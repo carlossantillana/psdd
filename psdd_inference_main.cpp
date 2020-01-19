@@ -5,6 +5,7 @@
 #include <iostream>
 #include <psdd/cnf.h>
 #include <psdd/optionparser.h>
+#include <psdd/fpga_psdd_node.h>
 extern "C" {
 #include <sdd/sddapi.h>
 }
@@ -74,12 +75,23 @@ int main(int argc, const char *argv[]) {
   PsddNode *result_node = psdd_manager->ReadPsddFile(psdd_filename, 0);
   std::vector<SddLiteral> variables =
       vtree_util::VariablesUnderVtree(psdd_manager->vtree());
-  auto serialized_psdd = psdd_node_util::SerializePsddNodes(result_node);
-  auto mpe_result = psdd_node_util::GetMPESolution(serialized_psdd);
+  // auto serialized_psdd = psdd_node_util::SerializePsddNodes(result_node);
+  auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
+
+  for (auto j =0; j < 40; j++){
+    std::cout << fpga_serialized_psdd[j] << std::endl;
+  }
+  // auto mpe_result = psdd_node_util::GetMPESolution(serialized_psdd);
+  auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
+
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
-  for (auto i = 0; i < 10000; ++i){
-      psdd_node_util::Evaluate(var_mask, mpe_result.first, serialized_psdd);
+  //10000
+  // for (auto i = 0; i < 1; ++i){
+  //     psdd_node_util::Evaluate(var_mask, mpe_result.first, serialized_psdd);
+  // }
+  for (auto i = 0; i < 1; ++i){
+      fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
   }
   delete (psdd_manager);
 }
