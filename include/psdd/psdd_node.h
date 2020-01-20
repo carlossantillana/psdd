@@ -104,7 +104,6 @@ public:
   void ResetDataCount() override;
   void DirectSample(std::bitset<MAX_VAR> *instantiation,
                     RandomDoubleFromUniformGenerator *generator) override;
-
 private:
   void CalculateHashValue();
   int32_t literal_;

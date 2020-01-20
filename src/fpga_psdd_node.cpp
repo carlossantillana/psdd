@@ -203,15 +203,20 @@ std::vector<SddLiteral> LeftToRightLeafTraverse(Vtree *root) {
 } // namespace vtree_util
 namespace fpga_psdd_node_util {
 FPGAPsddNode* ConvertToStaticNode(PsddNode * node){
-  FPGAPsddNode * tmp;
+  FPGAPsddNode * staticNode;
+  std::cout << "converting node to static, ";
+
   if (node ->node_type() == 1){
-    tmp = new FPGAPsddNode(static_cast<PsddLiteralNode *>(node));
+    std::cout << "literal\n";
+    staticNode = new FPGAPsddNode(static_cast<PsddLiteralNode *>(node));
   } else if (node ->node_type() == 2){
-    tmp = new FPGAPsddNode(static_cast<PsddDecisionNode *>(node));
-  } else {
-    tmp = new FPGAPsddNode(static_cast<PsddTopNode *>(node));
+    std::cout << "decision\n";
+    staticNode = new FPGAPsddNode(static_cast<PsddDecisionNode *>(node));
+  } else if (node ->node_type() == 3){
+    std::cout << "top\n";
+    staticNode = new FPGAPsddNode(static_cast<PsddTopNode *>(node));
   }
-  return tmp;
+  return staticNode;
 }
 
 SddNode *ConvertPsddNodeToSddNode(
@@ -263,13 +268,16 @@ SddNode *ConvertPsddNodeToSddNode(
 
 // parents appear before children
 std::vector<FPGAPsddNode *> SerializePsddNodes(PsddNode *root) {
+  std::cout << "inside small serialize\n";
   return SerializePsddNodes(std::vector<PsddNode *>({root}));
 }
 
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<PsddNode *> &root_nodes) {
   std::unordered_set<uintmax_t> node_explored;
+  std::cout << "inside big serialize\n";
   std::vector<FPGAPsddNode*> result;
+  std::cout << "starting first for loop in serialize\n";
   for (const auto cur_root_node : root_nodes) {
     if (node_explored.find(cur_root_node->node_index()) ==
         node_explored.end()) {
@@ -277,6 +285,7 @@ SerializePsddNodes(const std::vector<PsddNode *> &root_nodes) {
       node_explored.insert(cur_root_node->node_index());
     }
   }
+  std::cout << "starting second for loop in serialize\n";
   uintmax_t explore_index = 0;
   while (explore_index != result.size()) {
     FPGAPsddNode *cur_psdd_node = result[explore_index];
@@ -371,38 +380,38 @@ void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,
 }
 
 std::pair<std::bitset<MAX_VAR>, Probability>
-GetMPESolution(const std::vector<PsddNode *> &serialized_psdd_nodes) {
+GetMPESolution(const std::vector<FPGAPsddNode *> &serialized_psdd_nodes) {
   for (auto it = serialized_psdd_nodes.rbegin();
        it != serialized_psdd_nodes.rend(); ++it) {
-    PsddNode *cur_node = *it;
+    FPGAPsddNode *cur_node = *it;
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
       auto *cache_pair = new std::pair<PsddParameter, uintmax_t>(
           PsddParameter::CreateFromDecimal(1.0), 0);
       cur_node->SetUserData((uintmax_t)cache_pair);
     } else if (cur_node->node_type() == TOP_NODE_TYPE) {
-      PsddTopNode *cur_top_node = cur_node->psdd_top_node();
+      // PsddGopNode *cur_top_node = cur_node->top_node();
       Probability cur_value;
       std::pair<PsddParameter, uintmax_t> *cache_pair;
-      if (cur_top_node->true_parameter() > cur_top_node->false_parameter()) {
+      if (cur_node->true_parameter() > cur_node->false_parameter()) {
         cache_pair = new std::pair<PsddParameter, uintmax_t>(
-            cur_top_node->true_parameter(), 1);
+            cur_node->true_parameter(), 1);
       } else {
         cache_pair = new std::pair<PsddParameter, uintmax_t>(
-            cur_top_node->false_parameter(), 0);
+            cur_node->false_parameter(), 0);
       }
       cur_node->SetUserData((uintmax_t)cache_pair);
     } else {
       assert(cur_node->node_type() == DECISION_NODE_TYPE);
-      PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
+      // PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
       Probability max_product = Probability::CreateFromDecimal(0);
       uintmax_t max_index = 0;
-      const auto &cur_primes = cur_decn_node->primes();
-      const auto &cur_subs = cur_decn_node->subs();
-      const auto &cur_params = cur_decn_node->parameters();
-      uintmax_t element_size = cur_decn_node->primes().size();
+      const auto &cur_primes = cur_node->primes();
+      const auto &cur_subs = cur_node->subs();
+      const auto &cur_params = cur_node->parameters();
+      uintmax_t element_size = cur_node->primes().size();
       for (uintmax_t i = 0; i < element_size; ++i) {
-        PsddNode *cur_prime_node = cur_primes[i];
-        PsddNode *cur_sub_node = cur_subs[i];
+        FPGAPsddNode *cur_prime_node = cur_primes[i];
+        FPGAPsddNode *cur_sub_node = cur_subs[i];
         PsddParameter cur_parameter = cur_params[i];
         auto cur_prime_comp_cache =
             (std::pair<PsddParameter, uintmax_t> *)cur_prime_node->user_data();
@@ -421,7 +430,7 @@ GetMPESolution(const std::vector<PsddNode *> &serialized_psdd_nodes) {
     }
   }
   // Extract solution;
-  std::queue<PsddNode *> node_queue;
+  std::queue<FPGAPsddNode *> node_queue;
   node_queue.push(serialized_psdd_nodes[0]);
   std::bitset<MAX_VAR> max_instantiation;
   auto *cache_pair =
@@ -429,29 +438,29 @@ GetMPESolution(const std::vector<PsddNode *> &serialized_psdd_nodes) {
           ->user_data();
   auto max_prob = cache_pair->first;
   while (!node_queue.empty()) {
-    PsddNode *cur_node = node_queue.front();
+    FPGAPsddNode *cur_node = node_queue.front();
     node_queue.pop();
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
-      PsddLiteralNode *cur_literal_node = cur_node->psdd_literal_node();
-      if (cur_literal_node->sign()) {
-        max_instantiation.set(cur_literal_node->variable_index());
+      // PsddLiteralNode *cur_literal_node = cur_node->psdd_literal_node();
+      if (cur_node->sign()) {
+        max_instantiation.set(cur_node->variable_index());
       }
     } else if (cur_node->node_type() == DECISION_NODE_TYPE) {
-      PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
+      // PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
       cache_pair = (std::pair<PsddParameter, uintmax_t> *)cur_node->user_data();
-      node_queue.push(cur_decn_node->primes()[cache_pair->second]);
-      node_queue.push(cur_decn_node->subs()[cache_pair->second]);
+      node_queue.push(cur_node->primes()[cache_pair->second]);
+      node_queue.push(cur_node->subs()[cache_pair->second]);
     } else {
       assert(cur_node->node_type() == TOP_NODE_TYPE);
-      PsddTopNode *cur_top_node = cur_node->psdd_top_node();
+      // PsddTopNode *cur_top_node = cur_node->psdd_top_node();
       cache_pair =
-          (std::pair<PsddParameter, uintmax_t> *)cur_top_node->user_data();
+          (std::pair<PsddParameter, uintmax_t> *)cur_node->user_data();
       if (cache_pair->second) {
-        max_instantiation.set(cur_top_node->variable_index());
+        max_instantiation.set(cur_node->variable_index());
       }
     }
   }
-  for (PsddNode *cur_node : serialized_psdd_nodes) {
+  for (FPGAPsddNode *cur_node : serialized_psdd_nodes) {
     cache_pair = (std::pair<PsddParameter, uintmax_t> *)cur_node->user_data();
     delete (cache_pair);
     cur_node->SetUserData(0);
@@ -498,14 +507,15 @@ mpz_class ModelCount(const std::vector<PsddNode *> &serialized_nodes) {
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      const std::vector<FPGAPsddNode *> &serialized_nodes) {
+  std::cout << "inside big evaluate\n";
   std::unordered_map<uintmax_t, Probability> evaluation_cache;
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
-    PsddNode *cur_node = *node_it;
+    FPGAPsddNode *cur_node = *node_it;
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
-      PsddLiteralNode *cur_lit = cur_node->psdd_literal_node();
-      if (variables[cur_lit->variable_index()]) {
-        if (instantiation[cur_lit->variable_index()] == cur_lit->sign()) {
+      // PsddLiteralNode *cur_lit = cur_node->psdd_literal_node();
+      if (variables[cur_node->variable_index()]) {
+        if (instantiation[cur_node->variable_index()] == cur_node->sign()) {
           evaluation_cache[cur_node->node_index()] =
               Probability::CreateFromDecimal(1);
         } else {
@@ -517,76 +527,81 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
             Probability::CreateFromDecimal(1);
       }
     } else if (cur_node->node_type() == TOP_NODE_TYPE) {
-      PsddTopNode *cur_top = cur_node->psdd_top_node();
-      if (variables[cur_top->variable_index()]) {
-        if (instantiation[cur_top->variable_index()]) {
-          evaluation_cache[cur_node->node_index()] = cur_top->true_parameter();
+      // PsddTopNode *cur_top = cur_node->psdd_top_node();
+      if (variables[cur_node->variable_index()]) {
+        if (instantiation[cur_node->variable_index()]) {
+          evaluation_cache[cur_node->node_index()] = cur_node->true_parameter();
         } else {
-          evaluation_cache[cur_node->node_index()] = cur_top->false_parameter();
+          evaluation_cache[cur_node->node_index()] = cur_node->false_parameter();
         }
       } else {
         evaluation_cache[cur_node->node_index()] =
             Probability::CreateFromDecimal(1);
       }
     } else {
-      PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
-      auto element_size = cur_decn_node->primes().size();
+      // PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
+      auto element_size = cur_node->primes().size();
       Probability cur_prob = Probability::CreateFromDecimal(0);
       for (size_t i = 0; i < element_size; ++i) {
-        PsddNode *cur_prime = cur_decn_node->primes()[i];
-        PsddNode *cur_sub = cur_decn_node->subs()[i];
+        FPGAPsddNode *cur_prime = cur_node->primes()[i];
+        FPGAPsddNode *cur_sub = cur_node->subs()[i];
         cur_prob = cur_prob + evaluation_cache[cur_prime->node_index()] *
                                   evaluation_cache[cur_sub->node_index()] *
-                                  cur_decn_node->parameters()[i];
+                                  cur_node->parameters()[i];
       }
       evaluation_cache[cur_node->node_index()] = cur_prob;
     }
   }
   return evaluation_cache[serialized_nodes[0]->node_index()];
 }
-bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
-                  const std::bitset<MAX_VAR> &partial_instantiation) {
-  std::vector<FPGAPsddNode *> serialized_nodes = SerializePsddNodes(node);
-  return IsConsistent(serialized_nodes, variable_mask, partial_instantiation);
-}
-bool IsConsistent(const std::vector<PsddNode *> &nodes,
-                  const std::bitset<MAX_VAR> &variable_mask,
-                  const std::bitset<MAX_VAR> &partial_instantiation) {
-  for (auto node_it = nodes.rbegin(); node_it != nodes.rend(); ++node_it) {
-    PsddNode *cur_node = *node_it;
-    if (cur_node->node_type() == LITERAL_NODE_TYPE) {
-      if (variable_mask[cur_node->psdd_literal_node()->variable_index()]) {
-        if (partial_instantiation[cur_node->psdd_literal_node()
-                                      ->variable_index()] ==
-            cur_node->psdd_literal_node()->sign()) {
-          cur_node->SetActivationFlag();
-        }
-      } else {
-        cur_node->SetActivationFlag();
-      }
-    } else if (cur_node->node_type() == TOP_NODE_TYPE) {
-      cur_node->SetActivationFlag();
-    } else {
-      const auto &primes = cur_node->psdd_decision_node()->primes();
-      const auto &subs = cur_node->psdd_decision_node()->subs();
-      auto element_size = primes.size();
-      for (size_t i = 0; i < element_size; ++i) {
-        if (primes[i]->activation_flag() && subs[i]->activation_flag()) {
-          cur_node->SetActivationFlag();
-          break;
-        }
-      }
-    }
-  }
-  bool result = nodes[0]->activation_flag();
-  for (PsddNode *cur_node : nodes) {
-    cur_node->ResetActivationFlag();
-  }
-  return result;
-}
+// bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
+//                   const std::bitset<MAX_VAR> &partial_instantiation) {
+//   std::vector<FPGAPsddNode *> serialized_nodes = SerializePsddNodes(node);
+//   return IsConsistent(serialized_nodes, variable_mask, partial_instantiation);
+// }
+// bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
+//                   const std::bitset<MAX_VAR> &partial_instantiation) {
+//   // std::vector<FPGAPsddNode *> serialized_nodes = SerializePsddNodes(node);
+//   return IsConsistent(node, variable_mask, partial_instantiation);
+// }
+// bool IsConsistent(const std::vector<FPGAPsddNode *> &nodes,
+//                   const std::bitset<MAX_VAR> &variable_mask,
+//                   const std::bitset<MAX_VAR> &partial_instantiation) {
+//   for (auto node_it = nodes.rbegin(); node_it != nodes.rend(); ++node_it) {
+//     FPGAPsddNode *cur_node = *node_it;
+//     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
+//       if (variable_mask[cur_node->psdd_literal_node()->variable_index()]) {
+//         if (partial_instantiation[cur_node->variable_index()] ==
+//             cur_node->psdd_literal_node()->sign()) {
+//           cur_node->SetActivationFlag();
+//         }
+//       } else {
+//         cur_node->SetActivationFlag();
+//       }
+//     } else if (cur_node->node_type() == TOP_NODE_TYPE) {
+//       cur_node->SetActivationFlag();
+//     } else {
+//       const auto &primes = cur_node->psdd_decision_node()->primes();
+//       const auto &subs = cur_node->psdd_decision_node()->subs();
+//       auto element_size = primes.size();
+//       for (size_t i = 0; i < element_size; ++i) {
+//         if (primes[i]->activation_flag() && subs[i]->activation_flag()) {
+//           cur_node->SetActivationFlag();
+//           break;
+//         }
+//       }
+//     }
+//   }
+//   bool result = nodes[0]->activation_flag();
+//   for (FPGAPsddNode *cur_node : nodes) {
+//     cur_node->ResetActivationFlag();
+//   }
+//   return result;
+// }
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      PsddNode *root_node) {
+  std::cout << "inside small evaluate\n";
   std::vector<FPGAPsddNode *> serialized_nodes = SerializePsddNodes(root_node);
   return Evaluate(variables, instantiation, serialized_nodes);
 }
@@ -606,29 +621,29 @@ void WritePsddToFile(PsddNode *root_node, const char *output_filename) {
        ++it) {
     FPGAPsddNode *cur = *it;
     if (cur->node_type() == LITERAL_NODE_TYPE) {
-      PsddLiteralNode *cur_literal = cur->psdd_literal_node();
+      // PsddLiteralNode *cur_literal = cur->psdd_literal_node();
       psdd_content +=
           "L " + std::to_string(node_index) + " " +
-          std::to_string(sdd_vtree_position(cur_literal->vtree_node())) + " " +
-          std::to_string(cur_literal->literal()) + "\n";
+          std::to_string(sdd_vtree_position(cur->vtree_node())) + " " +
+          std::to_string(cur->literal()) + "\n";
     } else if (cur->node_type() == TOP_NODE_TYPE) {
-      PsddTopNode *cur_top_node = cur->psdd_top_node();
+      // PsddTopNode *cur_top_node = cur->psdd_top_node();
       psdd_content +=
           "T " + std::to_string(node_index) + " " +
-          std::to_string(sdd_vtree_position(cur_top_node->vtree_node())) + " " +
-          std::to_string(cur_top_node->variable_index()) + " " +
-          std::to_string(cur_top_node->false_parameter().parameter()) + " " +
-          std::to_string(cur_top_node->true_parameter().parameter()) + "\n";
+          std::to_string(sdd_vtree_position(cur->vtree_node())) + " " +
+          std::to_string(cur->variable_index()) + " " +
+          std::to_string(cur->false_parameter().parameter()) + " " +
+          std::to_string(cur->true_parameter().parameter()) + "\n";
     } else {
       assert(cur->node_type() == DECISION_NODE_TYPE);
-      PsddDecisionNode *cur_decision_node = cur->psdd_decision_node();
+      // PsddDecisionNode *cur_decision_node = cur->psdd_decision_node();
       psdd_content +=
           "D " + std::to_string(node_index) + " " +
-          std::to_string(sdd_vtree_position(cur_decision_node->vtree_node())) +
-          " " + std::to_string(cur_decision_node->primes().size());
-      const auto &primes = cur_decision_node->primes();
-      const auto &subs = cur_decision_node->subs();
-      const auto &params = cur_decision_node->parameters();
+          std::to_string(sdd_vtree_position(cur->vtree_node())) +
+          " " + std::to_string(cur->primes().size());
+      const auto &primes = cur->primes();
+      const auto &subs = cur->subs();
+      const auto &params = cur->parameters();
       auto element_size = primes.size();
       for (size_t i = 0; i < element_size; ++i) {
         psdd_content += " " + std::to_string(primes[i]->user_data());
@@ -734,36 +749,41 @@ uintmax_t GetPsddSize(PsddNode *root_node) {
 } // namespace psdd_node_util
 FPGAPsddNode::FPGAPsddNode(PsddLiteralNode * literal){
   node_type_ = 1;
-  literal->getNodeIndex();
-  literal->getVtreeNode();
-  literal->getFlagIndex();
-  literal->getSign();
-  literal->getLiteral();
-  //sign, literal, node index, vtree_node, flag_index
+  node_index_ = literal->node_index();
+  vtree_node_ = literal->vtree_node();
+  flag_index_ = literal->flag_index();
+  activation_flag_ = literal->activation_flag();
+  hash_value_ = literal->hash_value();
+  user_data_ =literal->user_data();
+  literal_ = literal->literal();
 }
 FPGAPsddNode::FPGAPsddNode(PsddDecisionNode * decision){
   node_type_ = 2;
-  decision->getNodeIndex();
-  decision->getVtreeNode();
-  decision->getFlagIndex();
-  decision->getPrimes();
-  decision->getSubs();
-  decision->getParams();
-  decision->getDataCount();
-  //node index, vtree_node, flag_index, primes, subs, params, data counts
+  node_index_ = decision->node_index();
+  vtree_node_ = decision->vtree_node();
+  flag_index_ = decision->flag_index();
+  activation_flag_ = decision->activation_flag();
+  hash_value_ = decision->hash_value();
+  for (int i=0; i<decision->primes().size(); i++) 
+        primes_.push_back(fpga_psdd_node_util::ConvertToStaticNode(decision->primes()[i])); 
+  for (int i=0; i<decision->subs().size(); i++) 
+        subs_.push_back(fpga_psdd_node_util::ConvertToStaticNode(decision->subs()[i])); 
+  parameters_ = decision->parameters();
+  data_counts_ = decision->data_counts();
 }
 FPGAPsddNode::FPGAPsddNode(PsddTopNode * top){
   node_type_ = 3;
-  top->getNodeIndex();
-  top->getVtreeNode();
-  top->getFlagIndex();
-  top->getVariableIndex();
-  top->getTrueParam();
-  top->getFalseParam();
-  top->getFalseDataCount();
-  top->getTrueDataCount();
-  //node index, vtree_node, flag_index, variable_index, tru_param,
-  //false_param, false_data_count, true_data_count
+  node_index_ = top->node_index();
+  vtree_node_ = top->vtree_node();
+  flag_index_ = top->flag_index();
+  activation_flag_ = top->activation_flag();
+  hash_value_ = top->hash_value();
+  user_data_ =top->user_data();
+  variable_index_ = top->variable_index();
+  true_parameter_ = top->true_parameter();
+  false_parameter_ = top->false_parameter();
+  false_data_count_ = top->false_data_count();
+  true_data_count_ = top->true_data_count();
 }
 FPGAPsddNode::FPGAPsddNode(uintmax_t node_index, Vtree *vtree_node)
     : FPGAPsddNode(node_index, vtree_node, 0) {}
@@ -792,16 +812,16 @@ void FPGAPsddNode::SetNodeType(int newNodeType) { node_type_ = newNodeType; }
 
 void FPGAPsddNode::ResetActivationFlag() { activation_flag_ = false; }
 
-bool PsddNode::IsConsistent(const std::bitset<MAX_VAR> &instantiation,
-                            uint32_t variable_size) {
-  std::unordered_map<uint32_t, bool> evid;
-  for (size_t i = 1; i <= variable_size; ++i) {
-    evid[i] = instantiation[i];
-  }
-  return IsConsistent(evid);
-}
-uintmax_t PsddNode::user_data() const { return user_data_; }
-void PsddNode::SetUserData(uintmax_t user_data) { user_data_ = user_data; }
+// bool FPGAPsddNode::IsConsistent(const std::bitset<MAX_VAR> &instantiation,
+//                             uint32_t variable_size) {
+//   std::unordered_map<uint32_t, bool> evid;
+//   for (size_t i = 1; i <= variable_size; ++i) {
+//     evid[i] = instantiation[i];
+//   }
+//   return IsConsistent(evid);
+// }
+uintmax_t FPGAPsddNode::user_data() const { return user_data_; }
+void FPGAPsddNode::SetUserData(uintmax_t user_data) { user_data_ = user_data; }
 //start of literal node
 FPGAPsddNode::FPGAPsddNode(uintmax_t node_index, Vtree *vtree_node,
                                  uintmax_t flag_index, int32_t literal)
@@ -819,45 +839,147 @@ FPGAPsddNode::FPGAPsddNode(uintmax_t *node_index, Vtree *vtree_node,
 FPGAPsddNode::FPGAPsddNode(uintmax_t *node_index, Vtree *vtree_node,
                                  int32_t literal)
     : FPGAPsddNode(node_index, vtree_node, 0, literal) {}
-//make more dynamic
-bool PsddLiteralNode::operator==(const PsddLiteralNode &other) const {
-  return literal_ == other.literal() && flag_index() == other.flag_index();
+//made more dynamic
+bool FPGAPsddNode::operator==(const FPGAPsddNode &other) const {
+  if (node_type_ == LITERAL_NODE_TYPE){
+    return literal_ == other.literal() && flag_index() == other.flag_index();
+  } else if (node_type_ == DECISION_NODE_TYPE){
+      if (primes_.size() != other.primes_.size()) {
+        return false;
+      }
+      if (flag_index() != other.flag_index()) {
+        return false;
+      }
+      auto element_size = primes_.size();
+      for (size_t i = 0; i < element_size; i++) {
+        if (primes_[i]->node_index() != other.primes_[i]->node_index()) {
+          return false;
+        }
+        if (subs_[i]->node_index() != other.subs_[i]->node_index()) {
+          return false;
+        }
+        if (parameters_[i] != other.parameters_[i]) {
+          return false;
+        }
+      }
+      return true;
+  } else if (node_type_ == TOP_NODE_TYPE) {
+    return variable_index_ == other.variable_index_ &&
+          flag_index() == other.flag_index() &&
+          true_parameter_ == other.true_parameter_;
+  }
 }
+//made more dynamic
+int FPGAPsddNode::node_type() const { return node_type_; }
 
-int PsddLiteralNode::node_type() const { return 1; }
+//made more dynamic+2 overloads
+// bool FPGAPsddNode::IsConsistent(
+//     const std::unordered_map<uint32_t, bool> &partial_instantiation) const {
+//   if (node_type_ == LITERAL_NODE_TYPE){
+//     uint32_t var_index = variable_index();
+//     if (partial_instantiation.find(var_index) != partial_instantiation.end()) {
+//       return partial_instantiation.find(var_index)->second == sign();
+//     } else {
+//       return true;
+//     }
+//   } else if (node_type_ == DECISION_NODE_TYPE) {
+//       auto element_size = primes_.size();
+//       for (size_t i = 0; i < element_size; i++) {
+//         FPGAPsddNode *cur_prime = primes_[i];
+//         FPGAPsddNode *cur_sub = subs_[i];
+//         if (cur_prime->IsConsistent(partial_instantiation) &&
+//             cur_sub->IsConsistent(partial_instantiation)) {
+//           return true;
+//         }
+//       }
+//       return false;
+//   } else if (node_type_ == TOP_NODE_TYPE){
+//     return true;
+//   }
+// }
 
-bool PsddLiteralNode::IsConsistent(
-    const std::unordered_map<uint32_t, bool> &partial_instantiation) const {
-  uint32_t var_index = variable_index();
-  if (partial_instantiation.find(var_index) != partial_instantiation.end()) {
-    return partial_instantiation.find(var_index)->second == sign();
-  } else {
-    return true;
+bool FPGAPsddNode::sign() const { if (node_type() == 1) return literal_ > 0; }
+
+//made more dynamic
+uint32_t FPGAPsddNode::variable_index() const {
+  if (node_type_ == LITERAL_NODE_TYPE){
+    return literal_ > 0 ? static_cast<uint32_t>(literal_)
+                        : static_cast<uint32_t>(-literal_);
+  } else if (node_type_ == TOP_NODE_TYPE){
+    return variable_index_;
   }
 }
 
-bool FPGAPsddNode::sign() const { return literal_ > 0; }
+int32_t FPGAPsddNode::literal() const { if (node_type() == 1) return literal_; }
 
-uint32_t FPGAPsddNode::variable_index() const {
-  return literal_ > 0 ? static_cast<uint32_t>(literal_)
-                      : static_cast<uint32_t>(-literal_);
+//made more dynamic
+void FPGAPsddNode::CalculateHashValue() {
+  if (node_type_ == LITERAL_NODE_TYPE){
+    std::size_t hash_value = std::hash<int32_t>{}(literal_);
+    hash_value ^= (std::hash<uintmax_t>{}(flag_index()) << 1);
+    set_hash_value(hash_value);
+  } else if (node_type_ == DECISION_NODE_TYPE){
+    std::size_t hash_value = std::hash<uintmax_t>{}(flag_index());
+    auto element_size = primes_.size();
+    for (size_t i = 0; i < element_size; i++) {
+      hash_value ^= (std::hash<uintmax_t>{}(primes_[i]->node_index()) << i);
+      hash_value ^= (std::hash<uintmax_t>{}(subs_[i]->node_index()) << i);
+      hash_value ^= (parameters_[i].hash_value() << i);
+    }
+    set_hash_value(hash_value);
+  } else if (node_type_ == TOP_NODE_TYPE){
+      std::size_t hash_value = std::hash<uint32_t>{}(variable_index_);
+      hash_value ^= true_parameter_.hash_value() << 1;
+      hash_value ^= std::hash<uintmax_t>{}(flag_index()) << 2;
+      set_hash_value(hash_value);
+  }
 }
 
-int32_t FPGAPsddNode::literal() const { return literal_; }
-
-void PsddLiteralNode::CalculateHashValue() {
-  std::size_t hash_value = std::hash<int32_t>{}(literal_);
-  hash_value ^= (std::hash<uintmax_t>{}(flag_index()) << 1);
-  set_hash_value(hash_value);
+//made more dynamic
+void FPGAPsddNode::ResetDataCount() {
+  if (node_type_ == DECISION_NODE_TYPE){
+    auto element_size = primes_.size();
+    for (size_t i = 0; i < element_size; ++i) {
+      data_counts_[i] = 0;
+    }
+  } else if (node_type_ == TOP_NODE_TYPE){
+      true_data_count_ = 0;
+      false_data_count_ = 0;
+  }
 }
 
-void PsddLiteralNode::ResetDataCount() {}
-
-void PsddLiteralNode::DirectSample(
+//made more dynamic
+void FPGAPsddNode::DirectSample(
     std::bitset<MAX_VAR> *instantiation,
     RandomDoubleFromUniformGenerator *generator) {
-  if (literal_ > 0) {
-    instantiation->set((size_t)literal_);
+  if (node_type_ == LITERAL_NODE_TYPE){
+    if (literal_ > 0) {
+      instantiation->set((size_t)literal_);
+    }
+  } else if (node_type_ == DECISION_NODE_TYPE){
+      PsddParameter uniform_rand = PsddParameter::CreateFromDecimal(
+        (generator->generate() - generator->min()) /
+        (generator->max() - generator->min()));
+    PsddParameter acc = PsddParameter::CreateFromDecimal(0);
+    auto element_size = primes_.size();
+    for (size_t i = 0; i < element_size; ++i) {
+      PsddParameter cur_parameter = parameters_[i];
+      acc = acc + cur_parameter;
+      if (uniform_rand < acc) {
+        // Use this partition
+        primes_[i]->DirectSample(instantiation, generator);
+        subs_[i]->DirectSample(instantiation, generator);
+        return;
+      }
+    }
+    assert(false);
+  } else if (node_type_ == TOP_NODE_TYPE){
+        PsddParameter uniform_rand = PsddParameter::CreateFromDecimal(
+        (generator->generate() - generator->min()) /
+        (generator->max() - generator->min()));
+    if (uniform_rand < true_parameter_) {
+      instantiation->set(variable_index_);
+    }
   }
 }
 //start of decision
@@ -913,100 +1035,109 @@ FPGAPsddNode::FPGAPsddNode(uintmax_t *node_index, Vtree *vtree_node,
                                    const std::vector<FPGAPsddNode *> &subs)
     : FPGAPsddNode(node_index, vtree_node, 0, primes, subs) {}
 
-//make more dynamic!!!!!
-bool PsddDecisionNode::operator==(const PsddDecisionNode &other) const {
-  if (primes_.size() != other.primes_.size()) {
-    return false;
-  }
-  if (flag_index() != other.flag_index()) {
-    return false;
-  }
-  auto element_size = primes_.size();
-  for (size_t i = 0; i < element_size; i++) {
-    if (primes_[i]->node_index() != other.primes_[i]->node_index()) {
-      return false;
-    }
-    if (subs_[i]->node_index() != other.subs_[i]->node_index()) {
-      return false;
-    }
-    if (parameters_[i] != other.parameters_[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-//make more dynamic
-int PsddDecisionNode::node_type() const { return 2; }
+//made more dynamic
+// bool PsddDecisionNode::operator==(const PsddDecisionNode &other) const {
+//   if (primes_.size() != other.primes_.size()) {
+//     return false;
+//   }
+//   if (flag_index() != other.flag_index()) {
+//     return false;
+//   }
+//   auto element_size = primes_.size();
+//   for (size_t i = 0; i < element_size; i++) {
+//     if (primes_[i]->node_index() != other.primes_[i]->node_index()) {
+//       return false;
+//     }
+//     if (subs_[i]->node_index() != other.subs_[i]->node_index()) {
+//       return false;
+//     }
+//     if (parameters_[i] != other.parameters_[i]) {
+//       return false;
+//     }
+//   }
+//   return true;
+// }
+//made more dynamic
+// int PsddDecisionNode::node_type() const { return 2; }
 
-//make more dynamic
-bool PsddDecisionNode::IsConsistent(
-    const std::unordered_map<uint32_t, bool> &partial_instantiation) const {
-  auto element_size = primes_.size();
-  for (size_t i = 0; i < element_size; i++) {
-    PsddNode *cur_prime = primes_[i];
-    PsddNode *cur_sub = subs_[i];
-    if (cur_prime->IsConsistent(partial_instantiation) &&
-        cur_sub->IsConsistent(partial_instantiation)) {
-      return true;
-    }
-  }
-  return false;
-}
+//made more dynamic
+// bool PsddDecisionNode::IsConsistent(
+//     const std::unordered_map<uint32_t, bool> &partial_instantiation) const {
+//   auto element_size = primes_.size();
+//   for (size_t i = 0; i < element_size; i++) {
+//     PsddNode *cur_prime = primes_[i];
+//     PsddNode *cur_sub = subs_[i];
+//     if (cur_prime->IsConsistent(partial_instantiation) &&
+//         cur_sub->IsConsistent(partial_instantiation)) {
+//       return true;
+//     }
+//   }
+//   return false;
+// }
 
 const std::vector<FPGAPsddNode *> &FPGAPsddNode::primes() const {
-  return primes_;
+  if (node_type_ == DECISION_NODE_TYPE)
+    return primes_;
 }
 
-const std::vector<FPGAPsddNode *> &FPGAPsddNode::subs() const { return subs_; }
+const std::vector<FPGAPsddNode *> &FPGAPsddNode::subs() const {   
+  if (node_type_ == DECISION_NODE_TYPE) return subs_; 
+  }
 
 const std::vector<PsddParameter> &FPGAPsddNode::parameters() const {
-  return parameters_;
+  if (node_type_ == DECISION_NODE_TYPE)
+    return parameters_;
 }
 
-void PsddDecisionNode::CalculateHashValue() {
-  std::size_t hash_value = std::hash<uintmax_t>{}(flag_index());
-  auto element_size = primes_.size();
-  for (size_t i = 0; i < element_size; i++) {
-    hash_value ^= (std::hash<uintmax_t>{}(primes_[i]->node_index()) << i);
-    hash_value ^= (std::hash<uintmax_t>{}(subs_[i]->node_index()) << i);
-    hash_value ^= (parameters_[i].hash_value() << i);
-  }
-  set_hash_value(hash_value);
-}
-void PsddDecisionNode::IncrementDataCount(uintmax_t index,
+//made more dynamic
+// void PsddDecisionNode::CalculateHashValue() {
+//   std::size_t hash_value = std::hash<uintmax_t>{}(flag_index());
+//   auto element_size = primes_.size();
+//   for (size_t i = 0; i < element_size; i++) {
+//     hash_value ^= (std::hash<uintmax_t>{}(primes_[i]->node_index()) << i);
+//     hash_value ^= (std::hash<uintmax_t>{}(subs_[i]->node_index()) << i);
+//     hash_value ^= (parameters_[i].hash_value() << i);
+//   }
+//   set_hash_value(hash_value);
+// }
+void FPGAPsddNode::IncrementDataCount(uintmax_t index,
                                           uintmax_t increment_size) {
-  data_counts_[index] += increment_size;
+  if (node_type_ == DECISION_NODE_TYPE)
+    data_counts_[index] += increment_size;
 }
 
-void PsddDecisionNode::ResetDataCount() {
-  auto element_size = primes_.size();
-  for (size_t i = 0; i < element_size; ++i) {
-    data_counts_[i] = 0;
-  }
-}
+//made more dynamic
+// void PsddDecisionNode::ResetDataCount() {
+//   auto element_size = primes_.size();
+//   for (size_t i = 0; i < element_size; ++i) {
+//     data_counts_[i] = 0;
+//   }
+// }
 
-void PsddDecisionNode::DirectSample(
-    std::bitset<MAX_VAR> *instantiation,
-    RandomDoubleFromUniformGenerator *generator) {
-  PsddParameter uniform_rand = PsddParameter::CreateFromDecimal(
-      (generator->generate() - generator->min()) /
-      (generator->max() - generator->min()));
-  PsddParameter acc = PsddParameter::CreateFromDecimal(0);
-  auto element_size = primes_.size();
-  for (size_t i = 0; i < element_size; ++i) {
-    PsddParameter cur_parameter = parameters_[i];
-    acc = acc + cur_parameter;
-    if (uniform_rand < acc) {
-      // Use this partition
-      primes_[i]->DirectSample(instantiation, generator);
-      subs_[i]->DirectSample(instantiation, generator);
-      return;
-    }
-  }
-  assert(false);
-}
-const std::vector<uintmax_t> &PsddDecisionNode::data_counts() const {
-  return data_counts_;
+//Made more dynamic
+// void PsddDecisionNode::DirectSample(
+//     std::bitset<MAX_VAR> *instantiation,
+//     RandomDoubleFromUniformGenerator *generator) {
+//   PsddParameter uniform_rand = PsddParameter::CreateFromDecimal(
+//       (generator->generate() - generator->min()) /
+//       (generator->max() - generator->min()));
+//   PsddParameter acc = PsddParameter::CreateFromDecimal(0);
+//   auto element_size = primes_.size();
+//   for (size_t i = 0; i < element_size; ++i) {
+//     PsddParameter cur_parameter = parameters_[i];
+//     acc = acc + cur_parameter;
+//     if (uniform_rand < acc) {
+//       // Use this partition
+//       primes_[i]->DirectSample(instantiation, generator);
+//       subs_[i]->DirectSample(instantiation, generator);
+//       return;
+//     }
+//   }
+//   assert(false);
+// }
+const std::vector<uintmax_t> &FPGAPsddNode::data_counts() const {
+  if (node_type_ == DECISION_NODE_TYPE)
+    return data_counts_;
 }
 //start of top node
 FPGAPsddNode::FPGAPsddNode(uintmax_t node_index, Vtree *vtree_node,
@@ -1032,51 +1163,72 @@ FPGAPsddNode::FPGAPsddNode(uintmax_t *node_index, Vtree *vtree_node,
                          uint32_t variable_index)
     : FPGAPsddNode(node_index, vtree_node, 0, variable_index) {}
 
-bool PsddTopNode::operator==(const PsddTopNode &other) const {
-  return variable_index_ == other.variable_index_ &&
-         flag_index() == other.flag_index() &&
-         true_parameter_ == other.true_parameter_;
-}
+//made more dynamic!
+// bool PsddTopNode::operator==(const PsddTopNode &other) const {
+//   return variable_index_ == other.variable_index_ &&
+//          flag_index() == other.flag_index() &&
+//          true_parameter_ == other.true_parameter_;
+// }
 
-int PsddTopNode::node_type() const { return 3; }
+//made more dynamic
+// int PsddTopNode::node_type() const { return 3; }
 
-bool PsddTopNode::IsConsistent(
-    const std::unordered_map<uint32_t, bool> &partial_instantiation) const {
-  return true;
-}
+//made more dynamic
+// bool PsddTopNode::IsConsistent(
+//     const std::unordered_map<uint32_t, bool> &partial_instantiation) const {
+//   return true;
+// }
 
-uint32_t FPGAPsddNode::variable_index() const { return variable_index_; }
+//made more dynamic
+// uint32_t FPGAPsddNode::variable_index() const { return variable_index_; }
 
-void PsddTopNode::CalculateHashValue() {
-  std::size_t hash_value = std::hash<uint32_t>{}(variable_index_);
-  hash_value ^= true_parameter_.hash_value() << 1;
-  hash_value ^= std::hash<uintmax_t>{}(flag_index()) << 2;
-  set_hash_value(hash_value);
-}
+//Made more dynamic
+// void PsddTopNode::CalculateHashValue() {
+//   std::size_t hash_value = std::hash<uint32_t>{}(variable_index_);
+//   hash_value ^= true_parameter_.hash_value() << 1;
+//   hash_value ^= std::hash<uintmax_t>{}(flag_index()) << 2;
+//   set_hash_value(hash_value);
+// }
 
 void FPGAPsddNode::IncrementTrueDataCount(uintmax_t increment_size) {
-  true_data_count_ += increment_size;
+  if (node_type_ == TOP_NODE_TYPE)
+    true_data_count_ += increment_size;
 }
 
 void FPGAPsddNode::IncrementFalseDataCount(uintmax_t increment_size) {
-  false_data_count_ += increment_size;
+  if (node_type_ == TOP_NODE_TYPE)
+    false_data_count_ += increment_size;
 }
 
-void FPGAPsddNode::ResetDataCount() {
-  true_data_count_ = 0;
-  false_data_count_ = 0;
+//made more dynamic
+// void FPGAPsddNode::ResetDataCount() {
+//   true_data_count_ = 0;
+//   false_data_count_ = 0;
+// }
+PsddParameter FPGAPsddNode::true_parameter() const { 
+  if (node_type_ == TOP_NODE_TYPE)
+  return true_parameter_; 
 }
-PsddParameter FPGAPsddNode::true_parameter() const { return true_parameter_; }
-PsddParameter FPGAPsddNode::false_parameter() const { return false_parameter_; }
+PsddParameter FPGAPsddNode::false_parameter() const { 
+  if (node_type_ == TOP_NODE_TYPE)
+  return false_parameter_; 
+}
 
-void PsddTopNode::DirectSample(std::bitset<MAX_VAR> *instantiation,
-                               RandomDoubleFromUniformGenerator *generator) {
-  PsddParameter uniform_rand = PsddParameter::CreateFromDecimal(
-      (generator->generate() - generator->min()) /
-      (generator->max() - generator->min()));
-  if (uniform_rand < true_parameter_) {
-    instantiation->set(variable_index_);
-  }
+//Made more dynamic
+// void PsddTopNode::DirectSample(std::bitset<MAX_VAR> *instantiation,
+//                                RandomDoubleFromUniformGenerator *generator) {
+//   PsddParameter uniform_rand = PsddParameter::CreateFromDecimal(
+//       (generator->generate() - generator->min()) /
+//       (generator->max() - generator->min()));
+//   if (uniform_rand < true_parameter_) {
+//     instantiation->set(variable_index_);
+//   }
+// }
+uintmax_t FPGAPsddNode::true_data_count() const { 
+  if (node_type_ == TOP_NODE_TYPE)
+  return true_data_count_; 
 }
-uintmax_t FPGAPsddNode::true_data_count() const { return true_data_count_; }
-uintmax_t FPGAPsddNode::false_data_count() const { return false_data_count_; }
+uintmax_t FPGAPsddNode::false_data_count() const { 
+  if (node_type_ == TOP_NODE_TYPE)
+  return false_data_count_; 
+}

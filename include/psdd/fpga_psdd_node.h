@@ -64,7 +64,7 @@ public:
   FPGAPsddNode(PsddDecisionNode * decision);
   FPGAPsddNode(PsddTopNode * top);
   ~FPGAPsddNode();
-  int node_type(); // 1 is literal node, 2 is decision node, 3
+  int node_type() const; // 1 is literal node, 2 is decision node, 3
                                      // is top node with variable index
   uintmax_t node_index() const;
   uintmax_t flag_index() const;
@@ -293,7 +293,7 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      FPGAPsddNode *root_node);
-bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
+bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<FPGAPsddNode *> &nodes,
                   const std::bitset<MAX_VAR> &variable_mask,
