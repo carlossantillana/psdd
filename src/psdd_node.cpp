@@ -251,6 +251,7 @@ SddNode *ConvertPsddNodeToSddNode(
 
 // parents appear before children
 std::vector<PsddNode *> SerializePsddNodes(PsddNode *root) {
+  std::cout << "Serialize small \n";
   return SerializePsddNodes(std::vector<PsddNode *>({root}));
 }
 
@@ -258,13 +259,18 @@ std::vector<PsddNode *>
 SerializePsddNodes(const std::vector<PsddNode *> &root_nodes) {
   std::unordered_set<uintmax_t> node_explored;
   std::vector<PsddNode *> result;
+  std::cout << "Serialize Large\n";
   for (const auto cur_root_node : root_nodes) {
+    std::cout << "index " << cur_root_node->node_index() << std::endl;
     if (node_explored.find(cur_root_node->node_index()) ==
         node_explored.end()) {
       result.push_back(cur_root_node);
       node_explored.insert(cur_root_node->node_index());
+    } else {
+      std::cout << "cache out \n";
     }
   }
+  std::cout << "Second for loop \n";
   uintmax_t explore_index = 0;
   while (explore_index != result.size()) {
     PsddNode *cur_psdd_node = result[explore_index];

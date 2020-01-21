@@ -275,9 +275,9 @@ std::vector<SddLiteral> LeftToRightLeafTraverse(Vtree *root);
 } // namespace vtree_util
 
 namespace fpga_psdd_node_util {
-std::vector<FPGAPsddNode *> SerializePsddNodes(PsddNode *root);
+std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
-SerializePsddNodes(const std::vector<PsddNode *> &root_nodes);
+SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,

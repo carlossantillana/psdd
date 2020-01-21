@@ -8,6 +8,7 @@
 #include <iostream>
 #include <psdd/psdd_manager.h>
 #include <psdd/psdd_unique_table.h>
+#include <psdd/fpga_psdd_unique_table.h>
 #include <queue>
 #include <sstream>
 #include <stack>
@@ -269,14 +270,33 @@ PsddManager::PsddManager(Vtree *vtree, PsddUniqueTable *unique_table)
     }
   }
 }
+
+PsddManager::PsddManager(Vtree *vtree, FPGAPsddUniqueTable *unique_table)
+    : vtree_(vtree), fpga_unique_table_(unique_table), node_index_(0),
+      leaf_vtree_map_() {
+  std::vector<Vtree *> serialized_vtrees = vtree_util::SerializeVtree(vtree_);
+  for (Vtree *cur_v : serialized_vtrees) {
+    if (sdd_vtree_is_leaf(cur_v)) {
+      leaf_vtree_map_[sdd_vtree_var(cur_v)] = cur_v;
+    }
+  }
+}
+
 PsddManager::~PsddManager() {
   unique_table_->DeleteUnusedPsddNodes({});
   delete (unique_table_);
+  fpga_unique_table_->DeleteUnusedFPGAPsddNodes({});
+  delete (fpga_unique_table_);
   sdd_vtree_free(vtree_);
 }
 void PsddManager::DeleteUnusedPsddNodes(
     const std::vector<PsddNode *> &used_nodes) {
   unique_table_->DeleteUnusedPsddNodes(used_nodes);
+}
+
+void PsddManager::DeleteUnusedFPGAPsddNodes(
+    const std::vector<FPGAPsddNode *> &used_nodes) {
+  fpga_unique_table_->DeleteUnusedFPGAPsddNodes(used_nodes);
 }
 
 PsddNode *PsddManager::ConvertSddToPsdd(SddNode *root_node, Vtree *sdd_vtree,
@@ -424,6 +444,55 @@ PsddNode *PsddManager::GetTrueNode(Vtree *target_vtree_node,
   return GetTrueNode(target_vtree_node, flag_index, &true_node_map);
 }
 
+FPGAPsddNode *PsddManager::GetTrueFPGANode(
+    Vtree *target_vtree_node, uintmax_t flag_index,
+    std::unordered_map<SddLiteral, FPGAPsddNode *> *true_node_map) {
+  if (true_node_map->find(sdd_vtree_position(target_vtree_node)) !=
+      true_node_map->end()) {
+    return true_node_map->find(sdd_vtree_position(target_vtree_node))->second;
+  } else {
+    std::vector<Vtree *> post_order_vtree_nodes =
+        vtree_util::SerializeVtree(target_vtree_node);
+    for (auto it = post_order_vtree_nodes.rbegin();
+         it != post_order_vtree_nodes.rend(); it++) {
+      Vtree *cur_vtree_node = *it;
+      if (sdd_vtree_is_leaf(cur_vtree_node)) {
+        FPGAPsddNode *new_true_node =
+            GetFPGAPsddTopNode((uint32_t)sdd_vtree_var(cur_vtree_node), flag_index,
+                           PsddParameter::CreateFromDecimal(1),
+                           PsddParameter::CreateFromDecimal(1));
+        true_node_map->insert(
+            std::make_pair(sdd_vtree_position(cur_vtree_node), new_true_node));
+      } else {
+        Vtree *cur_left_node = sdd_vtree_left(cur_vtree_node);
+        Vtree *cur_right_node = sdd_vtree_right(cur_vtree_node);
+        assert(true_node_map->find(sdd_vtree_position(cur_left_node)) !=
+               true_node_map->end());
+        assert(true_node_map->find(sdd_vtree_position(cur_right_node)) !=
+               true_node_map->end());
+        FPGAPsddNode *left_true_node =
+            true_node_map->find(sdd_vtree_position(cur_left_node))->second;
+        FPGAPsddNode *right_true_node =
+            true_node_map->find(sdd_vtree_position(cur_right_node))->second;
+        FPGAPsddNode *new_true_node = GetConformedFPGAPsddDecisionNode(
+            {left_true_node}, {right_true_node},
+            {PsddParameter::CreateFromDecimal(1)}, flag_index);
+        true_node_map->insert(
+            std::make_pair(sdd_vtree_position(cur_vtree_node), new_true_node));
+      }
+    }
+    assert(true_node_map->find(sdd_vtree_position(target_vtree_node)) !=
+           true_node_map->end());
+    return true_node_map->find(sdd_vtree_position(target_vtree_node))->second;
+  }
+}
+
+FPGAPsddNode *PsddManager::GetTrueFPGANode(Vtree *target_vtree_node,
+                                   uintmax_t flag_index) {
+  std::unordered_map<SddLiteral, FPGAPsddNode *> true_node_map;
+  return GetTrueFPGANode(target_vtree_node, flag_index, &true_node_map);
+}
+
 PsddNode *PsddManager::NormalizePsddNode(
     Vtree *target_vtree_node, PsddNode *target_psdd_node, uintmax_t flag_index,
     std::unordered_map<SddLiteral, PsddNode *> *true_node_map) {
@@ -453,11 +522,48 @@ PsddNode *PsddManager::NormalizePsddNode(
   }
   return cur_node;
 }
+
+FPGAPsddNode *PsddManager::NormalizeFPGAPsddNode(
+    Vtree *target_vtree_node, FPGAPsddNode *target_psdd_node, uintmax_t flag_index,
+    std::unordered_map<SddLiteral, FPGAPsddNode *> *true_node_map) {
+  FPGAPsddNode *cur_node = target_psdd_node;
+  while (cur_node->vtree_node() != target_vtree_node) {
+    Vtree *cur_vtree_node = cur_node->vtree_node();
+    Vtree *cur_vtree_parent_node = sdd_vtree_parent(cur_vtree_node);
+    assert(cur_vtree_parent_node != nullptr);
+    if (sdd_vtree_left(cur_vtree_parent_node) == cur_vtree_node) {
+      auto true_node = GetTrueFPGANode(sdd_vtree_right(cur_vtree_parent_node),
+                                   flag_index, true_node_map);
+      FPGAPsddNode *next_node = new FPGAPsddNode(
+          node_index_, cur_vtree_parent_node, flag_index, {cur_node},
+          {true_node}, {PsddParameter::CreateFromDecimal(1)});
+      next_node = fpga_unique_table_->GetUniqueNode(next_node, &node_index_);
+      cur_node = next_node;
+    } else {
+      assert(sdd_vtree_right(cur_vtree_parent_node) == cur_vtree_node);
+      auto true_node = GetTrueFPGANode(sdd_vtree_left(cur_vtree_parent_node),
+                                   flag_index, true_node_map);
+      FPGAPsddNode *next_node = new FPGAPsddNode(
+          node_index_, cur_vtree_parent_node, flag_index, {true_node},
+          {cur_node}, {PsddParameter::CreateFromDecimal(1)});
+      next_node = fpga_unique_table_->GetUniqueNode(next_node, &node_index_);
+      cur_node = next_node;
+    }
+  }
+  return cur_node;
+}
+
 Vtree *PsddManager::vtree() const { return vtree_; }
 PsddManager *PsddManager::GetPsddManagerFromVtree(Vtree *psdd_vtree) {
   Vtree *copy_vtree = vtree_util::CopyVtree(psdd_vtree);
   auto *unique_table = PsddUniqueTable::GetPsddUniqueTable();
   return new PsddManager(copy_vtree, unique_table);
+}
+PsddManager *PsddManager::GetFPGAPsddManagerFromVtree(Vtree *psdd_vtree) {
+  Vtree *copy_vtree = vtree_util::CopyVtree(psdd_vtree);
+  FPGAPsddUniqueTable test = FPGAPsddUniqueTable();
+  auto *fpga_unique_table = test.GetFPGAPsddUniqueTable();
+  return new PsddManager(copy_vtree, fpga_unique_table);
 }
 PsddTopNode *
 PsddManager::GetPsddTopNode(uint32_t variable_index, uintmax_t flag_index,
@@ -473,6 +579,21 @@ PsddManager::GetPsddTopNode(uint32_t variable_index, uintmax_t flag_index,
       (PsddTopNode *)unique_table_->GetUniqueNode(next_node, &node_index_);
   return next_node;
 }
+FPGAPsddNode *
+PsddManager::GetFPGAPsddTopNode(uint32_t variable_index, uintmax_t flag_index,
+                            const PsddParameter &positive_parameter,
+                            const PsddParameter &negative_parameter) {
+  assert(leaf_vtree_map_.find(variable_index) != leaf_vtree_map_.end());
+  Vtree *target_vtree_node = leaf_vtree_map_[variable_index];
+  assert(sdd_vtree_is_leaf(target_vtree_node));
+  auto next_node = new FPGAPsddNode(node_index_, target_vtree_node, flag_index,
+                                   (uint32_t)sdd_vtree_var(target_vtree_node),
+                                   positive_parameter, negative_parameter);
+  next_node =
+      fpga_unique_table_->GetUniqueNode(next_node, &node_index_);
+  return next_node;
+}
+
 PsddLiteralNode *PsddManager::GetPsddLiteralNode(int32_t literal,
                                                  uintmax_t flag_index) {
   assert(leaf_vtree_map_.find(abs(literal)) != leaf_vtree_map_.end());
@@ -484,6 +605,18 @@ PsddLiteralNode *PsddManager::GetPsddLiteralNode(int32_t literal,
       (PsddLiteralNode *)unique_table_->GetUniqueNode(next_node, &node_index_);
   return next_node;
 }
+
+FPGAPsddNode *PsddManager::GetFPGAPsddLiteralNode(int32_t literal,
+                                                 uintmax_t flag_index) {
+  assert(leaf_vtree_map_.find(abs(literal)) != leaf_vtree_map_.end());
+  Vtree *target_vtree_node = leaf_vtree_map_[abs(literal)];
+  assert(sdd_vtree_is_leaf(target_vtree_node));
+  auto next_node =
+      new FPGAPsddNode(node_index_, target_vtree_node, flag_index, literal);
+  next_node = fpga_unique_table_->GetUniqueNode(next_node, &node_index_);
+  return next_node;
+}
+
 PsddDecisionNode *PsddManager::GetConformedPsddDecisionNode(
     const std::vector<PsddNode *> &primes, const std::vector<PsddNode *> &subs,
     const std::vector<PsddParameter> &params, uintmax_t flag_index) {
@@ -509,6 +642,35 @@ PsddDecisionNode *PsddManager::GetConformedPsddDecisionNode(
   auto next_decn_node = new PsddDecisionNode(
       node_index_, lca, flag_index, conformed_primes, conformed_subs, params);
   next_decn_node = (PsddDecisionNode *)unique_table_->GetUniqueNode(
+      next_decn_node, &node_index_);
+  return next_decn_node;
+}
+
+FPGAPsddNode *PsddManager::GetConformedFPGAPsddDecisionNode(
+    const std::vector<FPGAPsddNode *> &primes, const std::vector<FPGAPsddNode *> &subs,
+    const std::vector<PsddParameter> &params, uintmax_t flag_index) {
+  std::unordered_map<SddLiteral, FPGAPsddNode *> true_node_map;
+  Vtree *lca =
+      sdd_vtree_lca(primes[0]->vtree_node(), subs[0]->vtree_node(), vtree_);
+  assert(lca != nullptr);
+  Vtree *left_child = sdd_vtree_left(lca);
+  Vtree *right_child = sdd_vtree_right(lca);
+  auto element_size = primes.size();
+  std::vector<FPGAPsddNode *> conformed_primes;
+  std::vector<FPGAPsddNode *> conformed_subs;
+  for (size_t i = 0; i < element_size; ++i) {
+    FPGAPsddNode *cur_prime = primes[i];
+    FPGAPsddNode *cur_sub = subs[i];
+    FPGAPsddNode *cur_conformed_prime =
+        NormalizeFPGAPsddNode(left_child, cur_prime, flag_index, &true_node_map);
+    FPGAPsddNode *cur_conformed_sub =
+        NormalizeFPGAPsddNode(right_child, cur_sub, flag_index, &true_node_map);
+    conformed_primes.push_back(cur_conformed_prime);
+    conformed_subs.push_back(cur_conformed_sub);
+  }
+  auto next_decn_node = new FPGAPsddNode(
+      node_index_, lca, flag_index, conformed_primes, conformed_subs, params);
+  next_decn_node = fpga_unique_table_->GetUniqueNode(
       next_decn_node, &node_index_);
   return next_decn_node;
 }
@@ -646,6 +808,81 @@ PsddNode *PsddManager::ReadPsddFile(const char *psdd_filename,
   psdd_file.close();
   return root_node;
 }
+
+FPGAPsddNode *PsddManager::ReadFPGAPsddFile(const char *psdd_filename,
+                                    uintmax_t flag_index) {
+  std::ifstream psdd_file;
+  std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
+  psdd_file.open(psdd_filename);
+  if (!psdd_file) {
+    std::cerr << "File " << psdd_filename << " cannot be open.";
+    exit(1); // terminate with error
+  }
+  std::string line;
+  FPGAPsddNode *root_node = nullptr;
+  while (std::getline(psdd_file, line)) {
+    if (line[0] == 'c') {
+      continue;
+    }
+    if (line[0] == 'p') {
+      continue;
+    }
+    if (line[0] == 'L') {
+      std::istringstream iss(line.substr(1, std::string::npos));
+      uintmax_t node_index;
+      uint32_t vtree_index;
+      int32_t literal;
+      iss >> node_index >> vtree_index >> literal;
+      FPGAPsddNode *cur_node = GetFPGAPsddLiteralNode(literal, flag_index);
+      construct_fpga_cache[node_index] = cur_node;
+      root_node = cur_node;
+    } else if (line[0] == 'T') {
+      std::istringstream iss(line.substr(1, std::string::npos));
+      uintmax_t node_index;
+      uint32_t vtree_index;
+      uint32_t variable_index;
+      double neg_log_pr;
+      double pos_log_pr;
+      iss >> node_index >> vtree_index >> variable_index >> neg_log_pr >>
+          pos_log_pr;
+      FPGAPsddNode *cur_node = GetFPGAPsddTopNode(
+          variable_index, flag_index, PsddParameter::CreateFromLog(pos_log_pr),
+          PsddParameter::CreateFromLog(neg_log_pr));
+      construct_fpga_cache[node_index] = cur_node;
+      root_node = cur_node;
+    } else {
+      assert(line[0] == 'D');
+      std::istringstream iss(line.substr(1, std::string::npos));
+      uintmax_t node_index;
+      int vtree_index;
+      uintmax_t element_size;
+      iss >> node_index >> vtree_index >> element_size;
+      std::vector<FPGAPsddNode *> primes;
+      std::vector<FPGAPsddNode *> subs;
+      std::vector<PsddParameter> params;
+      for (size_t j = 0; j < element_size; j++) {
+        uintmax_t prime_index;
+        uintmax_t sub_index;
+        double weight_in_log;
+        iss >> prime_index >> sub_index >> weight_in_log;
+        assert(construct_fpga_cache.find(prime_index) != construct_fpga_cache.end());
+        assert(construct_fpga_cache.find(sub_index) != construct_fpga_cache.end());
+        FPGAPsddNode *prime_node = construct_fpga_cache[prime_index];
+        FPGAPsddNode *sub_node = construct_fpga_cache[sub_index];
+        primes.push_back(prime_node);
+        subs.push_back(sub_node);
+        params.push_back(PsddParameter::CreateFromLog(weight_in_log));
+      }
+      FPGAPsddNode *cur_node =
+          GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
+      construct_fpga_cache[node_index] = cur_node;
+      root_node = cur_node;
+    }
+  }
+  psdd_file.close();
+  return root_node;
+}
+
 std::vector<PsddNode *> PsddManager::SampleParametersForMultiplePsdds(
     RandomDoubleGenerator *generator,
     const std::vector<PsddNode *> &root_psdd_nodes, uintmax_t flag_index) {

@@ -4,7 +4,6 @@
 
 #include <psdd/psdd_node.h>
 #include <psdd/psdd_unique_table.h>
-
 #include <unordered_set>
 
 namespace {

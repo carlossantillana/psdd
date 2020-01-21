@@ -204,16 +204,16 @@ std::vector<SddLiteral> LeftToRightLeafTraverse(Vtree *root) {
 namespace fpga_psdd_node_util {
 FPGAPsddNode* ConvertToStaticNode(PsddNode * node){
   FPGAPsddNode * staticNode;
-  std::cout << "converting node to static, ";
+  // std::cout << "converting node to static, ";
 
   if (node ->node_type() == 1){
-    std::cout << "literal\n";
+    // std::cout << "literal\n";
     staticNode = new FPGAPsddNode(static_cast<PsddLiteralNode *>(node));
   } else if (node ->node_type() == 2){
-    std::cout << "decision\n";
+    // std::cout << "decision\n";
     staticNode = new FPGAPsddNode(static_cast<PsddDecisionNode *>(node));
   } else if (node ->node_type() == 3){
-    std::cout << "top\n";
+    // std::cout << "top\n";
     staticNode = new FPGAPsddNode(static_cast<PsddTopNode *>(node));
   }
   return staticNode;
@@ -267,22 +267,25 @@ SddNode *ConvertPsddNodeToSddNode(
 }
 
 // parents appear before children
-std::vector<FPGAPsddNode *> SerializePsddNodes(PsddNode *root) {
+std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root) {
   std::cout << "inside small serialize\n";
-  return SerializePsddNodes(std::vector<PsddNode *>({root}));
+  return SerializePsddNodes(std::vector<FPGAPsddNode *>({root}));
 }
 
 std::vector<FPGAPsddNode *>
-SerializePsddNodes(const std::vector<PsddNode *> &root_nodes) {
+SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
   std::unordered_set<uintmax_t> node_explored;
   std::cout << "inside big serialize\n";
   std::vector<FPGAPsddNode*> result;
   std::cout << "starting first for loop in serialize\n";
   for (const auto cur_root_node : root_nodes) {
+    std::cout << "index: " << cur_root_node->node_index() << " type: " << cur_root_node->node_type() << std::endl;
     if (node_explored.find(cur_root_node->node_index()) ==
         node_explored.end()) {
-      result.push_back(ConvertToStaticNode(cur_root_node));
+      result.push_back(cur_root_node);
       node_explored.insert(cur_root_node->node_index());
+    }else {
+      std::cout << "cache out\n";
     }
   }
   std::cout << "starting second for loop in serialize\n";
@@ -312,10 +315,10 @@ SerializePsddNodes(const std::vector<PsddNode *> &root_nodes) {
   return result;
 }
 
-std::unordered_map<uintmax_t, PsddNode *>
-GetCoveredPsddNodes(const std::vector<PsddNode *> &root_nodes) {
-  std::unordered_map<uintmax_t, PsddNode *> covered_nodes;
-  std::queue<PsddNode *> front_nodes;
+std::unordered_map<uintmax_t, FPGAPsddNode *>
+GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
+  std::unordered_map<uintmax_t, FPGAPsddNode *> covered_nodes;
+  std::queue<FPGAPsddNode *> front_nodes;
   for (const auto cur_root_node : root_nodes) {
     if (covered_nodes.find(cur_root_node->node_index()) ==
         covered_nodes.end()) {
@@ -324,12 +327,12 @@ GetCoveredPsddNodes(const std::vector<PsddNode *> &root_nodes) {
     }
   }
   while (!front_nodes.empty()) {
-    PsddNode *cur_psdd_node = front_nodes.front();
+    FPGAPsddNode *cur_psdd_node = front_nodes.front();
     front_nodes.pop();
     if (cur_psdd_node->node_type() == 2) {
-      auto cur_decn_node = static_cast<PsddDecisionNode *>(cur_psdd_node);
-      const std::vector<PsddNode *> &primes = cur_decn_node->primes();
-      const std::vector<PsddNode *> &subs = cur_decn_node->subs();
+      auto cur_decn_node = cur_psdd_node;
+      const std::vector<FPGAPsddNode *> &primes = cur_decn_node->primes();
+      const std::vector<FPGAPsddNode *> &subs = cur_decn_node->subs();
       for (const auto cur_prime : primes) {
         if (covered_nodes.find(cur_prime->node_index()) ==
             covered_nodes.end()) {
@@ -469,7 +472,7 @@ GetMPESolution(const std::vector<FPGAPsddNode *> &serialized_psdd_nodes) {
 }
 
 std::pair<std::bitset<MAX_VAR>, Probability>
-GetMPESolution(PsddNode *psdd_node) {
+GetMPESolution(FPGAPsddNode *psdd_node) {
   auto serialized_psdd_nodes = fpga_psdd_node_util::SerializePsddNodes(psdd_node);
   return GetMPESolution(serialized_psdd_nodes);
 }
@@ -600,13 +603,13 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 // }
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
-                     PsddNode *root_node) {
+                     FPGAPsddNode *root_node) {
   std::cout << "inside small evaluate\n";
   std::vector<FPGAPsddNode *> serialized_nodes = SerializePsddNodes(root_node);
   return Evaluate(variables, instantiation, serialized_nodes);
 }
 //FIX THIS TO USE FPGA
-void WritePsddToFile(PsddNode *root_node, const char *output_filename) {
+void WritePsddToFile(FPGAPsddNode *root_node, const char *output_filename) {
   auto serialized_psdds = SerializePsddNodes(root_node);
   std::string psdd_content =
       "c ids of psdd nodes start at 0\nc psdd nodes appear bottom-up, children "
@@ -733,7 +736,7 @@ GetMarginals(const std::vector<PsddNode *> &serialized_nodes) {
   }
   return marginals;
 }
-uintmax_t GetPsddSize(PsddNode *root_node) {
+uintmax_t GetPsddSize(FPGAPsddNode *root_node) {
   uintmax_t psdd_size = 0;
   auto serialized_psdds = SerializePsddNodes(root_node);
   for (FPGAPsddNode *cur_node : serialized_psdds) {
@@ -764,10 +767,12 @@ FPGAPsddNode::FPGAPsddNode(PsddDecisionNode * decision){
   flag_index_ = decision->flag_index();
   activation_flag_ = decision->activation_flag();
   hash_value_ = decision->hash_value();
-  for (int i=0; i<decision->primes().size(); i++) 
-        primes_.push_back(fpga_psdd_node_util::ConvertToStaticNode(decision->primes()[i])); 
-  for (int i=0; i<decision->subs().size(); i++) 
-        subs_.push_back(fpga_psdd_node_util::ConvertToStaticNode(decision->subs()[i])); 
+  //Where issue happens
+  // std::cout << ""
+  // for (int i=0; i<decision->primes().size(); i++) 
+  //       primes_.push_back(fpga_psdd_node_util::ConvertToStaticNode(decision->primes()[i])); 
+  // for (int i=0; i<decision->subs().size(); i++) 
+  //       subs_.push_back(fpga_psdd_node_util::ConvertToStaticNode(decision->subs()[i])); 
   parameters_ = decision->parameters();
   data_counts_ = decision->data_counts();
 }
