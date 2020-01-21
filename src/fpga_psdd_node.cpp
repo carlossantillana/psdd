@@ -202,32 +202,32 @@ std::vector<SddLiteral> LeftToRightLeafTraverse(Vtree *root) {
 }
 } // namespace vtree_util
 namespace fpga_psdd_node_util {
-FPGAPsddNode* ConvertToStaticNode(PsddNode * node){
-  FPGAPsddNode * staticNode;
-  // std::cout << "converting node to static, ";
+// FPGAPsddNode* ConvertToStaticNode(PsddNode * node){
+//   FPGAPsddNode * staticNode;
+//   // std::cout << "converting node to static, ";
 
-  if (node ->node_type() == 1){
-    // std::cout << "literal\n";
-    staticNode = new FPGAPsddNode(static_cast<PsddLiteralNode *>(node));
-  } else if (node ->node_type() == 2){
-    // std::cout << "decision\n";
-    staticNode = new FPGAPsddNode(static_cast<PsddDecisionNode *>(node));
-  } else if (node ->node_type() == 3){
-    // std::cout << "top\n";
-    staticNode = new FPGAPsddNode(static_cast<PsddTopNode *>(node));
-  }
-  return staticNode;
-}
+//   if (node ->node_type() == 1){
+//     // std::cout << "literal\n";
+//     staticNode = new FPGAPsddNode(static_cast<PsddLiteralNode *>(node));
+//   } else if (node ->node_type() == 2){
+//     // std::cout << "decision\n";
+//     staticNode = new FPGAPsddNode(static_cast<PsddDecisionNode *>(node));
+//   } else if (node ->node_type() == 3){
+//     // std::cout << "top\n";
+//     staticNode = new FPGAPsddNode(static_cast<PsddTopNode *>(node));
+//   }
+//   return staticNode;
+// }
 
 SddNode *ConvertPsddNodeToSddNode(
-    const std::vector<PsddNode *> &serialized_psdd_nodes,
+    const std::vector<FPGAPsddNode *> &serialized_psdd_nodes,
     const std::unordered_map<SddLiteral, SddLiteral> &variable_map,
     SddManager *sdd_manager) {
   for (auto node_it = serialized_psdd_nodes.rbegin();
        node_it != serialized_psdd_nodes.rend(); ++node_it) {
-    PsddNode *cur_node = *node_it;
+    FPGAPsddNode *cur_node = *node_it;
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
-      PsddLiteralNode *cur_literal = cur_node->psdd_literal_node();
+      FPGAPsddNode *cur_literal = cur_node->psdd_literal_node();
       uint32_t psdd_variable_index = cur_literal->variable_index();
       assert(variable_map.find((SddLiteral)psdd_variable_index) !=
              variable_map.end());
@@ -240,14 +240,14 @@ SddNode *ConvertPsddNodeToSddNode(
       SddNode *cur_lit = sdd_manager_literal(sdd_literal, sdd_manager);
       cur_node->SetUserData((uintmax_t)cur_lit);
     } else if (cur_node->node_type() == DECISION_NODE_TYPE) {
-      PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
+      FPGAPsddNode *cur_decn_node = cur_node->psdd_decision_node();
       const auto &decn_primes = cur_decn_node->primes();
       const auto &decn_subs = cur_decn_node->subs();
       auto element_size = decn_primes.size();
       SddNode *cur_logic = sdd_manager_false(sdd_manager);
       for (size_t i = 0; i < element_size; ++i) {
-        PsddNode *cur_prime = decn_primes[i];
-        PsddNode *cur_sub = decn_subs[i];
+        FPGAPsddNode *cur_prime = decn_primes[i];
+        FPGAPsddNode *cur_sub = decn_subs[i];
         SddNode *cur_partition =
             sdd_conjoin((SddNode *)cur_prime->user_data(),
                         (SddNode *)cur_sub->user_data(), sdd_manager);
@@ -260,7 +260,7 @@ SddNode *ConvertPsddNodeToSddNode(
     }
   }
   auto root_logic = (SddNode *)serialized_psdd_nodes[0]->user_data();
-  for (PsddNode *cur_node : serialized_psdd_nodes) {
+  for (FPGAPsddNode *cur_node : serialized_psdd_nodes) {
     cur_node->SetUserData(0);
   }
   return root_logic;
@@ -351,10 +351,10 @@ GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
   return covered_nodes;
 }
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,
-                       const std::vector<PsddNode *> &serialized_psdd_nodes) {
+                       const std::vector<FPGAPsddNode *> &serialized_psdd_nodes) {
   for (auto node_it = serialized_psdd_nodes.rbegin();
        node_it != serialized_psdd_nodes.rend(); ++node_it) {
-    PsddNode *cur_node = *node_it;
+    FPGAPsddNode *cur_node = *node_it;
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
       // literal
       auto cur_literal_node = cur_node->psdd_literal_node();
@@ -476,25 +476,25 @@ GetMPESolution(FPGAPsddNode *psdd_node) {
   auto serialized_psdd_nodes = fpga_psdd_node_util::SerializePsddNodes(psdd_node);
   return GetMPESolution(serialized_psdd_nodes);
 }
-mpz_class ModelCount(const std::vector<PsddNode *> &serialized_nodes) {
+mpz_class ModelCount(const std::vector<FPGAPsddNode *> &serialized_nodes) {
   std::unordered_map<uintmax_t, mpz_class> count_cache;
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
-    PsddNode *cur_node = *node_it;
+    FPGAPsddNode *cur_node = *node_it;
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
       count_cache[cur_node->node_index()] = 1;
     } else if (cur_node->node_type() == TOP_NODE_TYPE) {
       count_cache[cur_node->node_index()] = 2;
     } else {
       assert(cur_node->node_type() == DECISION_NODE_TYPE);
-      PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
+      FPGAPsddNode *cur_decn_node = cur_node->psdd_decision_node();
       const auto &primes = cur_decn_node->primes();
       const auto &subs = cur_decn_node->subs();
       auto element_size = primes.size();
       mpz_class total_count = 0;
       for (size_t i = 0; i < element_size; ++i) {
-        PsddNode *cur_prime = primes[i];
-        PsddNode *cur_sub = subs[i];
+        FPGAPsddNode *cur_prime = primes[i];
+        FPGAPsddNode *cur_sub = subs[i];
         const mpz_class &a = count_cache[cur_prime->node_index()];
         const mpz_class &b = count_cache[cur_sub->node_index()];
         mpz_class product = 0;
@@ -667,18 +667,18 @@ void WritePsddToFile(FPGAPsddNode *root_node, const char *output_filename) {
   }
 }
 std::unordered_map<uint32_t, std::pair<Probability, Probability>>
-GetMarginals(const std::vector<PsddNode *> &serialized_nodes) {
+GetMarginals(const std::vector<FPGAPsddNode *> &serialized_nodes) {
   // first is false second is true
   std::unordered_map<uint32_t, std::pair<Probability, Probability>> marginals;
   std::vector<Probability> derivatives(serialized_nodes.size(),
                                        Probability::CreateFromDecimal(0));
   auto index = 0;
-  for (PsddNode *cur_node : serialized_nodes) {
+  for (FPGAPsddNode *cur_node : serialized_nodes) {
     cur_node->SetUserData((uintmax_t)index);
     index++;
   }
   derivatives[0] = Probability::CreateFromDecimal(1);
-  for (PsddNode *cur_node : serialized_nodes) {
+  for (FPGAPsddNode *cur_node : serialized_nodes) {
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
       auto cur_lit = cur_node->psdd_literal_node();
       auto marginal_it = marginals.find(cur_lit->variable_index());
@@ -725,7 +725,7 @@ GetMarginals(const std::vector<PsddNode *> &serialized_nodes) {
       }
     }
   }
-  for (PsddNode *cur_node : serialized_nodes) {
+  for (FPGAPsddNode *cur_node : serialized_nodes) {
     cur_node->SetUserData(0);
   }
   for (auto &cur_marginal : marginals) {

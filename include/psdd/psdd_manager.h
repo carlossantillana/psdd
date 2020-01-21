@@ -5,9 +5,7 @@
 #ifndef PSDD_PSDD_MANAGER_H
 #define PSDD_PSDD_MANAGER_H
 #include <psdd/psdd_node.h>
-#include <psdd/fpga_psdd_node.h>
 #include <psdd/psdd_unique_table.h>
-#include <psdd/fpga_psdd_unique_table.h>
 extern "C" {
 #include <sdd/sddapi.h>
 };
@@ -18,11 +16,9 @@ public:
       Vtree *sdd_vtree,
       const std::unordered_map<uint32_t, uint32_t> &variable_mapping);
   static PsddManager *GetPsddManagerFromVtree(Vtree *psdd_vtree);
-static PsddManager *GetFPGAPsddManagerFromVtree(Vtree *psdd_vtree);
 
   ~PsddManager();
 void DeleteUnusedPsddNodes(const std::vector<PsddNode *> &used_nodes);
-void DeleteUnusedFPGAPsddNodes(const std::vector<FPGAPsddNode *> &used_nodes);
 
   PsddNode *ConvertSddToPsdd(SddNode *root_node, Vtree *sdd_vtree,
                              uintmax_t flag_index);
@@ -34,13 +30,8 @@ void DeleteUnusedFPGAPsddNodes(const std::vector<FPGAPsddNode *> &used_nodes);
                     Vtree *sub_psdd_vtree);
   PsddNode *GetTrueNode(Vtree *target_vtree_node, uintmax_t flag_index);
 
-  FPGAPsddNode *GetTrueFPGANode(Vtree *target_vtree_node, uintmax_t flag_index);
 
   PsddTopNode *GetPsddTopNode(uint32_t variable_index, uintmax_t flag_index,
-                              const PsddParameter &positive_parameter,
-                              const PsddParameter &negative_parameter);
-
-  FPGAPsddNode *GetFPGAPsddTopNode(uint32_t variable_index, uintmax_t flag_index,
                               const PsddParameter &positive_parameter,
                               const PsddParameter &negative_parameter);
   PsddDecisionNode *
@@ -48,20 +39,9 @@ void DeleteUnusedFPGAPsddNodes(const std::vector<FPGAPsddNode *> &used_nodes);
                                const std::vector<PsddNode *> &subs,
                                const std::vector<PsddParameter> &params,
                                uintmax_t flag_index);
-
-FPGAPsddNode *
-  GetConformedFPGAPsddDecisionNode(const std::vector<FPGAPsddNode *> &primes,
-                               const std::vector<FPGAPsddNode *> &subs,
-                               const std::vector<PsddParameter> &params,
-                               uintmax_t flag_index);
-                               
   PsddLiteralNode *GetPsddLiteralNode(int32_t literal, uintmax_t flag_index);
-  FPGAPsddNode *GetFPGAPsddLiteralNode(int32_t literal, uintmax_t flag_index);
-
   PsddNode *NormalizePsddNode(Vtree *target_vtree_node,
                               PsddNode *target_psdd_node, uintmax_t flag_index);
-  FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
-                              FPGAPsddNode *target_psdd_node, uintmax_t flag_index);
   // input psdd may or may not from the same manager, but it has to conform a
   // consistent vtree.
   PsddNode *LoadPsddNode(Vtree *target_vtree, PsddNode *root_psdd_node,
@@ -72,7 +52,6 @@ FPGAPsddNode *
                                                 uintmax_t flag_index);
   Vtree *vtree() const;
   PsddNode *ReadPsddFile(const char *psdd_filename, uintmax_t flag_index);
-  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index);
   std::vector<PsddNode *> SampleParametersForMultiplePsdds(
       RandomDoubleGenerator *generator,
       const std::vector<PsddNode *> &root_psdd_nodes, uintmax_t flag_index);
@@ -85,25 +64,15 @@ FPGAPsddNode *
 
 private:
   PsddManager(Vtree *vtree, PsddUniqueTable *unique_table);
-  PsddManager(Vtree *vtree, FPGAPsddUniqueTable *unique_table);
   PsddNode *
   GetTrueNode(Vtree *target_vtree_node, uintmax_t flag_index,
               std::unordered_map<SddLiteral, PsddNode *> *true_node_map);
-
-FPGAPsddNode *
-  GetTrueFPGANode(Vtree *target_vtree_node, uintmax_t flag_index,
-              std::unordered_map<SddLiteral, FPGAPsddNode *> *true_node_map);
   PsddNode *
   NormalizePsddNode(Vtree *target_vtree_node, PsddNode *target_psdd_node,
                     uintmax_t flag_index,
                     std::unordered_map<SddLiteral, PsddNode *> *true_node_map);
-  FPGAPsddNode *
-  NormalizeFPGAPsddNode(Vtree *target_vtree_node, FPGAPsddNode *target_psdd_node,
-                    uintmax_t flag_index,
-                    std::unordered_map<SddLiteral, FPGAPsddNode *> *true_node_map);
   Vtree *vtree_;
   PsddUniqueTable *unique_table_;
-  FPGAPsddUniqueTable *fpga_unique_table_;
   uintmax_t node_index_;
   std::unordered_map<uint32_t, Vtree *>
       leaf_vtree_map_; // keys are variable index

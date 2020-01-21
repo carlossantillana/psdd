@@ -6,6 +6,7 @@
 #include <psdd/cnf.h>
 #include <psdd/optionparser.h>
 #include <psdd/fpga_psdd_node.h>
+#include <psdd/fpga_psdd_manager.h>
 extern "C" {
 #include <sdd/sddapi.h>
 }
@@ -71,7 +72,7 @@ int main(int argc, const char *argv[]) {
 
   Vtree *psdd_vtree = sdd_vtree_read(vtree_filename);
   // PsddManager *psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
-    PsddManager *psdd_manager = PsddManager::GetFPGAPsddManagerFromVtree(psdd_vtree);
+    FPGAPsddManager *psdd_manager = FPGAPsddManager::GetFPGAPsddManagerFromVtree(psdd_vtree);
 
   sdd_vtree_free(psdd_vtree);
   // PsddNode *result_node = psdd_manager->ReadPsddFile(psdd_filename, 0);
