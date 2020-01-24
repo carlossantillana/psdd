@@ -29,6 +29,7 @@ class PsddTopNode;
 class PsddLiteralNode;
 class PsddDecisionNode;
 
+
 class FPGAPsddNode {
 public:
   FPGAPsddNode(uintmax_t node_index, Vtree *vtree_node, uintmax_t flag_index);

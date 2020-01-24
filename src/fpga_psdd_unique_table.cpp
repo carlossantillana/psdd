@@ -5,7 +5,6 @@
 
 #include <psdd/fpga_psdd_node.h>
 #include <psdd/fpga_psdd_unique_table.h>
-
 #include <unordered_set>
 
 namespace {

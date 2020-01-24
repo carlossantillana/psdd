@@ -2,12 +2,12 @@
 // Created by jason on 2/28/18.
 //
 
-#ifndef STRUCTURED_BAYESIAN_NETWORK_CNF_H
-#define STRUCTURED_BAYESIAN_NETWORK_CNF_H
+#ifndef STRUCTURED_BAYESIAN_NETWORK_FPGA_CNF_H
+#define STRUCTURED_BAYESIAN_NETWORK_FPGA_CNF_H
 
 #include <vector>
-#include <psdd/psdd_node.h>
-#include <psdd/psdd_manager.h>
+#include <psdd/fpga_psdd_node.h>
+#include <psdd/fpga_psdd_manager.h>
 
 class CNF {
  public:
@@ -20,7 +20,7 @@ class CNF {
   bool CheckConstraintWithPartialInstantiation(const std::bitset<MAX_VAR> &variable_mask,
                                                const std::bitset<MAX_VAR> &variable_instantiation) const;
   */
-  PsddNode* Compile(PsddManager* psdd_manager, uintmax_t flag_index) const;
+  FPGAPsddNode* Compile(FPGAPsddManager* psdd_manager, uintmax_t flag_index) const;
  private:
   std::vector<std::vector<SddLiteral>> clauses_;
 };

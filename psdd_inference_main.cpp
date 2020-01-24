@@ -3,10 +3,8 @@
 //
 
 #include <iostream>
-#include <psdd/cnf.h>
+#include <psdd/fpgacnf.h>
 #include <psdd/optionparser.h>
-#include <psdd/fpga_psdd_node.h>
-#include <psdd/fpga_psdd_manager.h>
 extern "C" {
 #include <sdd/sddapi.h>
 }
@@ -71,16 +69,16 @@ int main(int argc, const char *argv[]) {
   const char *vtree_filename = parse.nonOption(1);
 
   Vtree *psdd_vtree = sdd_vtree_read(vtree_filename);
-  // PsddManager *psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
-    FPGAPsddManager *psdd_manager = FPGAPsddManager::GetFPGAPsddManagerFromVtree(psdd_vtree);
+  //PsddManager *psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
+  FPGAPsddManager *psdd_manager = FPGAPsddManager::GetFPGAPsddManagerFromVtree(psdd_vtree);
 
-  sdd_vtree_free(psdd_vtree);
+  //sdd_vtree_free(psdd_vtree);
   // PsddNode *result_node = psdd_manager->ReadPsddFile(psdd_filename, 0);
-  std::cout << "starting read fpga psdd file\n";
-  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0);
+  //std::cout << "starting read fpga psdd file\n";
+  //FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0);
 
-  std::vector<SddLiteral> variables =
-      vtree_util::VariablesUnderVtree(psdd_manager->vtree());
+  //std::vector<SddLiteral> variables =
+  //    vtree_util::VariablesUnderVtree(psdd_manager->vtree());
    //auto serialized_psdd = psdd_node_util::SerializePsddNodes(result_node);
   // auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
 
@@ -104,5 +102,5 @@ int main(int argc, const char *argv[]) {
   //       std::cout << "finished fpga getMPE\n";
 
   // }
-  delete (psdd_manager);
+  //delete (psdd_manager);
 }

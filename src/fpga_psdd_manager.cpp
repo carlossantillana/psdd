@@ -272,7 +272,7 @@ FPGAPsddManager::FPGAPsddManager(Vtree *vtree, FPGAPsddUniqueTable *unique_table
 
 
 FPGAPsddManager::~FPGAPsddManager() {
-  // fpga_unique_table_->DeleteUnusedFPGAPsddNodes({});
+  fpga_unique_table_->DeleteUnusedFPGAPsddNodes({});
   delete (fpga_unique_table_);
   sdd_vtree_free(vtree_);
 }
