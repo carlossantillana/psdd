@@ -13,10 +13,10 @@ class FPGAPsddNode;
 
 class FPGAPsddUniqueTable {
  public:
-  ~FPGAPsddUniqueTable() = default;
-  FPGAPsddNode *GetUniqueNode(FPGAPsddNode *node, uintmax_t *node_index);
-  void DeleteFPGAPsddNodesWithoutFlagIndexes(const std::unordered_set<uintmax_t> &flag_index);
-  void DeleteUnusedFPGAPsddNodes(const std::vector<FPGAPsddNode *> &used_psdd_nodes);
+  virtual ~FPGAPsddUniqueTable() = default;
+  virtual FPGAPsddNode *GetUniqueNode(FPGAPsddNode *node, uintmax_t *node_index) = 0;
+  virtual void DeleteFPGAPsddNodesWithoutFlagIndexes(const std::unordered_set<uintmax_t> &flag_index) = 0;
+  virtual void DeleteUnusedFPGAPsddNodes(const std::vector<FPGAPsddNode *> &used_psdd_nodes) = 0;
   static FPGAPsddUniqueTable *GetFPGAPsddUniqueTable();
 };
 

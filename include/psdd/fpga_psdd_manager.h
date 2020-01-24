@@ -54,18 +54,18 @@ FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
   std::pair<FPGAPsddNode *, PsddParameter> Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2,
                                                 uintmax_t flag_index);
   Vtree *vtree() const;
-  std::unordered_map<
-      SddLiteral, std::unordered_set<FPGAPsddNode *, FPGAUniqueTableFunctional,
-                                     FPGAUniqueTableFunctional>>
-                *decision_node_table() const;
+  // std::unordered_map<
+  //     SddLiteral, std::unordered_set<FPGAPsddNode *, FPGAUniqueTableFunctional,
+  //                                    FPGAUniqueTableFunctional>>
+  //               *decision_node_table() const;
   
-  std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
-                FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>> 
-                *literal_node_table() const;
+  // std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
+  //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>> 
+  //               *literal_node_table() const;
   
-  std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
-                FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>> 
-                *top_node_table() const;                            
+  // std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
+  //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>> 
+  //               *top_node_table() const;                            
   FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index);
   std::vector<FPGAPsddNode *> SampleParametersForMultipleFPGAPsdds(
       RandomDoubleGenerator *generator,

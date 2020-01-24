@@ -790,6 +790,9 @@ FPGAPsddNode::FPGAPsddNode(PsddTopNode * top){
   false_data_count_ = top->false_data_count();
   true_data_count_ = top->true_data_count();
 }
+
+FPGAPsddNode::~FPGAPsddNode() {}
+
 FPGAPsddNode::FPGAPsddNode(uintmax_t node_index, Vtree *vtree_node)
     : FPGAPsddNode(node_index, vtree_node, 0) {}
 

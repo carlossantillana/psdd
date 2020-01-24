@@ -24,8 +24,8 @@ struct FPGAUniqueTableFunctional {
 class FPGAPsddUniqueTableImp : public FPGAPsddUniqueTable {
 public:
   FPGAPsddUniqueTableImp() : FPGAPsddUniqueTable() {}
-  ~FPGAPsddUniqueTableImp();
-  FPGAPsddNode *GetUniqueNode(FPGAPsddNode *node, uintmax_t *node_index) {
+  ~FPGAPsddUniqueTableImp() override = default;
+  FPGAPsddNode *GetUniqueNode(FPGAPsddNode *node, uintmax_t *node_index) override {
     if (node->node_type() == 1) {
       auto cur_literal_node = node;
       SddLiteral cur_node_vtree_position =
@@ -116,7 +116,7 @@ public:
     }
   }
   void DeleteFPGAPsddNodesWithoutFlagIndexes(
-      const std::unordered_set<uintmax_t> &flag_index) {
+      const std::unordered_set<uintmax_t> &flag_index) override{
     // check decision map
     auto decision_table_it = decision_node_table_.begin();
     while (decision_table_it != decision_node_table_.end()) {
@@ -172,7 +172,7 @@ public:
 
   // TODO:testing this function
   void DeleteUnusedFPGAPsddNodes(
-      const std::vector<FPGAPsddNode *> &used_psdd_nodes) {
+      const std::vector<FPGAPsddNode *> &used_psdd_nodes) override {
     auto covered_nodes = fpga_psdd_node_util::GetCoveredPsddNodes(used_psdd_nodes);
     // check decision map
     auto decision_table_it = decision_node_table_.begin();
