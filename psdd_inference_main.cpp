@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <psdd/fpgacnf.h>
+#include <psdd/cnf.h>
 #include <psdd/optionparser.h>
 extern "C" {
 #include <sdd/sddapi.h>
@@ -69,38 +70,38 @@ int main(int argc, const char *argv[]) {
   const char *vtree_filename = parse.nonOption(1);
 
   Vtree *psdd_vtree = sdd_vtree_read(vtree_filename);
-  //PsddManager *psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
   FPGAPsddManager *psdd_manager = FPGAPsddManager::GetFPGAPsddManagerFromVtree(psdd_vtree);
+  PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
 
   sdd_vtree_free(psdd_vtree);
-  //PsddNode *result_node = psdd_manager->ReadPsddFile(psdd_filename, 0);
-  std::cout << "starting read fpga psdd file\n";
   FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0);
+  PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
 
   std::vector<SddLiteral> variables =
       vtree_util::VariablesUnderVtree(psdd_manager->vtree());
-   //auto serialized_psdd = psdd_node_util::SerializePsddNodes(result_node);
   auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
+  auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
 
-  // for (auto j =0; j < 40; j++){
-  //    std::cout << fpga_serialized_psdd[j] << std::endl;
-  // }
-  // auto mpe_result = psdd_node_util::GetMPESolution(serialized_psdd);
   std::cout << "starting fpga getMPE\n";
-   auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
+  auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
+  auto reference_mpe_result = psdd_node_util::GetMPESolution(reference_serialized_psdd);
   std::cout << "finished fpga getMPE\n";
+  std::cout << "fpga_mpe.first == reference_mpe.first: " << ((fpga_mpe_result.first  == reference_mpe_result.first)  ? "true" : "false" ) << std::endl;
+  // std::cout << "reference mpe (first): " << reference_mpe_result.first << std::endl;
+  std::cout << "fpga_mpe.second == reference_mpe.second: " << ((fpga_mpe_result.second.parameter()  == reference_mpe_result.second.parameter())  ? "true" : "false" ) << std::endl;
 
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
-  //10000
-  // for (auto i = 0; i < 1; ++i){
-  //      fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
-  // }
-  for (auto i = 0; i < 1; ++i){
-      std::cout << "starting fpga evaluate\n";
-      fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
-        std::cout << "finished fpga getMPE\n";
+  auto reference_marginals = psdd_node_util::Evaluate(var_mask, reference_mpe_result.first, reference_serialized_psdd);
+  auto fpga_marginals = fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
+  std::cout << "fpga marginal: " << fpga_marginals.parameter() << std::endl;
+  std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
+  // for (auto i = 0; i < 100; ++i){
+  //     std::cout << "starting fpga evaluate\n";
+  //     fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
+  //       std::cout << "finished fpga getMPE\n";
 
-  }
+  //}
   delete (psdd_manager);
+  delete (reference_psdd_manager);
 }
