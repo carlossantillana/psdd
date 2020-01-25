@@ -40,7 +40,7 @@ SddNode *ConstructSddFromCnf(
   return total_logic;
 }
 } // namespace
-CNF::CNF(const char *filename) {
+fpga_CNF::fpga_CNF(const char *filename) {
   std::ifstream cnf_file(filename);
   std::string line;
   while (getline(cnf_file, line)) {
@@ -60,7 +60,7 @@ CNF::CNF(const char *filename) {
   }
   cnf_file.close();
 }
-const std::vector<std::vector<SddLiteral>> &CNF::clauses() const {
+const std::vector<std::vector<SddLiteral>> &fpga_CNF::clauses() const {
   return clauses_;
 }
 /*
@@ -144,10 +144,10 @@ vtree, unique_table, & node_index, 1); delete(unique_table);
   }
 }
  */
-CNF::CNF(const std::vector<std::vector<SddLiteral>> &clauses)
+fpga_CNF::fpga_CNF(const std::vector<std::vector<SddLiteral>> &clauses)
     : clauses_(clauses) {}
 
-FPGAPsddNode *CNF::Compile(FPGAPsddManager *psdd_manager, uintmax_t flag_index) const {
+FPGAPsddNode *fpga_CNF::Compile(FPGAPsddManager *psdd_manager, uintmax_t flag_index) const {
   Vtree *psdd_vtree = psdd_manager->vtree();
   SddLiteral sdd_index = 1;
   std::unordered_map<SddLiteral, SddLiteral> psdd_variable_to_sdd_variable;

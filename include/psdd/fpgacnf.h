@@ -9,11 +9,11 @@
 #include <psdd/fpga_psdd_node.h>
 #include <psdd/fpga_psdd_manager.h>
 
-class CNF {
+class fpga_CNF {
  public:
-  CNF() = default;
-  explicit CNF(const char *filename);
-  explicit CNF(const std::vector<std::vector<SddLiteral>> &clauses);
+  fpga_CNF() = default;
+  explicit fpga_CNF(const char *filename);
+  explicit fpga_CNF(const std::vector<std::vector<SddLiteral>> &clauses);
   const std::vector<std::vector<SddLiteral>> &clauses() const;
   /*
   PsddNode *CompileToSddWithEvidence(const std::unordered_map<uint32_t, bool> &evid, Vtree *vtree) const;
