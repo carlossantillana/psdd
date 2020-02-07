@@ -579,9 +579,38 @@ FPGAPsddManager::Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2, uintmax_t flag
   ComputationCache cache((uint32_t)leaf_vtree_map_.size());
   return MultiplyWithCache(arg1, arg2, this, flag_index, &cache);
 }
-
+FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
+  FPGAPsddNodeStruct PsddStruct;
+  PsddStruct.node_index_ = cur_node->node_index_;
+  PsddStruct.user_data_ = cur_node->user_data_;
+  PsddStruct.flag_index_ = cur_node->flag_index_;
+  PsddStruct.node_type_ = cur_node->node_type_;
+  PsddStruct.hash_value_ = cur_node->hash_value_;
+  PsddStruct.activation_flag_ = cur_node->activation_flag_;
+  PsddStruct.batched_psdd_value_ = cur_node->batched_psdd_value_;
+  PsddStruct.batched_psdd_context_value_ = cur_node->batched_psdd_context_value_;
+  for (int i = 0; i < cur_node->primes_.size(); i++){
+    PsddStruct.primes_.push_back(cur_node->primes_[i]->node_index_);
+  }
+  for (int i = 0; i < cur_node->subs_.size(); i++){
+    PsddStruct.subs_.push_back(cur_node->subs_[i]->node_index_);
+  }
+  for (int i = 0; i < cur_node->parameters_.size(); i++){
+    PsddStruct.parameters_.push_back(cur_node->parameters_[i]);
+  }
+  for (int i = 0; i < cur_node->data_counts_.size(); i++){
+    PsddStruct.data_counts_.push_back(cur_node->data_counts_[i]);
+  }
+  PsddStruct.variable_index_ = cur_node->variable_index_;
+  PsddStruct.true_parameter_ = cur_node->true_parameter_;
+  PsddStruct.false_parameter_ = cur_node->false_parameter_;
+  PsddStruct.true_data_count_ = cur_node->true_data_count_;
+  PsddStruct.false_data_count_ = cur_node->false_data_count_;
+  PsddStruct.literal_ = cur_node->literal_;
+  return PsddStruct;
+}
 FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
-                                    uintmax_t flag_index) {
+                                    uintmax_t flag_index, std::vector<FPGAPsddNodeStruct> &fpga_node_vector) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
   psdd_file.open(psdd_filename);
@@ -605,6 +634,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       int32_t literal;
       iss >> node_index >> vtree_index >> literal;
       FPGAPsddNode *cur_node = GetFPGAPsddLiteralNode(literal, flag_index);
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     } else if (line[0] == 'T') {
@@ -619,6 +649,8 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       FPGAPsddNode *cur_node = GetFPGAPsddTopNode(
           variable_index, flag_index, PsddParameter::CreateFromLog(pos_log_pr),
           PsddParameter::CreateFromLog(neg_log_pr));
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node);
+
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     } else {
@@ -646,6 +678,8 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       }
       FPGAPsddNode *cur_node =
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node);
+
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     }

@@ -136,12 +136,12 @@ public:
     return &batched_psdd_context_value_;
   }
 
-protected:
+public:
   void set_hash_value(std::size_t hash_value);
   void CalculateHashValue();
   int32_t literal_;
 
-private:
+public:
   uintmax_t node_index_;
   Vtree *vtree_node_;
   uintmax_t user_data_;
@@ -170,8 +170,8 @@ struct FPGAPsddNodeStruct {
   bool activation_flag_;
   BatchedPsddValue batched_psdd_value_;
   BatchedPsddValue batched_psdd_context_value_;
-  std::vector<uint32_t> primes_;
-  std::vector<uint32_t> subs_;
+  std::vector<uintmax_t> primes_;
+  std::vector<uintmax_t> subs_;
   std::vector<PsddParameter> parameters_;
   std::vector<uintmax_t> data_counts_;
   uint32_t variable_index_;

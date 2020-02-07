@@ -40,7 +40,7 @@ FPGAPsddNode *
                                const std::vector<FPGAPsddNode *> &subs,
                                const std::vector<PsddParameter> &params,
                                uintmax_t flag_index);
-                               
+
 FPGAPsddNode *GetFPGAPsddLiteralNode(int32_t literal, uintmax_t flag_index);
 
 FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
@@ -58,15 +58,15 @@ FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
   //     SddLiteral, std::unordered_set<FPGAPsddNode *, FPGAUniqueTableFunctional,
   //                                    FPGAUniqueTableFunctional>>
   //               *decision_node_table() const;
-  
+
   // std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
-  //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>> 
+  //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>>
   //               *literal_node_table() const;
-  
+
   // std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
-  //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>> 
-  //               *top_node_table() const;                            
-  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index);
+  //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>>
+  //               *top_node_table() const;
+  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<FPGAPsddNodeStruct> &fpga_node_vector);
   std::vector<FPGAPsddNode *> SampleParametersForMultipleFPGAPsdds(
       RandomDoubleGenerator *generator,
       const std::vector<FPGAPsddNode *> &root_psdd_nodes, uintmax_t flag_index);

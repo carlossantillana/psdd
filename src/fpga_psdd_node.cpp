@@ -323,8 +323,8 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
   while (explore_index != result.size()) {
     uint32_t cur_psdd_node_idx = result[explore_index];
     if (fpga_node_vector[cur_psdd_node_idx].node_type_ == 2) {
-      const std::vector<uint32_t> &primes = fpga_node_vector[cur_psdd_node_idx].primes_;
-      const std::vector<uint32_t> &subs = fpga_node_vector[cur_psdd_node_idx].subs_;
+      const std::vector<uintmax_t> &primes = fpga_node_vector[cur_psdd_node_idx].primes_;
+      const std::vector<uintmax_t> &subs = fpga_node_vector[cur_psdd_node_idx].subs_;
       for (int i = 0 ; i < primes.size() ; i++ ) {
         uint32_t cur_prime_idx = primes[i];
         if (node_explored.find(fpga_node_vector[cur_prime_idx].node_index_) ==
@@ -605,9 +605,10 @@ Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      std::vector<FPGAPsddNodeStruct>fpga_node_vector
             ) {
   std::unordered_map<uintmax_t, Probability> evaluation_cache;
+  std::cout << "starting first loop \n";
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
-    uint32_t cur_node_idx = *node_it;
+    uintmax_t cur_node_idx = *node_it;
     if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
       // PsddLiteralNode *cur_lit = cur_node->psdd_literal_node();
       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {

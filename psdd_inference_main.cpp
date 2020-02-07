@@ -10,6 +10,7 @@
 extern "C" {
 #include <sdd/sddapi.h>
 }
+const uint32_t PSDD_SIZE = 580817;
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -73,21 +74,30 @@ int main(int argc, const char *argv[]) {
   Vtree *psdd_vtree = sdd_vtree_read(vtree_filename);
   FPGAPsddManager *psdd_manager = FPGAPsddManager::GetFPGAPsddManagerFromVtree(psdd_vtree);
   PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
-
   sdd_vtree_free(psdd_vtree);
-  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0);
-  PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
+  std::vector<FPGAPsddNodeStruct> fpga_node_vector(PSDD_SIZE);//Carlos, please fill in data
 
-  std::vector<FPGAPsddNodeStruct> fpga_node_vector;//Carlos, please fill in data
-  uint32_t root_node_idx;// Carlos, please assign
+  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector);
+  PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
+  uint32_t root_node_idx = result_node->node_index_;// Carlos, please assign
 
   std::vector<SddLiteral> variables =
       vtree_util::VariablesUnderVtree(psdd_manager->vtree());
   auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
   auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
+  std::vector<uint32_t>  fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector ); //Carlos, please uncomment after modification
+  for(int i = 0; i < 15; i++){
+    std::cout << "node Index: " << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].node_index_ << " node type: " << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].node_type_  << " user data: " << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].user_data_  << std::endl;
+    std::cout << "old node Index: " << fpga_serialized_psdd[i]->node_index_ << " node type: " << fpga_serialized_psdd[i]->node_type_  << " user data: " << fpga_serialized_psdd[i]->user_data_  << std::endl;
 
-  //std::vector<uint32_t>  fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector ); //Carlos, please uncomment after modification
+    if (fpga_node_vector[fpga_serialized_psdd_evaluate[i]].node_type_ == 2){
+      for (int j  = 0; j < fpga_node_vector[fpga_serialized_psdd_evaluate[i]].primes_.size(); j++){
+        std::cout << "prime node index: "  << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].primes_[j] << std:: endl;
+        std::cout << "old prime node index: "  << fpga_serialized_psdd[i]->primes_[j]->node_index_ << std:: endl;
 
+      }
+    }
+  }
   std::cout << "starting fpga getMPE\n";
   auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
   auto reference_mpe_result = psdd_node_util::GetMPESolution(reference_serialized_psdd);
@@ -99,12 +109,14 @@ int main(int argc, const char *argv[]) {
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
   auto reference_marginals = psdd_node_util::Evaluate(var_mask, reference_mpe_result.first, reference_serialized_psdd);
-  auto fpga_marginals = fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
-  //auto fpga_marginalsNoPoint = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_evaluate, fpga_node_vector ); //Carlos, please uncomment after modification
+  // auto fpga_marginals = fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
+  std::cout << "starting evaluate\n";
+  auto fpga_marginalsNoPoint = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_evaluate, fpga_node_vector ); //Carlos, please uncomment after modification
+  std::cout << "finished evaluate\n";
 
 
-  //std::cout << "fpga marginal: " << fpga_marginalsNoPoint.parameter() << std::endl; //Carlos, please switch to this one after modification
-  std::cout << "fpga marginal: " << fpga_marginals.parameter() << std::endl;
+  std::cout << "fpga marginal: " << fpga_marginalsNoPoint.parameter() << std::endl; //Carlos, please switch to this one after modification
+  // std::cout << "fpga marginal: " << fpga_marginals.parameter() << std::endl;
   std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
   // for (auto i = 0; i < 100; ++i){
   //     std::cout << "starting fpga evaluate\n";
