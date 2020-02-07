@@ -543,8 +543,9 @@ mpz_class ModelCount(const std::vector<FPGAPsddNode *> &serialized_nodes) {
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      const std::vector<FPGAPsddNode *> &serialized_nodes) {
-  std::cout << "inside big evaluate\n";
+  std::cout << "inside big evaluate for original fpga imp.\n";
   std::unordered_map<uintmax_t, Probability> evaluation_cache;
+  bool first = true;
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
     FPGAPsddNode *cur_node = *node_it;
@@ -599,6 +600,14 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
   return Evaluate(variables, instantiation, serialized_nodes);
 }
 
+uint32_t get_variable_index(FPGAPsddNodeStruct FPGAPsddNode)  {
+  if (FPGAPsddNode.node_type_ == LITERAL_NODE_TYPE){
+    return FPGAPsddNode.literal_ > 0 ? static_cast<uint32_t>(FPGAPsddNode.literal_)
+                        : static_cast<uint32_t>(-FPGAPsddNode.literal_);
+  } else if (FPGAPsddNode.node_type_ == TOP_NODE_TYPE){
+    return FPGAPsddNode.variable_index_;
+  }
+}
 Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      std::vector<uint32_t> serialized_nodes,
@@ -610,9 +619,8 @@ Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
        node_it != serialized_nodes.rend(); ++node_it) {
     uintmax_t cur_node_idx = *node_it;
     if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
-      // PsddLiteralNode *cur_lit = cur_node->psdd_literal_node();
-      if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
-        if ( instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_>0) ) {
+      if (variables[get_variable_index(fpga_node_vector[cur_node_idx])]) {
+        if ( instantiation[get_variable_index(fpga_node_vector[cur_node_idx])] == (fpga_node_vector[cur_node_idx].literal_>0) ) {
           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
               Probability::CreateFromDecimal(1);
         } else {

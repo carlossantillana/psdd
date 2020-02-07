@@ -216,7 +216,7 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      FPGAPsddNode *root_node);
-
+uint32_t get_variable_index(FPGAPsddNodeStruct FPGAPsddNode);
 Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
                       std::vector<uint32_t> fpga_serialized_psdd_evaluate,

@@ -86,18 +86,7 @@ int main(int argc, const char *argv[]) {
   auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
   auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
   std::vector<uint32_t>  fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector ); //Carlos, please uncomment after modification
-  for(int i = 0; i < 15; i++){
-    std::cout << "node Index: " << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].node_index_ << " node type: " << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].node_type_  << " user data: " << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].user_data_  << std::endl;
-    std::cout << "old node Index: " << fpga_serialized_psdd[i]->node_index_ << " node type: " << fpga_serialized_psdd[i]->node_type_  << " user data: " << fpga_serialized_psdd[i]->user_data_  << std::endl;
 
-    if (fpga_node_vector[fpga_serialized_psdd_evaluate[i]].node_type_ == 2){
-      for (int j  = 0; j < fpga_node_vector[fpga_serialized_psdd_evaluate[i]].primes_.size(); j++){
-        std::cout << "prime node index: "  << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].primes_[j] << std:: endl;
-        std::cout << "old prime node index: "  << fpga_serialized_psdd[i]->primes_[j]->node_index_ << std:: endl;
-
-      }
-    }
-  }
   std::cout << "starting fpga getMPE\n";
   auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
   auto reference_mpe_result = psdd_node_util::GetMPESolution(reference_serialized_psdd);
@@ -109,7 +98,7 @@ int main(int argc, const char *argv[]) {
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
   auto reference_marginals = psdd_node_util::Evaluate(var_mask, reference_mpe_result.first, reference_serialized_psdd);
-  // auto fpga_marginals = fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
+  auto fpga_marginals = fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
   std::cout << "starting evaluate\n";
   auto fpga_marginalsNoPoint = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_evaluate, fpga_node_vector ); //Carlos, please uncomment after modification
   std::cout << "finished evaluate\n";
