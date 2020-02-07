@@ -6,6 +6,7 @@
 #include <psdd/fpgacnf.h>
 #include <psdd/cnf.h>
 #include <psdd/optionparser.h>
+#include <psdd/fpga_psdd_node.h>
 extern "C" {
 #include <sdd/sddapi.h>
 }
@@ -77,10 +78,20 @@ int main(int argc, const char *argv[]) {
   FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0);
   PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
 
+  std::vector<FPGAPsddNodeStruct>
+    decision_node_vector_;
+  std::vector<FPGAPsddNodeStruct>
+    literal_node_vector_;
+  std::vector<FPGAPsddNodeStruct>
+    top_node_vector_;
+
   std::vector<SddLiteral> variables =
       vtree_util::VariablesUnderVtree(psdd_manager->vtree());
   auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
   auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
+
+  std::vector<uint32_t>  fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(result_node, decision_node_vector_,
+   literal_node_vector_, top_node_vector_);
 
   std::cout << "starting fpga getMPE\n";
   auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
@@ -94,6 +105,9 @@ int main(int argc, const char *argv[]) {
   var_mask.set();
   auto reference_marginals = psdd_node_util::Evaluate(var_mask, reference_mpe_result.first, reference_serialized_psdd);
   auto fpga_marginals = fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
+  auto fpga_marginalsNoPoint = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_evaluate, decision_node_vector_,
+   literal_node_vector_, top_node_vector_);
+
   std::cout << "fpga marginal: " << fpga_marginals.parameter() << std::endl;
   std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
   // for (auto i = 0; i < 100; ++i){

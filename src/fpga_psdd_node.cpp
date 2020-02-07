@@ -298,6 +298,19 @@ SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
   return result;
 }
 
+std::vector<uint32_t> SerializePsddNodesEvaluate(FPGAPsddNode * result_node, std::vector<FPGAPsddNodeStruct> decision_node_vector_,
+ std::vector<FPGAPsddNodeStruct> literal_node_vector_, std::vector<FPGAPsddNodeStruct> top_node_vector_) {
+  return SerializePsddNodesEvaluate(std::vector<FPGAPsddNode *>({result_node}), decision_node_vector_, literal_node_vector_, top_node_vector_);
+}
+
+
+std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<FPGAPsddNode *> &result_node, std::vector<FPGAPsddNodeStruct> decision_node_vector_,
+ std::vector<FPGAPsddNodeStruct> literal_node_vector_, std::vector<FPGAPsddNodeStruct> top_node_vector_) {
+   std::vector<uint32_t> temp;
+   return temp;
+ }
+
+
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
   std::unordered_map<uintmax_t, FPGAPsddNode *> covered_nodes;
@@ -548,6 +561,15 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
   std::vector<FPGAPsddNode *> serialized_nodes = SerializePsddNodes(root_node);
   return Evaluate(variables, instantiation, serialized_nodes);
 }
+
+Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
+                     const std::bitset<MAX_VAR> &instantiation,
+                     std::vector<uint32_t> fpga_serialized_psdd_evaluate,
+                     std::vector<FPGAPsddNodeStruct>decision_node_vector_,
+                     std::vector<FPGAPsddNodeStruct>literal_node_vector_,
+                     std::vector<FPGAPsddNodeStruct>top_node_vector_) {
+ return Probability::CreateFromDecimal(1);
+ }
 
 void WritePsddToFile(FPGAPsddNode *root_node, const char *output_filename) {
   auto serialized_psdds = SerializePsddNodes(root_node);
@@ -949,8 +971,8 @@ const std::vector<FPGAPsddNode *> &FPGAPsddNode::primes() const {
     return primes_;
 }
 
-const std::vector<FPGAPsddNode *> &FPGAPsddNode::subs() const {   
-  if (node_type_ == DECISION_NODE_TYPE) return subs_; 
+const std::vector<FPGAPsddNode *> &FPGAPsddNode::subs() const {
+  if (node_type_ == DECISION_NODE_TYPE) return subs_;
   }
 
 const std::vector<PsddParameter> &FPGAPsddNode::parameters() const {
@@ -1003,20 +1025,20 @@ void FPGAPsddNode::IncrementFalseDataCount(uintmax_t increment_size) {
     false_data_count_ += increment_size;
 }
 
-PsddParameter FPGAPsddNode::true_parameter() const { 
+PsddParameter FPGAPsddNode::true_parameter() const {
   if (node_type_ == TOP_NODE_TYPE)
-  return true_parameter_; 
+  return true_parameter_;
 }
-PsddParameter FPGAPsddNode::false_parameter() const { 
+PsddParameter FPGAPsddNode::false_parameter() const {
   if (node_type_ == TOP_NODE_TYPE)
-  return false_parameter_; 
+  return false_parameter_;
 }
 
-uintmax_t FPGAPsddNode::true_data_count() const { 
+uintmax_t FPGAPsddNode::true_data_count() const {
   if (node_type_ == TOP_NODE_TYPE)
-  return true_data_count_; 
+  return true_data_count_;
 }
-uintmax_t FPGAPsddNode::false_data_count() const { 
+uintmax_t FPGAPsddNode::false_data_count() const {
   if (node_type_ == TOP_NODE_TYPE)
-  return false_data_count_; 
+  return false_data_count_;
 }

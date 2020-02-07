@@ -78,6 +78,8 @@ int main(int argc, const char *argv[]) {
   PsddManager *psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
   sdd_vtree_free(psdd_vtree);
   PsddNode *result_node = psdd_manager->ReadPsddFile(psdd_filename, 0);
+
+
   if (cnf != nullptr) {
     PsddNode *evid = cnf->Compile(psdd_manager, 0);
     auto new_node_result = psdd_manager->Multiply(evid, result_node, 0);
@@ -90,6 +92,9 @@ int main(int argc, const char *argv[]) {
   std::vector<SddLiteral> variables =
       vtree_util::VariablesUnderVtree(psdd_manager->vtree());
   auto serialized_psdd = psdd_node_util::SerializePsddNodes(result_node);
+
+
+
   if (options[MPE_QUERY]) {
     auto mpe_result = psdd_node_util::GetMPESolution(serialized_psdd);
     std::cout << "MPE result=";

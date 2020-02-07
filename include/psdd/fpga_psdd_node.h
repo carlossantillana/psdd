@@ -161,7 +161,25 @@ private:
   uintmax_t true_data_count_;
   uintmax_t false_data_count_;
 };
-
+struct FPGAPsddNodeStruct {
+  uintmax_t node_index_;
+  uintmax_t user_data_;
+  uintmax_t flag_index_;
+  int node_type_;
+  std::size_t hash_value_;
+  bool activation_flag_;
+  BatchedPsddValue batched_psdd_value_;
+  BatchedPsddValue batched_psdd_context_value_;
+  std::vector<uint32_t> primes_;
+  std::vector<uint32_t> subs_;
+  std::vector<PsddParameter> parameters_;
+  std::vector<uintmax_t> data_counts_;
+  uint32_t variable_index_;
+  PsddParameter true_parameter_;
+  PsddParameter false_parameter_;
+  uintmax_t true_data_count_;
+  uintmax_t false_data_count_;
+} ;
 namespace fpga_vtree_util {
 std::vector<Vtree *> SerializeVtree(Vtree *root);
 Vtree *CopyVtree(Vtree *root);
@@ -180,6 +198,10 @@ namespace fpga_psdd_node_util {
 std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
+std::vector<uint32_t> SerializePsddNodesEvaluate(FPGAPsddNode * result_node, std::vector<FPGAPsddNodeStruct> decision_node_vector_,
+ std::vector<FPGAPsddNodeStruct> literal_node_vector_, std::vector<FPGAPsddNodeStruct> top_node_vector_);
+std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<FPGAPsddNode *> &result_node, std::vector<FPGAPsddNodeStruct> decision_node_vector_,
+ std::vector<FPGAPsddNodeStruct> literal_node_vector_, std::vector<FPGAPsddNodeStruct> top_node_vector_);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,
@@ -195,6 +217,13 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      FPGAPsddNode *root_node);
+
+Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
+                      const std::bitset<MAX_VAR> &instantiation,
+                      std::vector<uint32_t> fpga_serialized_psdd_evaluate,
+                      std::vector<FPGAPsddNodeStruct>decision_node_vector_,
+                      std::vector<FPGAPsddNodeStruct>literal_node_vector_,
+                      std::vector<FPGAPsddNodeStruct>top_node_vector_);
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<FPGAPsddNode *> &nodes,
