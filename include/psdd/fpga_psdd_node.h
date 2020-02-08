@@ -174,8 +174,8 @@ struct FPGAPsddNodeStruct {
   uintmax_t primes_[57];
   uintmax_t subs_[57];
   uintmax_t children_size;
-  std::vector<PsddParameter> parameters_;
-  std::vector<uintmax_t> data_counts_;
+  PsddParameter parameters_ [57];
+  uintmax_t data_counts_ [57];
   uint32_t variable_index_;
   PsddParameter true_parameter_;
   PsddParameter false_parameter_;

@@ -600,10 +600,13 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
     PsddStruct.subs_[i] = sub;
   }
   for (int i = 0; i < cur_node->parameters_.size(); i++){
-    PsddStruct.parameters_.push_back(cur_node->parameters_[i]);
+    PsddParameter param = cur_node->parameters_[i];
+
+    PsddStruct.parameters_[i] = param;
   }
   for (int i = 0; i < cur_node->data_counts_.size(); i++){
-    PsddStruct.data_counts_.push_back(cur_node->data_counts_[i]);
+    uintmax_t data_count = cur_node->data_counts_[i];
+    PsddStruct.data_counts_[i] = data_count;
   }
   PsddStruct.variable_index_ = cur_node->variable_index_;
   PsddStruct.true_parameter_ = cur_node->true_parameter_;
