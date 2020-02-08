@@ -87,25 +87,26 @@ int main(int argc, const char *argv[]) {
       vtree_util::VariablesUnderVtree(psdd_manager->vtree());
   auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
   auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
-  std::vector<uint32_t>  fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector); 
+  auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector);
 
   std::cout << "starting fpga getMPE\n";
   auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
   auto reference_mpe_result = psdd_node_util::GetMPESolution(reference_serialized_psdd);
   std::cout << "finished fpga getMPE\n";
   std::cout << "fpga_mpe.first == reference_mpe.first: " << ((fpga_mpe_result.first  == reference_mpe_result.first)  ? "true" : "false" ) << std::endl;
-  // std::cout << "reference mpe (first): " << reference_mpe_result.first << std::endl;
   std::cout << "fpga_mpe.second == reference_mpe.second: " << ((fpga_mpe_result.second.parameter()  == reference_mpe_result.second.parameter())  ? "true" : "false" ) << std::endl;
 
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
   auto reference_marginals = psdd_node_util::Evaluate(var_mask, reference_mpe_result.first, reference_serialized_psdd);
-  // auto fpga_marginals_bad = fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
   std::cout << "starting evaluate\n";
-  auto fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_evaluate, fpga_node_vector);
+  std::cout << "serialize size(): " << fpga_serialized_psdd_evaluate.size() << std::endl;
+  std::array<uint32_t, PSDD_SIZE> fpga_serialized_psdd_;
+  std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE, fpga_serialized_psdd_.begin());
+  auto fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
   std::cout << "finished evaluate\n";
 
-
+  //
   std::cout << "fpga marginal: " << fpga_marginals.parameter() << std::endl; //Carlos, please switch to this one after modification
   std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
   // for (auto i = 0; i < 100; ++i){

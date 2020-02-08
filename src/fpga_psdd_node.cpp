@@ -610,7 +610,7 @@ uint32_t get_variable_index(FPGAPsddNodeStruct FPGAPsddNode)  {
 }
 Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
-                     std::vector<uint32_t> serialized_nodes,
+                     std::array<uint32_t, PSDD_SIZE>  serialized_nodes,
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
   std::unordered_map<uintmax_t, Probability> evaluation_cache;
   std::cout << "starting first loop \n";
