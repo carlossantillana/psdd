@@ -171,8 +171,9 @@ struct FPGAPsddNodeStruct {
   bool activation_flag_;
   BatchedPsddValue batched_psdd_value_;
   BatchedPsddValue batched_psdd_context_value_;
-  std::vector<uintmax_t> primes_;
-  std::vector<uintmax_t> subs_;
+  uintmax_t primes_[57];
+  uintmax_t subs_[57];
+  uintmax_t children_size;
   std::vector<PsddParameter> parameters_;
   std::vector<uintmax_t> data_counts_;
   uint32_t variable_index_;

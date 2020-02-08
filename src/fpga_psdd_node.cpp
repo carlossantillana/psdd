@@ -323,9 +323,9 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
   while (explore_index != result.size()) {
     uint32_t cur_psdd_node_idx = result[explore_index];
     if (fpga_node_vector[cur_psdd_node_idx].node_type_ == 2) {
-      const std::vector<uintmax_t> &primes = fpga_node_vector[cur_psdd_node_idx].primes_;
-      const std::vector<uintmax_t> &subs = fpga_node_vector[cur_psdd_node_idx].subs_;
-      for (int i = 0 ; i < primes.size() ; i++ ) {
+       std::vector<uintmax_t> primes (std::begin(fpga_node_vector[cur_psdd_node_idx].primes_), std::end(fpga_node_vector[cur_psdd_node_idx].primes_));
+       std::vector<uintmax_t> subs (std::begin(fpga_node_vector[cur_psdd_node_idx].subs_), std::end(fpga_node_vector[cur_psdd_node_idx].subs_));
+      for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size; i++ ) {
         uint32_t cur_prime_idx = primes[i];
         if (node_explored.find(fpga_node_vector[cur_prime_idx].node_index_) ==
             node_explored.end()) {
@@ -333,7 +333,7 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
           result.push_back(cur_prime_idx);
         }
       }
-      for (int i = 0 ; i < subs.size() ; i++ ) {
+      for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size ; i++ ) {
         uint32_t cur_sub_idx = subs[i];
         if (node_explored.find(fpga_node_vector[cur_sub_idx].node_index_) == node_explored.end()) {
           node_explored.insert(fpga_node_vector[cur_sub_idx].node_index_);
@@ -643,8 +643,8 @@ Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
             Probability::CreateFromDecimal(1);
       }
     } else {
-      // PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
-      auto element_size = fpga_node_vector[cur_node_idx].primes_.size();
+       auto element_size = fpga_node_vector[cur_node_idx].children_size;
+
       Probability cur_prob = Probability::CreateFromDecimal(0);
       for (size_t i = 0; i < element_size; ++i) {
         uint32_t cur_prime_idx = fpga_node_vector[cur_node_idx].primes_[i];

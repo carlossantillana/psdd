@@ -590,11 +590,14 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
   PsddStruct.activation_flag_ = cur_node->activation_flag_;
   PsddStruct.batched_psdd_value_ = cur_node->batched_psdd_value_;
   PsddStruct.batched_psdd_context_value_ = cur_node->batched_psdd_context_value_;
+  PsddStruct.children_size = cur_node->primes_.size();
   for (int i = 0; i < cur_node->primes_.size(); i++){
-    PsddStruct.primes_.push_back(cur_node->primes_[i]->node_index_);
+    uintmax_t prime = cur_node->primes_[i]->node_index_;
+    PsddStruct.primes_[i] = prime;
   }
   for (int i = 0; i < cur_node->subs_.size(); i++){
-    PsddStruct.subs_.push_back(cur_node->subs_[i]->node_index_);
+    uintmax_t sub = cur_node->subs_[i]->node_index_;
+    PsddStruct.subs_[i] = sub;
   }
   for (int i = 0; i < cur_node->parameters_.size(); i++){
     PsddStruct.parameters_.push_back(cur_node->parameters_[i]);
