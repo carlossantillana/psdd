@@ -298,12 +298,12 @@ SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
   return result;
 }
 
-std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node, std::vector<FPGAPsddNodeStruct> fpga_node_vector ) {
+std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE] ) {
   return SerializePsddNodesEvaluate(std::vector<uint32_t>({root_node}), fpga_node_vector);
 }
 
 
-std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<FPGAPsddNodeStruct> fpga_node_vector) {
+std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
   std::unordered_set<uintmax_t> node_explored;
   std::cout << "inside big serialize\n";
   std::vector<uint32_t> result;
@@ -611,8 +611,7 @@ uint32_t get_variable_index(FPGAPsddNodeStruct FPGAPsddNode)  {
 Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      std::vector<uint32_t> serialized_nodes,
-                     std::vector<FPGAPsddNodeStruct>fpga_node_vector
-            ) {
+                     FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
   std::unordered_map<uintmax_t, Probability> evaluation_cache;
   std::cout << "starting first loop \n";
   for (auto node_it = serialized_nodes.rbegin();

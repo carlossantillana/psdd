@@ -23,6 +23,7 @@ extern "C" {
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
+const uint32_t PSDD_SIZE = 580817;
 
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
@@ -199,8 +200,8 @@ namespace fpga_psdd_node_util {
 std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
-std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root, std::vector<FPGAPsddNodeStruct> fpga_node_vector);
-std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<FPGAPsddNodeStruct> fpga_node_vector);
+std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
+std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,
@@ -216,11 +217,11 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      FPGAPsddNode *root_node);
-uint32_t get_variable_index(FPGAPsddNodeStruct FPGAPsddNode);
+uint32_t get_variable_index(FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 Probability EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
                       std::vector<uint32_t> fpga_serialized_psdd_evaluate,
-                      std::vector<FPGAPsddNodeStruct>fpga_node_vector);
+                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);

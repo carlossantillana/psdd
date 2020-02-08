@@ -12,6 +12,7 @@
 #include <sstream>
 #include <stack>
 #include <unordered_set>
+
 namespace {
 using std::unordered_set;
 
@@ -610,7 +611,7 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
   return PsddStruct;
 }
 FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
-                                    uintmax_t flag_index, std::vector<FPGAPsddNodeStruct> &fpga_node_vector) {
+                                    uintmax_t flag_index, FPGAPsddNodeStruct  fpga_node_vector[PSDD_SIZE]) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
   psdd_file.open(psdd_filename);
