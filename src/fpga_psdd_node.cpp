@@ -600,14 +600,6 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
   return Evaluate(variables, instantiation, serialized_nodes);
 }
 
-uint32_t get_variable_index(FPGAPsddNodeStruct FPGAPsddNode)  {
-  if (FPGAPsddNode.node_type_ == LITERAL_NODE_TYPE){
-    return FPGAPsddNode.literal_ > 0 ? static_cast<uint32_t>(FPGAPsddNode.literal_)
-                        : static_cast<uint32_t>(-FPGAPsddNode.literal_);
-  } else if (FPGAPsddNode.node_type_ == TOP_NODE_TYPE){
-    return FPGAPsddNode.variable_index_;
-  }
-}
 double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      std::array<uint32_t, PSDD_SIZE>  serialized_nodes,
@@ -618,8 +610,8 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
        node_it != serialized_nodes.rend(); ++node_it) {
     uintmax_t cur_node_idx = *node_it;
     if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
-      if (variables[get_variable_index(fpga_node_vector[cur_node_idx])]) {
-        if ( instantiation[get_variable_index(fpga_node_vector[cur_node_idx])] == (fpga_node_vector[cur_node_idx].literal_>0) ) {
+      if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
+        if ( instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_>0) ) {
           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
               std::log(1);
         } else {
@@ -648,9 +640,6 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
       for (size_t i = 0; i < element_size; ++i) {
         uint32_t cur_prime_idx = fpga_node_vector[cur_node_idx].primes_[i];
         uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
-        // cur_prob = cur_prob + evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] +
-        //                           evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] +
-        //                           fpga_node_vector[cur_node_idx].parameters_[i].parameter_;
         double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] +
                                   evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] +
                                   fpga_node_vector[cur_node_idx].parameters_[i].parameter_;
@@ -886,7 +875,10 @@ void FPGAPsddNode::SetUserData(uintmax_t user_data) { user_data_ = user_data; }
 FPGAPsddNode::FPGAPsddNode(uintmax_t node_index, Vtree *vtree_node,
                                  uintmax_t flag_index, int32_t literal)
     : node_index_(node_index), vtree_node_(vtree_node), user_data_(0),
-      flag_index_(flag_index), activation_flag_(false), literal_(literal), node_type_(LITERAL_NODE_TYPE) {
+      flag_index_(flag_index), activation_flag_(false),
+       literal_(literal), node_type_(LITERAL_NODE_TYPE),
+       variable_index_( literal > 0 ? static_cast<uint32_t>(literal)
+                           : static_cast<uint32_t>(-literal)) {
   CalculateHashValue();
 }
 
