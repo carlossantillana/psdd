@@ -107,7 +107,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "finished evaluate\n";
 
   //
-  std::cout << "fpga marginal: " << fpga_marginals.parameter() << std::endl; //Carlos, please switch to this one after modification
+  std::cout << "fpga marginal: " << fpga_marginals << std::endl; //Carlos, please switch to this one after modification
   std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
   // for (auto i = 0; i < 100; ++i){
   //     std::cout << "starting fpga evaluate\n";

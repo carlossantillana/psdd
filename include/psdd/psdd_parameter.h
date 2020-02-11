@@ -26,7 +26,7 @@ public:
   PsddParameter &operator*=(const PsddParameter &other);
   double parameter() const;
 
-private:
+public:
   explicit PsddParameter(double parameter);
   double parameter_;
   uintmax_t hash_value_;
