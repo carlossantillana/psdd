@@ -172,11 +172,11 @@ struct FPGAPsddNodeStruct {
   //removed because not used
   // std::vector<bool> batched_psdd_value_;
   // std::vector<bool> batched_psdd_context_value_;
-  uintmax_t primes_[57];
-  uintmax_t subs_[57];
+  uint32_t primes_[57];
+  uint32_t subs_[57];
   uintmax_t children_size;
   double parameters_ [57];
-  uintmax_t data_counts_ [57];
+  uint32_t data_counts_ [57];
   uint32_t variable_index_;
   double true_parameter_;
   double false_parameter_;
