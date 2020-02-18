@@ -101,7 +101,7 @@ int main(int argc, const char *argv[]) {
   auto reference_marginals = psdd_node_util::Evaluate(var_mask, reference_mpe_result.first, reference_serialized_psdd);
   std::cout << "starting evaluate\n";
   std::array<uint32_t, PSDD_SIZE> fpga_serialized_psdd_;
-  std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + z, fpga_serialized_psdd_.begin());
+  std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE, fpga_serialized_psdd_.begin());
   auto fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
   std::cout << "finished evaluate\n";
 
