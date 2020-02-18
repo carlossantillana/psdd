@@ -588,8 +588,6 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
   PsddStruct.node_type_ = cur_node->node_type_;
   PsddStruct.hash_value_ = cur_node->hash_value_;
   PsddStruct.activation_flag_ = cur_node->activation_flag_;
-  PsddStruct.batched_psdd_value_ = cur_node->batched_psdd_value_;
-  PsddStruct.batched_psdd_context_value_ = cur_node->batched_psdd_context_value_;
   PsddStruct.children_size = cur_node->primes_.size();
   for (int i = 0; i < cur_node->primes_.size(); i++){
     uintmax_t prime = cur_node->primes_[i]->node_index_;
@@ -602,15 +600,15 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
   for (int i = 0; i < cur_node->parameters_.size(); i++){
     PsddParameter param = cur_node->parameters_[i];
 
-    PsddStruct.parameters_[i] = param;
+    PsddStruct.parameters_[i] = param.parameter_;
   }
   for (int i = 0; i < cur_node->data_counts_.size(); i++){
     uintmax_t data_count = cur_node->data_counts_[i];
     PsddStruct.data_counts_[i] = data_count;
   }
   PsddStruct.variable_index_ = cur_node->variable_index_;
-  PsddStruct.true_parameter_ = cur_node->true_parameter_;
-  PsddStruct.false_parameter_ = cur_node->false_parameter_;
+  PsddStruct.true_parameter_ = cur_node->true_parameter_.parameter_;
+  PsddStruct.false_parameter_ = cur_node->false_parameter_.parameter_;
   PsddStruct.true_data_count_ = cur_node->true_data_count_;
   PsddStruct.false_data_count_ = cur_node->false_data_count_;
   PsddStruct.literal_ = cur_node->literal_;

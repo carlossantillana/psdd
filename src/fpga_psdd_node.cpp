@@ -605,7 +605,6 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      std::array<uint32_t, PSDD_SIZE>  serialized_nodes,
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
   double evaluation_cache [PSDD_SIZE];
-
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
     uintmax_t cur_node_idx = *node_it;
@@ -625,9 +624,9 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
     } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
         if (instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
-          evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].true_parameter_.parameter_;
+          evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].true_parameter_;
         } else {
-          evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].false_parameter_.parameter_;
+          evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].false_parameter_;
         }
       } else {
         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
@@ -642,7 +641,7 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
         uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
         double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] +
                                   evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] +
-                                  fpga_node_vector[cur_node_idx].parameters_[i].parameter_;
+                                  fpga_node_vector[cur_node_idx].parameters_[i];
         if (cur_prob == -std::numeric_limits<double>::infinity()) {
           // if this is zero
           cur_prob = tmp;

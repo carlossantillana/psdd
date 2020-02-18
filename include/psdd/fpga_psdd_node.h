@@ -169,16 +169,17 @@ struct FPGAPsddNodeStruct {
   int node_type_;
   std::size_t hash_value_;
   bool activation_flag_;
-  BatchedPsddValue batched_psdd_value_;
-  BatchedPsddValue batched_psdd_context_value_;
+  //removed because not used
+  // std::vector<bool> batched_psdd_value_;
+  // std::vector<bool> batched_psdd_context_value_;
   uintmax_t primes_[57];
   uintmax_t subs_[57];
   uintmax_t children_size;
-  PsddParameter parameters_ [57];
+  double parameters_ [57];
   uintmax_t data_counts_ [57];
   uint32_t variable_index_;
-  PsddParameter true_parameter_;
-  PsddParameter false_parameter_;
+  double true_parameter_;
+  double false_parameter_;
   uintmax_t true_data_count_;
   uintmax_t false_data_count_;
   int32_t literal_;
