@@ -604,7 +604,7 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      std::array<uint32_t, PSDD_SIZE>  serialized_nodes,
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
-  long long evaluation_cache [PSDD_SIZE];
+  double evaluation_cache [PSDD_SIZE];
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
     uintmax_t cur_node_idx = *node_it;
@@ -614,7 +614,7 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
         } else {
           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-              -std::numeric_limits<long long>::infinity();
+              -std::numeric_limits<double>::infinity();
         }
       } else {
         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
@@ -634,17 +634,17 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
     } else {
        auto element_size = fpga_node_vector[cur_node_idx].children_size;
 
-      long long cur_prob = -std::numeric_limits<long long>::infinity();
+      double cur_prob = -std::numeric_limits<double>::infinity();
       for (size_t i = 0; i < element_size; ++i) {
         uint32_t cur_prime_idx = fpga_node_vector[cur_node_idx].primes_[i];
         uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
-        long long tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] *
+        double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] *
                                   evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] *
                                   fpga_node_vector[cur_node_idx].parameters_[i];
-        if (cur_prob == -std::numeric_limits<long long>::infinity()) {
+        if (cur_prob == -std::numeric_limits<double>::infinity()) {
           // if this is zero
           cur_prob = tmp;
-        } else if (tmp == -std::numeric_limits<long long>::infinity()) {
+        } else if (tmp == -std::numeric_limits<double>::infinity()) {
           // No change on the paramter_
         } else {
           if (cur_prob > tmp) {

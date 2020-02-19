@@ -102,12 +102,14 @@ int main(int argc, const char *argv[]) {
   std::cout << "starting evaluate\n";
   std::array<uint32_t, PSDD_SIZE> fpga_serialized_psdd_;
   std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE, fpga_serialized_psdd_.begin());
-  auto fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
+  double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
   std::cout << "finished evaluate\n";
 
-  //
-  std::cout << "fpga marginal: " << fpga_marginals << std::endl; //Carlos, please switch to this one after modification
+
+  std::cout << "fpga marginal: " << fpga_marginals << std::endl;
+  printf("%.17e\n", fpga_marginals);
   std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
+    printf("%.17e\n", reference_marginals.parameter());
   // for (auto i = 0; i < 100; ++i){
   //     std::cout << "starting fpga evaluate\n";
   //     fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
