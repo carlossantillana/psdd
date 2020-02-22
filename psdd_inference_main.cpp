@@ -78,6 +78,11 @@ int main(int argc, const char *argv[]) {
   sdd_vtree_free(psdd_vtree);
   std::cout << "starting read psdd file\n";
   FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector);
+  uint32_t correctPsddSize = 0;
+  for (auto i : fpga_node_vector){
+        correctPsddSize = i.node_index_ > correctPsddSize ? i.node_index_ : correctPsddSize;
+  }
+  std:: cout << "Correct Psdd Size: " << correctPsddSize +1 << std::endl;
   PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
   uint32_t root_node_idx = result_node->node_index_;
 
@@ -109,7 +114,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "fpga marginal: " << fpga_marginals << std::endl;
   printf("%.17e\n", fpga_marginals);
   std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
-    printf("%.17e\n", reference_marginals.parameter());
+  printf("%.17e\n", reference_marginals.parameter());
   // for (auto i = 0; i < 100; ++i){
   //     std::cout << "starting fpga evaluate\n";
   //     fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);

@@ -623,6 +623,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
     std::cerr << "File " << psdd_filename << " cannot be open.";
     exit(1); // terminate with error
   }
+  std::unordered_map<int, int> children;
   std::string line;
   FPGAPsddNode *root_node = nullptr;
   while (std::getline(psdd_file, line)) {
@@ -668,6 +669,11 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       std::vector<FPGAPsddNode *> primes;
       std::vector<FPGAPsddNode *> subs;
       std::vector<PsddParameter> params;
+      if (children.find(element_size) == children.end()){
+        children.emplace(element_size, 1);
+      } else{
+        children.at(element_size)++;
+      }
       for (size_t j = 0; j < element_size; j++) {
         uintmax_t prime_index;
         uintmax_t sub_index;
@@ -688,6 +694,9 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     }
+  }
+  for (auto i : children){
+    std::cout << "num children: " << i.first << " times: " << i.second << std::endl;
   }
   psdd_file.close();
   return root_node;

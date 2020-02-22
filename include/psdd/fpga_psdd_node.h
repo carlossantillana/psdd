@@ -23,8 +23,8 @@ extern "C" {
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
-const uint32_t PSDD_SIZE = 580817;
-
+const uint32_t PSDD_SIZE = 50;
+const uint32_t MAX_CHILDREN = 27;
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
 class PsddLiteralNode;
@@ -172,11 +172,11 @@ struct FPGAPsddNodeStruct {
   //removed because not used
   // std::vector<bool> batched_psdd_value_;
   // std::vector<bool> batched_psdd_context_value_;
-  uint32_t primes_[57];
-  uint32_t subs_[57];
+  uint32_t primes_[MAX_CHILDREN];
+  uint32_t subs_[MAX_CHILDREN];
   uintmax_t children_size;
-  double parameters_ [57];
-  uint32_t data_counts_ [57];
+  double parameters_ [MAX_CHILDREN];
+  uint32_t data_counts_ [MAX_CHILDREN];
   uint32_t variable_index_;
   double true_parameter_;
   double false_parameter_;
