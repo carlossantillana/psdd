@@ -580,6 +580,14 @@ FPGAPsddManager::Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2, uintmax_t flag
   ComputationCache cache((uint32_t)leaf_vtree_map_.size());
   return MultiplyWithCache(arg1, arg2, this, flag_index, &cache);
 }
+
+double convertToLinear(double log_num){
+  if (log_num == 0)
+    return -std::numeric_limits<double>::infinity();
+  else
+    return std::exp(log_num);
+}
+
 FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
   FPGAPsddNodeStruct PsddStruct;
   PsddStruct.node_index_ = cur_node->node_index_;
@@ -600,7 +608,7 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
   for (int i = 0; i < cur_node->parameters_.size(); i++){
     PsddParameter param = cur_node->parameters_[i];
 
-    PsddStruct.parameters_[i] = param.parameter_;
+    PsddStruct.parameters_[i] = convertToLinear(param.parameter_);
   }
   for (int i = 0; i < cur_node->data_counts_.size(); i++){
     uintmax_t data_count = cur_node->data_counts_[i];

@@ -529,9 +529,12 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
       for (size_t i = 0; i < element_size; ++i) {
         PsddNode *cur_prime = cur_decn_node->primes()[i];
         PsddNode *cur_sub = cur_decn_node->subs()[i];
+        std::cout << "before: cur_prob: " << cur_prob.parameter_ << " ec[cur_prime->node_index()]: " << evaluation_cache[cur_prime->node_index()].parameter_ << " ec[cur_sub->node_index()]: " << evaluation_cache[cur_sub->node_index()].parameter_ <<" cur_decn_node->parameters()[i]: " << cur_decn_node->parameters()[i].parameter_ << std::endl;
         cur_prob = cur_prob + evaluation_cache[cur_prime->node_index()] *
                                   evaluation_cache[cur_sub->node_index()] *
                                   cur_decn_node->parameters()[i];
+        std::cout << "after cur_prob: " << cur_prob.parameter_ << std::endl;
+
       }
       evaluation_cache[cur_node->node_index()] = cur_prob;
     }
