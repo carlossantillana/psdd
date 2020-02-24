@@ -103,9 +103,7 @@ int main(int argc, const char *argv[]) {
 
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
-  for (int i = 0 ; i <= PSDD_SIZE; i++){
-    std::cout << "reference index: " << reference_serialized_psdd[i]->node_index_ << " fpga index: " << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].node_index_ << std::endl;
-  }
+
   std::cout << "starting refernce evaluate  ------------------------------------\n";
 
   auto reference_marginals = psdd_node_util::Evaluate(var_mask, reference_mpe_result.first, reference_serialized_psdd);
@@ -118,10 +116,10 @@ int main(int argc, const char *argv[]) {
   std::cout << "finished fpga evaluate ------------------------\n";
 
 
-  std::cout << "fpga marginal: " << fpga_marginals << std::endl;
-  printf("%.17e\n", fpga_marginals);
-  std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
-  printf("%.17e\n", reference_marginals.parameter());
+  // std::cout << "fpga marginal: " << fpga_marginals << std::endl;
+  printf("fpga marginal %.17e, transformed back to log scale: %.17e\n", fpga_marginals, log(fpga_marginals));
+  // std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
+  printf("reference  marginal %.17e\n", reference_marginals.parameter());
   // for (auto i = 0; i < 100; ++i){
   //     std::cout << "starting fpga evaluate\n";
   //     fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
