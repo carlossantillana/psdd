@@ -222,7 +222,7 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 uint32_t get_variable_index(FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
-                      std::array<uint32_t, PSDD_SIZE>  fpga_serialized_psdd_evaluate,
+                      std::array<uint32_t, PSDD_SIZE+1>  fpga_serialized_psdd_evaluate,
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,

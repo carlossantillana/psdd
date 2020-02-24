@@ -103,14 +103,17 @@ int main(int argc, const char *argv[]) {
 
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
+  for (int i = 0 ; i <= PSDD_SIZE; i++){
+    std::cout << "reference index: " << reference_serialized_psdd[i]->node_index_ << " fpga index: " << fpga_node_vector[fpga_serialized_psdd_evaluate[i]].node_index_ << std::endl;
+  }
   std::cout << "starting refernce evaluate  ------------------------------------\n";
 
   auto reference_marginals = psdd_node_util::Evaluate(var_mask, reference_mpe_result.first, reference_serialized_psdd);
   std::cout << "finished reference evaluate--------------------------------------------------\n";
 
   std::cout << "starting fpga evaluate ----------------------------------\n";
-  std::array<uint32_t, PSDD_SIZE> fpga_serialized_psdd_;
-  std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE, fpga_serialized_psdd_.begin());
+  std::array<uint32_t, PSDD_SIZE+1> fpga_serialized_psdd_;
+  std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE+1, fpga_serialized_psdd_.begin());
   double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
   std::cout << "finished fpga evaluate ------------------------\n";
 

@@ -601,45 +601,58 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 }
 
 
+double convertToLinear(double log_num){
+  if (log_num == 0)
+    return -std::numeric_limits<double>::infinity();
+  else
+    return std::exp(log_num);
+}
 
 double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
-                     std::array<uint32_t, PSDD_SIZE>  serialized_nodes,
+                     std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
   std::unordered_map<uintmax_t, double> evaluation_cache;
   std::cout << "starting first loop \n";
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
     uintmax_t cur_node_idx = *node_it;
+    std::cout << "at node: " << fpga_node_vector[cur_node_idx].node_index_ << std::endl;
     if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
         if ( instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_ > 0) ) {
           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-              0;
+              1;
         } else {
           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-              -std::numeric_limits<double>::infinity();
+              0;
         }
       } else {
         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-            0;
+            1;
       }
     } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
       // PsddTopNode *cur_top = cur_node->psdd_top_node();
       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
         if (instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].true_parameter_;
+          if (fpga_node_vector[cur_node_idx].node_index_== 1){
+            std::cout << "inside top node with index 1!! true_parameter: " << fpga_node_vector[cur_node_idx].true_parameter_ << std::endl;
+          }
         } else {
           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].false_parameter_;
+          if (fpga_node_vector[cur_node_idx].node_index_ == 1){
+            std::cout << "inside top node with index 1!! false_parameter: " << fpga_node_vector[cur_node_idx].false_parameter_ << std::endl;
+          }
         }
       } else {
         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-            0;
+            1;
       }
     } else {
        uint32_t element_size = fpga_node_vector[cur_node_idx].children_size;
 
-      double cur_prob = -std::numeric_limits<double>::infinity();
+      double cur_prob = 0;
       for (size_t i = 0; i < element_size; ++i) {
         uint32_t cur_prime_idx = fpga_node_vector[cur_node_idx].primes_[i];
         uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
@@ -647,14 +660,14 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
         //this gets converted to below
         double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] * evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_];
         tmp = tmp * fpga_node_vector[cur_node_idx].parameters_[i];
-        std::cout << "before: cur_prob: " << cur_prob << " ec[fpga_nodes[cur_prime].index_]: " << evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] << " ec[fpga_nodes[cur_sub].index_]: " << evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] <<" fpga_nodes[cur_node_idx].param_[i]: " << fpga_node_vector[cur_node_idx].parameters_[i] << " tmp: " << tmp << std::endl;
+        std::cout << "before: cur_prob: " << cur_prob << " ec[prime(index)" << fpga_node_vector[cur_prime_idx].node_index_ << "]: " << evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] << " ec[sub(index)" << fpga_node_vector[cur_sub_idx].node_index_ << "]: " << evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] <<" fpga_nodes[current()" <<cur_node_idx << "].param_[i]: " << fpga_node_vector[cur_node_idx].parameters_[i] << " tmp: " << tmp << std::endl;
 
-        if (cur_prob == -std::numeric_limits<double>::infinity()) {
+        if (cur_prob == 0) {
           // if this is zero
           std::cout << "inside cur_prob == -inf\n";
           cur_prob =  tmp;
           continue;
-        } else if (tmp == -std::numeric_limits<double>::infinity()) {
+        } else if (tmp == 0) {
           std::cout << "inside evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] == -inf\n";
           cur_prob = cur_prob;
           continue;

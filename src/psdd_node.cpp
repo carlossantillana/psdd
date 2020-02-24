@@ -294,6 +294,7 @@ SerializePsddNodes(const std::vector<PsddNode *> &root_nodes) {
     }
     ++explore_index;
   }
+  std::cout << "reference nodes\n";
   return result;
 }
 
@@ -496,6 +497,8 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
     PsddNode *cur_node = *node_it;
+    std::cout << "at node: " << cur_node->node_index_ << std::endl;
+
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
       PsddLiteralNode *cur_lit = cur_node->psdd_literal_node();
       if (variables[cur_lit->variable_index()]) {
@@ -515,8 +518,14 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
       if (variables[cur_top->variable_index()]) {
         if (instantiation[cur_top->variable_index()]) {
           evaluation_cache[cur_node->node_index()] = cur_top->true_parameter();
+          if (cur_node->node_index() == 1){
+            std::cout << "inside top node with index 1!! true_parameter: " << cur_top->true_parameter().parameter_ << std::endl;
+          }
         } else {
           evaluation_cache[cur_node->node_index()] = cur_top->false_parameter();
+          if (cur_node->node_index() == 1){
+            std::cout << "inside top node with index 1!! false_parameter: " << cur_top->false_parameter().parameter_ << std::endl;
+          }
         }
       } else {
         evaluation_cache[cur_node->node_index()] =
@@ -529,7 +538,7 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
       for (size_t i = 0; i < element_size; ++i) {
         PsddNode *cur_prime = cur_decn_node->primes()[i];
         PsddNode *cur_sub = cur_decn_node->subs()[i];
-        std::cout << "before: cur_prob: " << cur_prob.parameter_ << " ec[cur_prime->node_index()]: " << evaluation_cache[cur_prime->node_index()].parameter_ << " ec[cur_sub->node_index()]: " << evaluation_cache[cur_sub->node_index()].parameter_ <<" cur_decn_node->parameters()[i]: " << cur_decn_node->parameters()[i].parameter_ << std::endl;
+        std::cout << "before: cur_prob: " << cur_prob.parameter_ << " ec[prime(index):" << cur_prime->node_index() <<"]: " << evaluation_cache[cur_prime->node_index()].parameter_ << " ec[sub(index)" <<cur_sub->node_index() << "]: " << evaluation_cache[cur_sub->node_index()].parameter_ <<" cur_decn_node(" << cur_decn_node->node_index_<< ")->parameters()[i]: " << cur_decn_node->parameters()[i].parameter_ << std::endl;
         cur_prob = cur_prob + evaluation_cache[cur_prime->node_index()] *
                                   evaluation_cache[cur_sub->node_index()] *
                                   cur_decn_node->parameters()[i];

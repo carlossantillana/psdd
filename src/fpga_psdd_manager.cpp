@@ -583,7 +583,7 @@ FPGAPsddManager::Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2, uintmax_t flag
 
 double convertToLinear(double log_num){
   if (log_num == 0)
-    return -std::numeric_limits<double>::infinity();
+    return 0;
   else
     return std::exp(log_num);
 }
@@ -615,8 +615,8 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
     PsddStruct.data_counts_[i] = data_count;
   }
   PsddStruct.variable_index_ = cur_node->variable_index_;
-  PsddStruct.true_parameter_ = cur_node->true_parameter_.parameter_;
-  PsddStruct.false_parameter_ = cur_node->false_parameter_.parameter_;
+  PsddStruct.true_parameter_ = convertToLinear(cur_node->true_parameter_.parameter_);
+  PsddStruct.false_parameter_ = convertToLinear(cur_node->false_parameter_.parameter_);
   PsddStruct.true_data_count_ = cur_node->true_data_count_;
   PsddStruct.false_data_count_ = cur_node->false_data_count_;
   PsddStruct.literal_ = cur_node->literal_;

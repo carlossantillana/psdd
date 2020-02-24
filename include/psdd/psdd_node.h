@@ -74,7 +74,7 @@ public:
 protected:
   void set_hash_value(std::size_t hash_value);
 
-private:
+public:
   uintmax_t node_index_;
   Vtree *vtree_node_;
   uintmax_t user_data_;
