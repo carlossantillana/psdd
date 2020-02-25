@@ -115,11 +115,23 @@ int main(int argc, const char *argv[]) {
   double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
   std::cout << "finished fpga evaluate ------------------------\n";
 
-
+  auto evaluation_cache = psdd_node_util::EvaluateToCompare(var_mask, reference_mpe_result.first, reference_serialized_psdd);
+  auto evaluation_cache_fpga = fpga_psdd_node_util::EvaluateToCompare(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
+  double difference = 0;
+  for (int i =0; i <= PSDD_SIZE; i++){
+    double tmpDiff = 0;
+    if (evaluation_cache.at(i).parameter_ != -std::numeric_limits<double>::infinity()){
+      tmpDiff = std::abs(evaluation_cache.at(i).parameter_ - log(evaluation_cache_fpga.at(i)));
+    }
+    std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga.at(i)) << " difference: " << tmpDiff << std::endl;
+    difference -= tmpDiff;
+  }
+  std::cout << "total difference: " << difference << std::endl;
   // std::cout << "fpga marginal: " << fpga_marginals << std::endl;
   printf("fpga marginal %.17e, transformed back to log scale: %.17e\n", fpga_marginals, log(fpga_marginals));
   // std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;
   printf("reference  marginal %.17e\n", reference_marginals.parameter());
+  printf("approximate error: %.17e\n",  reference_marginals.parameter() - log(fpga_marginals));
   // for (auto i = 0; i < 100; ++i){
   //     std::cout << "starting fpga evaluate\n";
   //     fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);

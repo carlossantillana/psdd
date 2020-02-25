@@ -216,6 +216,9 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      PsddNode *root_node);
+std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
+                    const std::bitset<MAX_VAR> &instantiation,
+                        const std::vector<PsddNode *> &serialized_nodes);
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<PsddNode *> &nodes,

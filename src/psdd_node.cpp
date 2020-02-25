@@ -539,6 +539,56 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
   }
   return evaluation_cache[serialized_nodes[0]->node_index()];
 }
+
+std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
+                     const std::bitset<MAX_VAR> &instantiation,
+                     const std::vector<PsddNode *> &serialized_nodes) {
+  std::unordered_map<uintmax_t, Probability> evaluation_cache;
+  for (auto node_it = serialized_nodes.rbegin();
+       node_it != serialized_nodes.rend(); ++node_it) {
+    PsddNode *cur_node = *node_it;
+    if (cur_node->node_type() == LITERAL_NODE_TYPE) {
+      PsddLiteralNode *cur_lit = cur_node->psdd_literal_node();
+      if (variables[cur_lit->variable_index()]) {
+        if (instantiation[cur_lit->variable_index()] == cur_lit->sign()) {
+          evaluation_cache[cur_node->node_index()] =
+              Probability::CreateFromDecimal(1);
+        } else {
+          evaluation_cache[cur_node->node_index()] =
+              Probability::CreateFromDecimal(0);
+        }
+      } else {
+        evaluation_cache[cur_node->node_index()] =
+            Probability::CreateFromDecimal(1);
+      }
+    } else if (cur_node->node_type() == TOP_NODE_TYPE) {
+      PsddTopNode *cur_top = cur_node->psdd_top_node();
+      if (variables[cur_top->variable_index()]) {
+        if (instantiation[cur_top->variable_index()]) {
+          evaluation_cache[cur_node->node_index()] = cur_top->true_parameter();
+        } else {
+          evaluation_cache[cur_node->node_index()] = cur_top->false_parameter();
+        }
+      } else {
+        evaluation_cache[cur_node->node_index()] =
+            Probability::CreateFromDecimal(1);
+      }
+    } else {
+      PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
+      auto element_size = cur_decn_node->primes().size();
+      Probability cur_prob = Probability::CreateFromDecimal(0);
+      for (size_t i = 0; i < element_size; ++i) {
+        PsddNode *cur_prime = cur_decn_node->primes()[i];
+        PsddNode *cur_sub = cur_decn_node->subs()[i];
+        cur_prob = cur_prob + evaluation_cache[cur_prime->node_index()] *
+                                  evaluation_cache[cur_sub->node_index()] *
+                                  cur_decn_node->parameters()[i];
+      }
+      evaluation_cache[cur_node->node_index()] = cur_prob;
+    }
+  }
+  return evaluation_cache;
+}
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation) {
   std::vector<PsddNode *> serialized_nodes = SerializePsddNodes(node);

@@ -224,6 +224,10 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
                       std::array<uint32_t, PSDD_SIZE+1>  fpga_serialized_psdd_evaluate,
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
+std::unordered_map<uintmax_t, double> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
+                   const std::bitset<MAX_VAR> &instantiation,
+                   std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,
+                   FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
