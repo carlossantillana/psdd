@@ -612,7 +612,7 @@ double convertToLinear(double log_num){
 
 double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
-                     std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,
+                     std::array<uint32_t, PSDD_SIZE>  serialized_nodes,
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                      uint32_t children_vector[TOTAL_CHILDREN],
                    double parameter_vector[TOTAL_PARAM]) {
@@ -654,9 +654,7 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
         uint32_t cur_prime_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
         uint32_t cur_sub_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
         double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] * evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_];
-        // tmp *= fpga_node_vector[cur_node_idx].parameters_[i];
         tmp *= parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i];
-        // std::cout << "(param, reference_param): (" << parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i] << "," << fpga_node_vector[cur_node_idx].parameters_[i] << ")\n";
 
         if (cur_prob == 0) {
           // if this is zero

@@ -174,7 +174,6 @@ struct FPGAPsddNodeStruct {
   uintmax_t children_size;
   uint32_t children_offset;
   uint32_t parameter_offset;
-  // double parameters_ [MAX_CHILDREN];
   uint32_t variable_index_;
   double true_parameter_;
   double false_parameter_;
@@ -222,7 +221,7 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 uint32_t get_variable_index(FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
-                      std::array<uint32_t, PSDD_SIZE+1>  fpga_serialized_psdd_evaluate,
+                      std::array<uint32_t, PSDD_SIZE>  fpga_serialized_psdd_evaluate,
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       uint32_t children_vector[TOTAL_CHILDREN],
                       double parameter_vector [TOTAL_PARAM]);

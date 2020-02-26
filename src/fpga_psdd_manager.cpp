@@ -615,7 +615,6 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, uint32_t childre
     param.parameter_ = convertToLinear(param.parameter_);
     parameter_vector[currentParam] = param.parameter_;
     currentParam++;
-    // PsddStruct.parameters_[i] = param.parameter_;
   }
   PsddStruct.variable_index_ = cur_node->variable_index_;
   PsddStruct.true_parameter_ = convertToLinear(cur_node->true_parameter_.parameter_);
