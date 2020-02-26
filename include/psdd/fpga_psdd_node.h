@@ -23,8 +23,9 @@ extern "C" {
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
-const uint32_t PSDD_SIZE = 50;
-const uint32_t MAX_CHILDREN = 27;
+const uint32_t PSDD_SIZE = 580817;
+const uint32_t MAX_CHILDREN = 57;
+const uint32_t TOTAL_CHILDREN = 1541021;
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
 class PsddLiteralNode;
@@ -169,14 +170,9 @@ struct FPGAPsddNodeStruct {
   int node_type_;
   std::size_t hash_value_;
   bool activation_flag_;
-  //removed because not used
-  // std::vector<bool> batched_psdd_value_;
-  // std::vector<bool> batched_psdd_context_value_;
-  uint32_t primes_[MAX_CHILDREN];
-  uint32_t subs_[MAX_CHILDREN];
   uintmax_t children_size;
+  uint32_t children_offset;
   double parameters_ [MAX_CHILDREN];
-  uint32_t data_counts_ [MAX_CHILDREN];
   uint32_t variable_index_;
   double true_parameter_;
   double false_parameter_;
@@ -202,8 +198,10 @@ namespace fpga_psdd_node_util {
 std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
-std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
-std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
+std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]
+                              ,uint32_t children_vector[TOTAL_CHILDREN]);
+std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes,
+          FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], uint32_t children_vector[TOTAL_CHILDREN]);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,
@@ -223,7 +221,8 @@ uint32_t get_variable_index(FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
                       std::array<uint32_t, PSDD_SIZE+1>  fpga_serialized_psdd_evaluate,
-                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
+                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
+                      uint32_t children_vector[TOTAL_CHILDREN]);
 std::unordered_map<uintmax_t, double> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                    const std::bitset<MAX_VAR> &instantiation,
                    std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,

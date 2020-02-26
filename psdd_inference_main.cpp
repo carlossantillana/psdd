@@ -11,7 +11,7 @@ extern "C" {
 #include <sdd/sddapi.h>
 }
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
-
+uint32_t children_vector [TOTAL_CHILDREN];
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -77,12 +77,12 @@ int main(int argc, const char *argv[]) {
   PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
   sdd_vtree_free(psdd_vtree);
   std::cout << "starting read psdd file\n";
-  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector);
+  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector, children_vector);
   uint32_t correctPsddSize = 0;
   for (auto i : fpga_node_vector){
         correctPsddSize = i.node_index_ > correctPsddSize ? i.node_index_ : correctPsddSize;
   }
-  std:: cout << "Correct Psdd Size: " << correctPsddSize +1 << std::endl;
+  std:: cout << "PSDD_SIZE: " << correctPsddSize +1 << std::endl;
   PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
   uint32_t root_node_idx = result_node->node_index_;
 
@@ -92,7 +92,7 @@ int main(int argc, const char *argv[]) {
       vtree_util::VariablesUnderVtree(psdd_manager->vtree());
   auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
   auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
-  auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector);
+  auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, children_vector);
 
   std::cout << "starting fpga getMPE\n";
   auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
@@ -112,21 +112,23 @@ int main(int argc, const char *argv[]) {
   std::cout << "starting fpga evaluate ----------------------------------\n";
   std::array<uint32_t, PSDD_SIZE+1> fpga_serialized_psdd_;
   std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE+1, fpga_serialized_psdd_.begin());
-  double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
+  double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector, children_vector);
   std::cout << "finished fpga evaluate ------------------------\n";
 
-  auto evaluation_cache = psdd_node_util::EvaluateToCompare(var_mask, reference_mpe_result.first, reference_serialized_psdd);
-  auto evaluation_cache_fpga = fpga_psdd_node_util::EvaluateToCompare(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
-  double difference = 0;
-  for (int i =0; i <= PSDD_SIZE; i++){
-    double tmpDiff = 0;
-    if (evaluation_cache.at(i).parameter_ != -std::numeric_limits<double>::infinity()){
-      tmpDiff = std::abs(evaluation_cache.at(i).parameter_ - log(evaluation_cache_fpga.at(i)));
-    }
-    std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga.at(i)) << " difference: " << tmpDiff << std::endl;
-    difference -= tmpDiff;
-  }
-  std::cout << "total difference: " << difference << std::endl;
+  // auto evaluation_cache = psdd_node_util::EvaluateToCompare(var_mask, reference_mpe_result.first, reference_serialized_psdd);
+  // auto evaluation_cache_fpga = fpga_psdd_node_util::EvaluateToCompare(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector);
+  //Check difference layer by layer
+  // double difference = 0;
+  // for (int i =0; i <= PSDD_SIZE; i++){
+  //   double tmpDiff = 0;
+  //   if (evaluation_cache.at(i).parameter_ != -std::numeric_limits<double>::infinity()){
+  //     tmpDiff = std::abs(evaluation_cache.at(i).parameter_ - log(evaluation_cache_fpga.at(i)));
+  //   }
+  //   std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga.at(i)) << " difference: " << tmpDiff << std::endl;
+  //   difference -= tmpDiff;
+  // }
+  // std::cout << "total difference: " << difference << std::endl;
+
   // std::cout << "fpga marginal: " << fpga_marginals << std::endl;
   printf("fpga marginal %.17e, transformed back to log scale: %.17e\n", fpga_marginals, log(fpga_marginals));
   // std::cout << "reference marginal: " << reference_marginals.parameter() << std::endl;

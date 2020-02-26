@@ -298,12 +298,14 @@ SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
   return result;
 }
 
-std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE] ) {
-  return SerializePsddNodesEvaluate(std::vector<uint32_t>({root_node}), fpga_node_vector);
+std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]
+                                                ,uint32_t children_vector[TOTAL_CHILDREN]) {
+  return SerializePsddNodesEvaluate(std::vector<uint32_t>({root_node}), fpga_node_vector, children_vector);
 }
 
 
-std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
+std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]
+                                                ,uint32_t children_vector[TOTAL_CHILDREN]) {
   std::unordered_set<uintmax_t> node_explored;
   std::cout << "inside big serialize\n";
   std::vector<uint32_t> result;
@@ -323,10 +325,10 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
   while (explore_index != result.size()) {
     uint32_t cur_psdd_node_idx = result[explore_index];
     if (fpga_node_vector[cur_psdd_node_idx].node_type_ == 2) {
-       std::vector<uintmax_t> primes (std::begin(fpga_node_vector[cur_psdd_node_idx].primes_), std::end(fpga_node_vector[cur_psdd_node_idx].primes_));
-       std::vector<uintmax_t> subs (std::begin(fpga_node_vector[cur_psdd_node_idx].subs_), std::end(fpga_node_vector[cur_psdd_node_idx].subs_));
+        std::vector<uintmax_t> primes ((children_vector + fpga_node_vector[cur_psdd_node_idx].children_offset), (children_vector + (fpga_node_vector[cur_psdd_node_idx].children_offset + fpga_node_vector[cur_psdd_node_idx].children_size )));
+       std::vector<uintmax_t> subs ((children_vector + fpga_node_vector[cur_psdd_node_idx].children_offset + fpga_node_vector[cur_psdd_node_idx].children_size), (children_vector + fpga_node_vector[cur_psdd_node_idx].children_offset + fpga_node_vector[cur_psdd_node_idx].children_size * 2));
       for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size; i++ ) {
-        uint32_t cur_prime_idx = primes[i];
+        uint32_t cur_prime_idx = fpga_node_vector[primes[i]].node_index_;
         if (node_explored.find(fpga_node_vector[cur_prime_idx].node_index_) ==
             node_explored.end()) {
           node_explored.insert(fpga_node_vector[cur_prime_idx].node_index_);
@@ -334,7 +336,7 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
         }
       }
       for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size ; i++ ) {
-        uint32_t cur_sub_idx = subs[i];
+        uint32_t cur_sub_idx = fpga_node_vector[subs[i]].node_index_;
         if (node_explored.find(fpga_node_vector[cur_sub_idx].node_index_) == node_explored.end()) {
           node_explored.insert(fpga_node_vector[cur_sub_idx].node_index_);
           result.push_back(cur_sub_idx);
@@ -611,11 +613,13 @@ double convertToLinear(double log_num){
 double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,
-                     FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
+                     FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
+                     uint32_t children_vector[TOTAL_CHILDREN]) {
   std::unordered_map<uintmax_t, double> evaluation_cache;
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
     uintmax_t cur_node_idx = *node_it;
+    // std::cout << "cur_node_idx: " << cur_node_idx << std::endl;
     if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
         if ( instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_ > 0) ) {
@@ -646,8 +650,13 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
 
       double cur_prob = 0;
       for (size_t i = 0; i < element_size; ++i) {
-        uint32_t cur_prime_idx = fpga_node_vector[cur_node_idx].primes_[i];
-        uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
+        // uint32_t cur_prime_idx_ref = fpga_node_vector[cur_node_idx].primes_[i];
+        // uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
+        uint32_t cur_prime_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
+        uint32_t cur_sub_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
+        // std::cout << "(cur_prime_idx, cur_prime_idx_ref) == (" << cur_prime_idx << "," << cur_prime_idx_ref <<")\n";
+        // std::cout << "(cur_sub_idx, cur_sub_idx_ref) == (" << cur_sub_idx << "," << cur_sub_idx_ref <<")\n";
+
         double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] * evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_];
         tmp *= fpga_node_vector[cur_node_idx].parameters_[i];
 
@@ -673,70 +682,70 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
   return evaluation_cache[fpga_node_vector[serialized_nodes[0]].node_index_];
  }
 
- std::unordered_map<uintmax_t, double> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
-                      const std::bitset<MAX_VAR> &instantiation,
-                      std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,
-                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
-   std::unordered_map<uintmax_t, double> evaluation_cache;
-   for (auto node_it = serialized_nodes.rbegin();
-        node_it != serialized_nodes.rend(); ++node_it) {
-     uintmax_t cur_node_idx = *node_it;
-     if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
-       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
-         if ( instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_ > 0) ) {
-           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-               1;
-         } else {
-           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-               0;
-         }
-       } else {
-         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-             1;
-       }
-     } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
-       // PsddTopNode *cur_top = cur_node->psdd_top_node();
-       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
-         if (instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
-           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].true_parameter_;
-         } else {
-           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].false_parameter_;
-         }
-       } else {
-         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-             1;
-       }
-     } else {
-        uint32_t element_size = fpga_node_vector[cur_node_idx].children_size;
-
-       double cur_prob = 0;
-       for (size_t i = 0; i < element_size; ++i) {
-         uint32_t cur_prime_idx = fpga_node_vector[cur_node_idx].primes_[i];
-         uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
-         double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] * evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_];
-         tmp *= fpga_node_vector[cur_node_idx].parameters_[i];
-
-         if (cur_prob == 0) {
-           // if this is zero
-           cur_prob =  tmp;
-           continue;
-         } else if (tmp == 0) {
-           cur_prob = cur_prob;
-           continue;
-         } else {
-           if (cur_prob > tmp) {
-             cur_prob =  cur_prob * (tmp / cur_prob);
-           } else {
-             cur_prob = tmp *
-                                  (cur_prob / tmp);
-           }
-         }
-       }
-       evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = cur_prob;
-     }
-   }
-   return evaluation_cache;
-  }
+ // std::unordered_map<uintmax_t, double> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
+ //                      const std::bitset<MAX_VAR> &instantiation,
+ //                      std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,
+ //                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]) {
+ //   std::unordered_map<uintmax_t, double> evaluation_cache;
+ //   for (auto node_it = serialized_nodes.rbegin();
+ //        node_it != serialized_nodes.rend(); ++node_it) {
+ //     uintmax_t cur_node_idx = *node_it;
+ //     if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
+ //       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
+ //         if ( instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_ > 0) ) {
+ //           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+ //               1;
+ //         } else {
+ //           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+ //               0;
+ //         }
+ //       } else {
+ //         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+ //             1;
+ //       }
+ //     } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
+ //       // PsddTopNode *cur_top = cur_node->psdd_top_node();
+ //       if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
+ //         if (instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
+ //           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].true_parameter_;
+ //         } else {
+ //           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].false_parameter_;
+ //         }
+ //       } else {
+ //         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+ //             1;
+ //       }
+ //     } else {
+ //        uint32_t element_size = fpga_node_vector[cur_node_idx].children_size;
+ //
+ //       double cur_prob = 0;
+ //       for (size_t i = 0; i < element_size; ++i) {
+ //         uint32_t cur_prime_idx = fpga_node_vector[cur_node_idx].primes_[i];
+ //         uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
+ //         double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] * evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_];
+ //         tmp *= fpga_node_vector[cur_node_idx].parameters_[i];
+ //
+ //         if (cur_prob == 0) {
+ //           // if this is zero
+ //           cur_prob =  tmp;
+ //           continue;
+ //         } else if (tmp == 0) {
+ //           cur_prob = cur_prob;
+ //           continue;
+ //         } else {
+ //           if (cur_prob > tmp) {
+ //             cur_prob =  cur_prob * (tmp / cur_prob);
+ //           } else {
+ //             cur_prob = tmp *
+ //                                  (cur_prob / tmp);
+ //           }
+ //         }
+ //       }
+ //       evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = cur_prob;
+ //     }
+ //   }
+ //   return evaluation_cache;
+ //  }
 
 void WritePsddToFile(FPGAPsddNode *root_node, const char *output_filename) {
   auto serialized_psdds = SerializePsddNodes(root_node);

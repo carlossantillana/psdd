@@ -66,7 +66,7 @@ FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
   // std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
   //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>>
   //               *top_node_table() const;
-  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
+  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], uint32_t children_vector [TOTAL_CHILDREN]);
   std::vector<FPGAPsddNode *> SampleParametersForMultipleFPGAPsdds(
       RandomDoubleGenerator *generator,
       const std::vector<FPGAPsddNode *> &root_psdd_nodes, uintmax_t flag_index);

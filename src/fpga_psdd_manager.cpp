@@ -588,7 +588,7 @@ double convertToLinear(double log_num){
     return std::exp(log_num);
 }
 
-FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
+FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, uint32_t children_vector[TOTAL_CHILDREN], int & currentChild){
   FPGAPsddNodeStruct PsddStruct;
   PsddStruct.node_index_ = cur_node->node_index_;
   PsddStruct.user_data_ = cur_node->user_data_;
@@ -597,22 +597,21 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
   PsddStruct.hash_value_ = cur_node->hash_value_;
   PsddStruct.activation_flag_ = cur_node->activation_flag_;
   PsddStruct.children_size = cur_node->primes_.size();
+  PsddStruct.children_offset = currentChild;
   for (int i = 0; i < cur_node->primes_.size(); i++){
     uint32_t prime = cur_node->primes_[i]->node_index_;
-    PsddStruct.primes_[i] = prime;
+    children_vector[currentChild] = prime;
+    currentChild++;
   }
   for (int i = 0; i < cur_node->subs_.size(); i++){
     uint32_t sub = cur_node->subs_[i]->node_index_;
-    PsddStruct.subs_[i] = sub;
+    children_vector[currentChild] = sub;
+    currentChild++;
   }
   for (int i = 0; i < cur_node->parameters_.size(); i++){
     PsddParameter param = cur_node->parameters_[i];
     param.parameter_ = convertToLinear(param.parameter_);
     PsddStruct.parameters_[i] = param.parameter_;
-  }
-  for (int i = 0; i < cur_node->data_counts_.size(); i++){
-    uintmax_t data_count = cur_node->data_counts_[i];
-    PsddStruct.data_counts_[i] = data_count;
   }
   PsddStruct.variable_index_ = cur_node->variable_index_;
   PsddStruct.true_parameter_ = convertToLinear(cur_node->true_parameter_.parameter_);
@@ -623,9 +622,10 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node){
   return PsddStruct;
 }
 FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
-                                    uintmax_t flag_index, FPGAPsddNodeStruct  fpga_node_vector[PSDD_SIZE]) {
+                                    uintmax_t flag_index, FPGAPsddNodeStruct  fpga_node_vector[PSDD_SIZE], uint32_t children_vector[TOTAL_CHILDREN]) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
+  int currentChild = 0;
   psdd_file.open(psdd_filename);
   if (!psdd_file) {
     std::cerr << "File " << psdd_filename << " cannot be open.";
@@ -648,7 +648,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       int32_t literal;
       iss >> node_index >> vtree_index >> literal;
       FPGAPsddNode *cur_node = GetFPGAPsddLiteralNode(literal, flag_index);
-      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node);
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node, children_vector, currentChild);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     } else if (line[0] == 'T') {
@@ -663,7 +663,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       FPGAPsddNode *cur_node = GetFPGAPsddTopNode(
           variable_index, flag_index, PsddParameter::CreateFromLog(pos_log_pr),
           PsddParameter::CreateFromLog(neg_log_pr));
-      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node);
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node, children_vector, currentChild);
 
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
@@ -697,15 +697,23 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       }
       FPGAPsddNode *cur_node =
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
-      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node);
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node, children_vector, currentChild);
 
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     }
   }
+  double total = 0;
+  double max  = 0;
   for (auto i : children){
     std::cout << "num children: " << i.first << " times: " << i.second << std::endl;
+    if (i.first > max){
+      max = i.first;
+    }
+    total+= i.first + i.second;
   }
+  std::cout << "TOTAL_CHILDREN: " << currentChild << std::endl;
+  std::cout << "MAX_CHILDREN: " << max << std::endl;
   psdd_file.close();
   return root_node;
 }
