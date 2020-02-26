@@ -114,6 +114,15 @@ int main(int argc, const char *argv[]) {
   std::cout << "starting fpga evaluate ----------------------------------\n";
   std::array<uint32_t, PSDD_SIZE> fpga_serialized_psdd_;
   std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE, fpga_serialized_psdd_.begin());
+  std::cout << "size of var_mask: " << sizeof(var_mask) << " Bytes" << std::endl;
+  std::cout << "size of fpga_mpe_result.first: " << sizeof(fpga_mpe_result.first) << " Bytes" << std::endl;
+  std::cout << "size of fpga_serialized_psdd_: " << sizeof(fpga_serialized_psdd_) << " Bytes"<< std::endl;
+  std::cout << "size of fpga_node_vector: " << sizeof(fpga_node_vector) << " Bytes" << std::endl;
+  std::cout << "size of children_vector: " << sizeof(children_vector) << " Bytes" << std::endl;
+  std::cout << "size of parameter_vector: " << sizeof(parameter_vector) << " Bytes" << std::endl;
+  std::cout << "total size: " << sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) << " Bytes == "  << (sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector)) /1000000 << " MegaBytes" << std::endl;
+
+
   double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
     fpga_node_vector, children_vector, parameter_vector);
   std::cout << "finished fpga evaluate ------------------------\n";
