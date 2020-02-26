@@ -26,6 +26,7 @@ extern "C" {
 const uint32_t PSDD_SIZE = 580817;
 const uint32_t MAX_CHILDREN = 57;
 const uint32_t TOTAL_CHILDREN = 1541021;
+const uint32_t TOTAL_PARAM = 770511;
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
 class PsddLiteralNode;
@@ -172,7 +173,8 @@ struct FPGAPsddNodeStruct {
   bool activation_flag_;
   uintmax_t children_size;
   uint32_t children_offset;
-  double parameters_ [MAX_CHILDREN];
+  uint32_t parameter_offset;
+  // double parameters_ [MAX_CHILDREN];
   uint32_t variable_index_;
   double true_parameter_;
   double false_parameter_;
@@ -222,7 +224,8 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
                       std::array<uint32_t, PSDD_SIZE+1>  fpga_serialized_psdd_evaluate,
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                      uint32_t children_vector[TOTAL_CHILDREN]);
+                      uint32_t children_vector[TOTAL_CHILDREN],
+                      double parameter_vector [TOTAL_PARAM]);
 std::unordered_map<uintmax_t, double> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                    const std::bitset<MAX_VAR> &instantiation,
                    std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,

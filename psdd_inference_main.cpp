@@ -12,6 +12,7 @@ extern "C" {
 }
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
 uint32_t children_vector [TOTAL_CHILDREN];
+double parameter_vector [TOTAL_PARAM];
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -77,7 +78,8 @@ int main(int argc, const char *argv[]) {
   PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
   sdd_vtree_free(psdd_vtree);
   std::cout << "starting read psdd file\n";
-  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector, children_vector);
+  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
+     children_vector, parameter_vector);
   uint32_t correctPsddSize = 0;
   for (auto i : fpga_node_vector){
         correctPsddSize = i.node_index_ > correctPsddSize ? i.node_index_ : correctPsddSize;
@@ -112,7 +114,8 @@ int main(int argc, const char *argv[]) {
   std::cout << "starting fpga evaluate ----------------------------------\n";
   std::array<uint32_t, PSDD_SIZE+1> fpga_serialized_psdd_;
   std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE+1, fpga_serialized_psdd_.begin());
-  double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_, fpga_node_vector, children_vector);
+  double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
+    fpga_node_vector, children_vector, parameter_vector);
   std::cout << "finished fpga evaluate ------------------------\n";
 
   // auto evaluation_cache = psdd_node_util::EvaluateToCompare(var_mask, reference_mpe_result.first, reference_serialized_psdd);

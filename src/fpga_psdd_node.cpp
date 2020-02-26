@@ -614,7 +614,8 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                     uint32_t children_vector[TOTAL_CHILDREN]) {
+                     uint32_t children_vector[TOTAL_CHILDREN],
+                   double parameter_vector[TOTAL_PARAM]) {
   std::unordered_map<uintmax_t, double> evaluation_cache;
   for (auto node_it = serialized_nodes.rbegin();
        node_it != serialized_nodes.rend(); ++node_it) {
@@ -650,15 +651,12 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
 
       double cur_prob = 0;
       for (size_t i = 0; i < element_size; ++i) {
-        // uint32_t cur_prime_idx_ref = fpga_node_vector[cur_node_idx].primes_[i];
-        // uint32_t cur_sub_idx = fpga_node_vector[cur_node_idx].subs_[i];
         uint32_t cur_prime_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
         uint32_t cur_sub_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
-        // std::cout << "(cur_prime_idx, cur_prime_idx_ref) == (" << cur_prime_idx << "," << cur_prime_idx_ref <<")\n";
-        // std::cout << "(cur_sub_idx, cur_sub_idx_ref) == (" << cur_sub_idx << "," << cur_sub_idx_ref <<")\n";
-
         double tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] * evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_];
-        tmp *= fpga_node_vector[cur_node_idx].parameters_[i];
+        // tmp *= fpga_node_vector[cur_node_idx].parameters_[i];
+        tmp *= parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i];
+        // std::cout << "(param, reference_param): (" << parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i] << "," << fpga_node_vector[cur_node_idx].parameters_[i] << ")\n";
 
         if (cur_prob == 0) {
           // if this is zero
