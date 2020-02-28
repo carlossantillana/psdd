@@ -7,6 +7,8 @@
 #include <psdd/cnf.h>
 #include <psdd/optionparser.h>
 #include <psdd/fpga_psdd_node.h>
+#include <psdd/fpga_evaluate.h>
+
 extern "C" {
 #include <sdd/sddapi.h>
 }
@@ -123,7 +125,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "total size: " << sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) << " Bytes == "  << (sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector)) /1000000 << " MegaBytes" << std::endl;
 
 
-  double fpga_marginals = fpga_psdd_node_util::EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
+  double fpga_marginals = EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
     fpga_node_vector, children_vector, parameter_vector);
   std::cout << "finished fpga evaluate ------------------------\n";
 

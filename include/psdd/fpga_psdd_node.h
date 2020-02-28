@@ -226,16 +226,16 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      FPGAPsddNode *root_node);
 uint32_t get_variable_index(FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
-double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
-                      const std::bitset<MAX_VAR> &instantiation,
-                      std::array<uint32_t, PSDD_SIZE>  fpga_serialized_psdd_evaluate,
-                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                      uint32_t children_vector[TOTAL_CHILDREN],
-                      double parameter_vector [TOTAL_PARAM]);
-std::unordered_map<uintmax_t, double> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
-                   const std::bitset<MAX_VAR> &instantiation,
-                   std::array<uint32_t, PSDD_SIZE+1>  serialized_nodes,
-                   FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
+// double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
+//                       const std::bitset<MAX_VAR> &instantiation,
+//                       std::array<uint32_t, PSDD_SIZE>  fpga_serialized_psdd_evaluate,
+//                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
+//                       uint32_t children_vector[TOTAL_CHILDREN],
+//                       double parameter_vector [TOTAL_PARAM]);
+// std::unordered_map<uintmax_t, double> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
+//                    const std::bitset<MAX_VAR> &instantiation,
+//                    std::array<uint32_t, PSDD_SIZE>  serialized_nodes,
+//                    FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);

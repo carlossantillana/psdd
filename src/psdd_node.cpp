@@ -884,7 +884,7 @@ PsddDecisionNode::PsddDecisionNode(uintmax_t node_index, Vtree *vtree_node,
   }
   std::sort(
       indexes.begin(), indexes.end(),
-      [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; });
+      [](const std::pair<uintmax_t, uintmax_t> &lhs, const std::pair<uintmax_t, uintmax_t> &rhs) { return lhs.second < rhs.second; });
   auto partition_size = primes.size();
   assert(partition_size == subs.size());
   primes_.resize(partition_size, nullptr);
