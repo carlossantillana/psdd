@@ -1,4 +1,5 @@
 #include <psdd/fpga_psdd_node.h>
+#include <array>
 
 double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
@@ -51,7 +52,7 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
           cur_prob =  tmp;
           continue;
         } else if (tmp == 0) {
-          cur_prob = cur_prob;
+//          cur_prob = cur_prob;
           continue;
         } else {
           if (cur_prob > tmp) {
@@ -65,5 +66,6 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
       evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = cur_prob;
     }
   }
-  return evaluation_cache[fpga_node_vector[serialized_nodes[0]].node_index_];
+  return 0;
+  // return evaluation_cache[fpga_node_vector[serialized_nodes[0]].node_index_];
  }
