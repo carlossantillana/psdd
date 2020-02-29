@@ -74,7 +74,7 @@ int main(int argc, const char *argv[]) {
   }
   const char *psdd_filename = parse.nonOption(0);
   const char *vtree_filename = parse.nonOption(1);
-  std::cout << "starting read vtree\n";
+  std::cout << "starting read vtree : " << vtree_filename  << "\n";
   Vtree *psdd_vtree = sdd_vtree_read(vtree_filename);
   FPGAPsddManager *psdd_manager = FPGAPsddManager::GetFPGAPsddManagerFromVtree(psdd_vtree);
   PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
@@ -114,8 +114,11 @@ int main(int argc, const char *argv[]) {
   std::cout << "finished reference evaluate--------------------------------------------------\n";
 
   std::cout << "starting fpga evaluate ----------------------------------\n";
-  std::array<uint32_t, PSDD_SIZE> fpga_serialized_psdd_;
-  std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE, fpga_serialized_psdd_.begin());
+  uint32_t fpga_serialized_psdd_ [PSDD_SIZE];
+  // std::copy(fpga_serialized_psdd_evaluate.begin(), fpga_serialized_psdd_evaluate.begin() + PSDD_SIZE, fpga_serialized_psdd_);
+  for (int i = 0; i < PSDD_SIZE; i++){
+    fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
+  }
   std::cout << "size of var_mask: " << sizeof(var_mask) << " Bytes" << std::endl;
   std::cout << "size of fpga_mpe_result.first: " << sizeof(fpga_mpe_result.first) << " Bytes" << std::endl;
   std::cout << "size of fpga_serialized_psdd_: " << sizeof(fpga_serialized_psdd_) << " Bytes"<< std::endl;
