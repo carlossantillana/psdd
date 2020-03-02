@@ -14,7 +14,7 @@ extern "C" {
 }
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
 uint32_t children_vector [TOTAL_CHILDREN];
-double parameter_vector [TOTAL_PARAM];
+float parameter_vector [TOTAL_PARAM];
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {

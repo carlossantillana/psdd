@@ -172,20 +172,17 @@ public:
   uintmax_t false_data_count_;
 };
 struct FPGAPsddNodeStruct {
-  uintmax_t node_index_;
-  uintmax_t user_data_;
-  uintmax_t flag_index_;
-  int node_type_;
+  uint32_t node_index_;
+  uint32_t user_data_;
+  uint8_t node_type_;
   std::size_t hash_value_;
   bool activation_flag_;
   uintmax_t children_size;
   uint32_t children_offset;
   uint32_t parameter_offset;
   uint32_t variable_index_;
-  double true_parameter_;
-  double false_parameter_;
-  uintmax_t true_data_count_;
-  uintmax_t false_data_count_;
+  float true_parameter_;
+  float false_parameter_;
   int32_t literal_;
 } ;
 namespace fpga_vtree_util {
