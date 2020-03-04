@@ -581,12 +581,6 @@ FPGAPsddManager::Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2, uintmax_t flag
   return MultiplyWithCache(arg1, arg2, this, flag_index, &cache);
 }
 
-double convertToLinear(double log_num){
-  if (log_num == -std::numeric_limits<double>::infinity())
-    return 0;
-  else
-    return std::exp(log_num);
-}
 
 FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, uint32_t children_vector[TOTAL_CHILDREN],
   int & currentChild, float parameter_vector [TOTAL_PARAM], int & currentParam){
@@ -611,13 +605,13 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, uint32_t childre
   }
   for (int i = 0; i < cur_node->parameters_.size(); i++){
     PsddParameter param = cur_node->parameters_[i];
-    param.parameter_ = convertToLinear(param.parameter_);
+    param.parameter_ = (param.parameter_);
     parameter_vector[currentParam] = param.parameter_;
     currentParam++;
   }
   PsddStruct.variable_index_ = cur_node->variable_index_;
-  PsddStruct.true_parameter_ = convertToLinear(cur_node->true_parameter_.parameter_);
-  PsddStruct.false_parameter_ = convertToLinear(cur_node->false_parameter_.parameter_);
+  PsddStruct.true_parameter_ = (cur_node->true_parameter_.parameter_);
+  PsddStruct.false_parameter_ = (cur_node->false_parameter_.parameter_);
   PsddStruct.literal_ = cur_node->literal_;
   return PsddStruct;
 }

@@ -135,23 +135,26 @@ int main(int argc, const char *argv[]) {
   auto evaluation_cache_fpga = fpga_psdd_node_util::EvaluateToCompare(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
     fpga_node_vector, children_vector, parameter_vector);
   // Check difference layer by layer
-  double difference = 0;
+  float difference = 0;
   for (int i =0; i < PSDD_SIZE; i++){
-    double tmpDiff = 0;
-    if (evaluation_cache.at(i).parameter_ != -std::numeric_limits<double>::infinity()){
-      tmpDiff = std::abs(evaluation_cache.at(i).parameter_ - log(evaluation_cache_fpga[i]));
+    float tmpDiff = 0;
+    if (evaluation_cache.at(i).parameter_ != -std::numeric_limits<float>::infinity()) {
+      tmpDiff = std::pow((evaluation_cache_fpga[i] - evaluation_cache.at(i).parameter_),2);
     }
      // std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga[i]) << " difference: " << tmpDiff << std::endl;
-    if (tmpDiff > .000001){
-      std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .000001 SOMETHING BAD HAPPENED\n";
+    if (tmpDiff > .1){
+      std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED\n";
     }
-    difference -= tmpDiff;
+    difference += tmpDiff;
   }
-  std::cout << "total difference: " << difference << std::endl;
+  std::cout << "RMSE: " << sqrt(difference/PSDD_SIZE) << std::endl;
+  std::cout << "RMSE over output: " <<  abs(sqrt(difference/PSDD_SIZE) / reference_marginals.parameter()) << std::endl;
 
-  printf("fpga marginal %.17e, transformed back to log scale: %.17e\n", fpga_marginals, log(fpga_marginals));
+  // printf("fpga marginal %.17e, transformed back to log scale: %.17e\n", fpga_marginals, log(fpga_marginals));
+  printf("fpga marginal %.17e,", fpga_marginals);
+
   printf("reference  marginal %.17e\n", reference_marginals.parameter());
-  printf("approximate error between outputs: %.17e\n",  reference_marginals.parameter() - log(fpga_marginals));
+  printf("approximate error between outputs: %.17e\n",  reference_marginals.parameter() - fpga_marginals);
   // for (auto i = 0; i < 100; ++i){
   //     std::cout << "starting fpga evaluate\n";
   //     fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
