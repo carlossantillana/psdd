@@ -50,88 +50,60 @@ const int ParamBurstLength = 78;
    }
  }
 
-double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
-                     const std::bitset<MAX_VAR> &instantiation,
-                     uint32_t  serialized_nodes [PSDD_SIZE],
-                     FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                     uint32_t children_vector[TOTAL_CHILDREN],
-                     float parameter_vector[TOTAL_PARAM]) {
-  double evaluation_cache [PSDD_SIZE];
-   uint32_t local_serialized_nodes [PsddBurstLength];
-   LoadInts(serialized_nodes, local_serialized_nodes, PsddBurstLength);
-   FPGAPsddNodeStruct local_fpga_node_vector[PsddBurstLength];
-   LoadStructs(fpga_node_vector,local_fpga_node_vector, PsddBurstLength);
-   uint32_t local_children_vector[ChildrenBurstLength];
-   LoadInts(children_vector, local_children_vector, ChildrenBurstLength);
-   float local_parameter_vector[ParamBurstLength];
-   LoadFloats(parameter_vector, local_parameter_vector, ParamBurstLength);
-
-   const int kMinTripCount = 0;
-   const int kMaxTripCount = kMinTripCount + PSDD_SIZE /PsddBurstLength;
+ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
+                      const std::bitset<MAX_VAR> &instantiation,
+                      uint32_t  serialized_nodes [PSDD_SIZE],
+                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
+                      uint32_t children_vector[TOTAL_CHILDREN],
+                      float parameter_vector[TOTAL_PARAM]) {
+  float evaluation_cache [PSDD_SIZE];
+  for(int j = PSDD_SIZE -1; j >= 0; j--){
+ #pragma HLS pipeline
+    uintmax_t cur_node_idx = serialized_nodes[j];
+    if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
+     if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
+       if ( instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_ > 0) ) {
+         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+             1;
+       } else {
+         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+             0;
+       }
+     } else {
+       evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+           1;
+     }
+   } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
+     if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
+       if (instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
+         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].true_parameter_;
+       } else {
+         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].false_parameter_;
+       }
+     } else {
+       evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+           1;
+     }
+   }
+ }
 
   for(int j = PSDD_SIZE -1; j >= 0; j--){
-#pragma HLS pipeline
-	  #pragma HLS LOOP_TRIPCOUNT min=PSDD_SIZE max=PSDD_SIZE
+  //#pragma HLS pipeline
+    uintmax_t cur_node_idx = serialized_nodes[j];
+    if (fpga_node_vector[cur_node_idx].node_type_ == DECISION_NODE_TYPE){
+    uint32_t element_size = fpga_node_vector[cur_node_idx].children_size;
+    float max_prob = 0;
 
-    uintmax_t cur_node_idx = local_serialized_nodes[j];
-     if (local_fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
-      if (variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-        if ( instantiation[local_fpga_node_vector[cur_node_idx].variable_index_] == (local_fpga_node_vector[cur_node_idx].literal_ > 0) ) {
-          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] =
-              1;
-        } else {
-          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] =
-              0;
-        }
-      } else {
-        evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] =
-            1;
-      }
-    } else if (local_fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
-      if (variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-        if (instantiation[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_fpga_node_vector[cur_node_idx].true_parameter_;
-        } else {
-          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_fpga_node_vector[cur_node_idx].false_parameter_;
-        }
-      } else {
-        evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] =
-            1;
-      }
-    } else {
-      uint32_t element_size = local_fpga_node_vector[cur_node_idx].children_size;
-      double cur_prob = 0;
-
-      assert(element_size <= MAX_CHILDREN);
+    assert(element_size <= MAX_CHILDREN);
       for (size_t i = 0; i < element_size; ++i) {
-#pragma HLS dependence variable=cur_prob inter false
-#pragma HLS LOOP_TRIPCOUNT min=0 max=MAX_CHILDREN
-#pragma HLS unroll factor=8
-
-        uint32_t cur_prime_idx = local_fpga_node_vector[local_children_vector[local_fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
-        uint32_t cur_sub_idx = local_fpga_node_vector[local_children_vector[local_fpga_node_vector[cur_node_idx].children_offset + local_fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
-        double tmp = evaluation_cache[local_fpga_node_vector[cur_prime_idx].node_index_] * evaluation_cache[local_fpga_node_vector[cur_sub_idx].node_index_] *  local_parameter_vector[local_fpga_node_vector[cur_node_idx].parameter_offset + i];
-#pragma HLS dependence variable=tmp inter false
-
-//        tmp *= local_parameter_vector[local_fpga_node_vector[cur_node_idx].parameter_offset + i];
-
-        if (cur_prob == 0) {
-          // if this is zero
-          cur_prob =  tmp;
-          continue;
-        } else if (tmp == 0) {
-//          cur_prob = cur_prob;
-          continue;
-        } else {
-          if (cur_prob > tmp) {
-            cur_prob =  cur_prob * (tmp / cur_prob);
-          } else {
-            cur_prob = tmp * (cur_prob / tmp);
-          }
-        }
+        #pragma HLS pipeline
+        uint32_t cur_prime_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
+        uint32_t cur_sub_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
+        float tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] * evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] *  parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i];
+        max_prob = (max_prob == 0 || max_prob < tmp) ? tmp : max_prob;
       }
-      evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = cur_prob;
+       evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = max_prob;
     }
   }
-  return evaluation_cache[local_fpga_node_vector[serialized_nodes[0]].node_index_];
- }
+  return evaluation_cache[fpga_node_vector[serialized_nodes[0]].node_index_];
+}
