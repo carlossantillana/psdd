@@ -586,10 +586,7 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, uint32_t childre
   int & currentChild, float parameter_vector [TOTAL_PARAM], int & currentParam){
   FPGAPsddNodeStruct PsddStruct;
   PsddStruct.node_index_ = cur_node->node_index_;
-  PsddStruct.user_data_ = cur_node->user_data_;
   PsddStruct.node_type_ = cur_node->node_type_;
-  PsddStruct.hash_value_ = cur_node->hash_value_;
-  PsddStruct.activation_flag_ = cur_node->activation_flag_;
   PsddStruct.children_size = cur_node->primes_.size();
   PsddStruct.children_offset = currentChild;
   PsddStruct.parameter_offset = currentParam;

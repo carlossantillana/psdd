@@ -24,15 +24,15 @@ extern "C" {
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
 //For map_network network
-// const uint32_t PSDD_SIZE = 580817;
-// const uint32_t MAX_CHILDREN = 57;
-// const uint32_t TOTAL_CHILDREN = 1541021;
-// const uint32_t TOTAL_PARAM = 770511;
+ const uint32_t PSDD_SIZE = 580817;
+ const uint32_t MAX_CHILDREN = 57;
+ const uint32_t TOTAL_CHILDREN = 1541021;
+ const uint32_t TOTAL_PARAM = 770511;
 //For grids network
-const uint32_t PSDD_SIZE = 51;
-const uint32_t MAX_CHILDREN = 2;
-const uint32_t TOTAL_CHILDREN = 156;
-const uint32_t TOTAL_PARAM = 78;
+//const uint32_t PSDD_SIZE = 51;
+//const uint32_t MAX_CHILDREN = 2;
+//const uint32_t TOTAL_CHILDREN = 156;
+//const uint32_t TOTAL_PARAM = 78;
 
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
@@ -173,17 +173,14 @@ public:
 };
 struct FPGAPsddNodeStruct {
   uint32_t node_index_;
-  uint32_t user_data_;
-  uint8_t node_type_;
-  std::size_t hash_value_;
-  bool activation_flag_;
-  uintmax_t children_size;
+  char node_type_;
+  short children_size;
   uint32_t children_offset;
   uint32_t parameter_offset;
-  uint32_t variable_index_;
+  short variable_index_;
   float true_parameter_;
   float false_parameter_;
-  int32_t literal_;
+  short literal_;
 } ;
 namespace fpga_vtree_util {
 std::vector<Vtree *> SerializeVtree(Vtree *root);
