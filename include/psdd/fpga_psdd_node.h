@@ -19,6 +19,8 @@ extern "C" {
 #include <psdd/psdd_node.h>
 #include <psdd/random_double_generator.h>
 #include <unordered_set>
+#include "ap_int.h"
+
 
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
@@ -172,11 +174,11 @@ public:
   uintmax_t false_data_count_;
 };
 struct FPGAPsddNodeStruct {
-  uint32_t node_index_;
+  ap_uint<20> node_index_;
   char node_type_;
   short children_size;
-  uint32_t children_offset;
-  uint32_t parameter_offset;
+  ap_uint<21> children_offset;
+  ap_uint<20> parameter_offset;
   short variable_index_;
   float true_parameter_;
   float false_parameter_;
@@ -201,9 +203,9 @@ std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]
-                              ,uint32_t children_vector[TOTAL_CHILDREN]);
+                              ,ap_uint<21> children_vector[TOTAL_CHILDREN]);
 std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes,
-          FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], uint32_t children_vector[TOTAL_CHILDREN]);
+          FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], ap_uint<21> children_vector[TOTAL_CHILDREN]);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,
@@ -223,9 +225,9 @@ uint32_t get_variable_index(FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 
 float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
-                      uint32_t  serialized_nodes [PSDD_SIZE],
+                      ap_uint<20>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                      uint32_t children_vector[TOTAL_CHILDREN],
+                      ap_uint<20> children_vector[TOTAL_CHILDREN],
                       float parameter_vector[TOTAL_PARAM]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,

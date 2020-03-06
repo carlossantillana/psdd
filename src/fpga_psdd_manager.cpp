@@ -582,7 +582,7 @@ FPGAPsddManager::Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2, uintmax_t flag
 }
 
 
-FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, uint32_t children_vector[TOTAL_CHILDREN],
+FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, ap_uint<21> children_vector[TOTAL_CHILDREN],
   int & currentChild, float parameter_vector [TOTAL_PARAM], int & currentParam){
   FPGAPsddNodeStruct PsddStruct;
   PsddStruct.node_index_ = cur_node->node_index_;
@@ -614,7 +614,7 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, uint32_t childre
 }
 FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
                                     uintmax_t flag_index, FPGAPsddNodeStruct  fpga_node_vector[PSDD_SIZE],
-                                    uint32_t children_vector[TOTAL_CHILDREN],
+                                    ap_uint<21> children_vector[TOTAL_CHILDREN],
                                   float parameter_vector [TOTAL_PARAM]) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;

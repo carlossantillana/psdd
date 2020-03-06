@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_EXE_LINKER_FLAGS "-no-pie")
 include_directories(include)
+include_directories("/opt/Xilinx/Vivado/2018.3.op2405991/include/")
 
 if(APPLE)
   link_directories(lib/darwin)
@@ -12,7 +13,7 @@ endif(APPLE)
 
 if(UNIX AND NOT APPLE)
   link_directories(lib/linux)
-endif(UNIX AND NOT APPLE)  
+endif(UNIX AND NOT APPLE)
 
 set(gtest_main "libgtest_main.a")
 set(gtest "libgtest.a")

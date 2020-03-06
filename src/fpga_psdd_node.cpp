@@ -299,13 +299,13 @@ SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
 }
 
 std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]
-                                                ,uint32_t children_vector[TOTAL_CHILDREN]) {
+                                                ,ap_uint<21> children_vector[TOTAL_CHILDREN]) {
   return SerializePsddNodesEvaluate(std::vector<uint32_t>({root_node}), fpga_node_vector, children_vector);
 }
 
 
 std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]
-                                                ,uint32_t children_vector[TOTAL_CHILDREN]) {
+                                                ,ap_uint<21> children_vector[TOTAL_CHILDREN]) {
   std::unordered_set<uintmax_t> node_explored;
   std::cout << "inside big serialize\n";
   std::vector<uint32_t> result;
@@ -603,9 +603,9 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 
 float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
-                     uint32_t  serialized_nodes [PSDD_SIZE],
+                     ap_uint<20>  serialized_nodes [PSDD_SIZE],
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                     uint32_t children_vector[TOTAL_CHILDREN],
+                     ap_uint<21> children_vector[TOTAL_CHILDREN],
                      float parameter_vector[TOTAL_PARAM]) {
  static float evaluation_cache [PSDD_SIZE];
  for(int j = PSDD_SIZE -1; j >= 0; j--){

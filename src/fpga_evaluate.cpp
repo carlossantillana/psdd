@@ -1,7 +1,7 @@
 #include <psdd/fpga_psdd_node.h>
 #include <iostream>
 #include <assert.h>
-
+#include "ap_int.h"
 //For Small
 //const int PsddBurstLength = 51;
 //const int ChildrenBurstLength = 156;
@@ -11,7 +11,22 @@
  const int ChildrenBurstLength = 1541021;
  const int ParamBurstLength = 770511;
 
- void loadInts(const uint32_t* data_dram, uint32_t* data_local, int burstLength){
+ // void loadInts(const uint32_t* data_dram, uint32_t* data_local, int burstLength){
+ //   #pragma HLS inline off
+ //   loadInts: for (int i = 0; i < burstLength; i++){
+ //   #pragma HLS pipeline
+ //     data_local[i] = data_dram[i];
+ //   }
+ // }
+
+ void load20Bit(const ap_uint<20>* data_dram, ap_uint<20>* data_local, int burstLength){
+   #pragma HLS inline off
+   loadInts: for (int i = 0; i < burstLength; i++){
+   #pragma HLS pipeline
+     data_local[i] = data_dram[i];
+   }
+ }
+ void load21Bit(const ap_uint<21>* data_dram, ap_uint<21>* data_local, int burstLength){
    #pragma HLS inline off
    loadInts: for (int i = 0; i < burstLength; i++){
    #pragma HLS pipeline
@@ -52,22 +67,22 @@
 
  double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
-                      uint32_t  serialized_nodes [PSDD_SIZE],
+                      ap_uint<20>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                      uint32_t children_vector[TOTAL_CHILDREN],
+                      ap_uint<21> children_vector[TOTAL_CHILDREN],
                       float parameter_vector[TOTAL_PARAM]) {
   float evaluation_cache [PSDD_SIZE];
   const std::bitset<MAX_VAR> local_variables = variables;
   const std::bitset<MAX_VAR> local_instantiation = instantiation;
-  uint32_t  local_serialized_nodes [PSDD_SIZE];
-  loadInts(serialized_nodes, local_serialized_nodes, PsddBurstLength);
+  ap_uint<20> local_serialized_nodes [PSDD_SIZE];
+  load20Bit(serialized_nodes, local_serialized_nodes, PsddBurstLength);
   FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
   loadStructs(fpga_node_vector, local_fpga_node_vector, PsddBurstLength);
-  uint32_t local_children_vector[TOTAL_CHILDREN];
-  loadInts(children_vector, local_children_vector, ChildrenBurstLength);
+  ap_uint<21> local_children_vector[TOTAL_CHILDREN];
+  load21Bit(children_vector, local_children_vector, ChildrenBurstLength);
   float local_parameter_vector[TOTAL_PARAM];
   loadFloats(parameter_vector, local_parameter_vector, ParamBurstLength);
-#pragma HLS RESOURCE variable=evaluation_cache core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_fpga_node_vector core=XPM_MEMORY uram
   for(int j = PSDD_SIZE -1; j >= 0; j--){
  #pragma HLS pipeline
     uintmax_t cur_node_idx = local_serialized_nodes[j];

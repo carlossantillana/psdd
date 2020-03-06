@@ -13,7 +13,7 @@ extern "C" {
 #include <sdd/sddapi.h>
 }
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
-uint32_t children_vector [TOTAL_CHILDREN];
+ap_uint<21> children_vector [TOTAL_CHILDREN];
 float parameter_vector [TOTAL_PARAM];
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
@@ -82,7 +82,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "starting read psdd file\n";
   FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
      children_vector, parameter_vector);
-  uint32_t correctPsddSize = 0;
+  ap_uint<20> correctPsddSize = 0;
   for (auto i : fpga_node_vector){
         correctPsddSize = i.node_index_ > correctPsddSize ? i.node_index_ : correctPsddSize;
   }
@@ -114,7 +114,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "finished reference evaluate--------------------------------------------------\n";
 
   std::cout << "starting fpga evaluate ----------------------------------\n";
-  uint32_t fpga_serialized_psdd_ [PSDD_SIZE];
+  ap_uint<20> fpga_serialized_psdd_ [PSDD_SIZE];
   for (int i = 0; i < PSDD_SIZE; i++){
     fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
   }
