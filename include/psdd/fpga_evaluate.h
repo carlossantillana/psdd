@@ -7,5 +7,5 @@ double EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
                       ap_uint<20> fpga_serialized_psdd_evaluate [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       ap_uint<21> children_vector[TOTAL_CHILDREN],
-                      float parameter_vector [TOTAL_PARAM]);
+                      ap_fixed<23,7,AP_RND > parameter_vector [TOTAL_PARAM]);
 #endif // FPGA_STRUCTURED_BAYESIAN_NETWORK_EVALUATE_H

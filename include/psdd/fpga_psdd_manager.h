@@ -45,29 +45,13 @@ FPGAPsddNode *GetFPGAPsddLiteralNode(int32_t literal, uintmax_t flag_index);
 
 FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
                               FPGAPsddNode *target_psdd_node, uintmax_t flag_index);
-  // input psdd may or may not from the same manager, but it has to conform a
-  // consistent vtree.
   FPGAPsddNode *LoadFPGAPsddNode(Vtree *target_vtree, FPGAPsddNode *root_psdd_node,
                          uintmax_t flag_index);
-  // arguments assumed to conformed to the same vtree as the one used by this
-  // manager.
   std::pair<FPGAPsddNode *, PsddParameter> Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2,
                                                 uintmax_t flag_index);
   Vtree *vtree() const;
-  // std::unordered_map<
-  //     SddLiteral, std::unordered_set<FPGAPsddNode *, FPGAUniqueTableFunctional,
-  //                                    FPGAUniqueTableFunctional>>
-  //               *decision_node_table() const;
-
-  // std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
-  //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>>
-  //               *literal_node_table() const;
-
-  // std::unordered_map< SddLiteral, std::unordered_set<FPGAPsddNode *,
-  //               FPGAUniqueTableFunctional, FPGAUniqueTableFunctional>>
-  //               *top_node_table() const;
   FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-    ap_uint<21> children_vector [TOTAL_CHILDREN], float parameter_vector [TOTAL_PARAM]);
+    ap_uint<21> children_vector [TOTAL_CHILDREN], ap_fixed<23,7,AP_RND > parameter_vector [TOTAL_PARAM]);
   std::vector<FPGAPsddNode *> SampleParametersForMultipleFPGAPsdds(
       RandomDoubleGenerator *generator,
       const std::vector<FPGAPsddNode *> &root_psdd_nodes, uintmax_t flag_index);
@@ -92,19 +76,7 @@ FPGAPsddNode *
   FPGAPsddUniqueTable *fpga_unique_table_;
   uintmax_t node_index_;
   std::unordered_map<uint32_t, Vtree *>
-      leaf_vtree_map_; // keys are variable index
-  // std::unordered_map<
-  //     SddLiteral, std::unordered_set<FPGAPsddNode *, FPGAUniqueTableFunctional,
-  //                                    FPGAUniqueTableFunctional>>
-  //     *decision_node_table_;
-  // std::unordered_map<
-  //     SddLiteral, std::unordered_set<FPGAPsddNode *, FPGAUniqueTableFunctional,
-  //                                    FPGAUniqueTableFunctional>>
-  //     *literal_node_table_;
-  // std::unordered_map<SddLiteral,
-  //                    std::unordered_set<FPGAPsddNode *, FPGAUniqueTableFunctional,
-  //                                       FPGAUniqueTableFunctional>>
-  //     *top_node_table_;
+      leaf_vtree_map_;
 };
 
 #endif // PSDD_PSDD_MANAGER_H

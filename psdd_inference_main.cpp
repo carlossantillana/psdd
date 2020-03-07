@@ -14,7 +14,7 @@ extern "C" {
 }
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
 ap_uint<21> children_vector [TOTAL_CHILDREN];
-float parameter_vector [TOTAL_PARAM];
+ap_fixed<23,7,AP_RND > parameter_vector [TOTAL_PARAM];
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -143,7 +143,7 @@ int main(int argc, const char *argv[]) {
     }
      // std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga[i]) << " difference: " << tmpDiff << std::endl;
     if (tmpDiff > .1){
-      std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED\n";
+      std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED \n";
     }
     difference += tmpDiff;
   }

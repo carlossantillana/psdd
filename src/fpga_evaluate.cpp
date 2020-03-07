@@ -42,7 +42,7 @@
    }
  }
 
- void loadFloats(const float* data_dram, float* data_local, int burstLength){
+ void loadFloats(const ap_fixed<23,7,AP_RND >* data_dram, ap_fixed<23,7,AP_RND >* data_local, int burstLength){
    #pragma HLS inline off
    loadFloat: for (int i = 0; i < burstLength; i++){
    #pragma HLS pipeline
@@ -70,7 +70,7 @@
                       ap_uint<20>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       ap_uint<21> children_vector[TOTAL_CHILDREN],
-                      float parameter_vector[TOTAL_PARAM]) {
+                      ap_fixed<23,7,AP_RND > parameter_vector[TOTAL_PARAM]) {
   float evaluation_cache [PSDD_SIZE];
   const std::bitset<MAX_VAR> local_variables = variables;
   const std::bitset<MAX_VAR> local_instantiation = instantiation;
@@ -80,7 +80,7 @@
   loadStructs(fpga_node_vector, local_fpga_node_vector, PsddBurstLength);
   ap_uint<21> local_children_vector[TOTAL_CHILDREN];
   load21Bit(children_vector, local_children_vector, ChildrenBurstLength);
-  float local_parameter_vector[TOTAL_PARAM];
+  ap_fixed<23,7,AP_RND > local_parameter_vector[TOTAL_PARAM];
   loadFloats(parameter_vector, local_parameter_vector, ParamBurstLength);
 #pragma HLS RESOURCE variable=local_fpga_node_vector core=XPM_MEMORY uram
   for(int j = PSDD_SIZE -1; j >= 0; j--){
@@ -122,7 +122,7 @@
         #pragma HLS pipeline
         uint32_t cur_prime_idx = local_fpga_node_vector[local_children_vector[local_fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
         uint32_t cur_sub_idx = local_fpga_node_vector[children_vector[local_fpga_node_vector[cur_node_idx].children_offset + local_fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
-        float tmp = evaluation_cache[local_fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[local_fpga_node_vector[cur_sub_idx].node_index_] +  (local_parameter_vector[local_fpga_node_vector[cur_node_idx].parameter_offset + i]);
+        float tmp = evaluation_cache[local_fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[local_fpga_node_vector[cur_sub_idx].node_index_] +  float (local_parameter_vector[local_fpga_node_vector[cur_node_idx].parameter_offset + i]);
         max_prob = (max_prob == -std::numeric_limits<float>::infinity() || max_prob < tmp) ? tmp : max_prob;
       }
        evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = max_prob;

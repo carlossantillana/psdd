@@ -581,9 +581,11 @@ FPGAPsddManager::Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2, uintmax_t flag
   return MultiplyWithCache(arg1, arg2, this, flag_index, &cache);
 }
 
+float maxParameter = -4000;
+float minParameter = 20;
 
 FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, ap_uint<21> children_vector[TOTAL_CHILDREN],
-  int & currentChild, float parameter_vector [TOTAL_PARAM], int & currentParam){
+  int & currentChild, ap_fixed<23,7,AP_RND > parameter_vector [TOTAL_PARAM], int & currentParam){
   FPGAPsddNodeStruct PsddStruct;
   PsddStruct.node_index_ = cur_node->node_index_;
   PsddStruct.node_type_ = cur_node->node_type_;
@@ -602,7 +604,10 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, ap_uint<21> chil
   }
   for (int i = 0; i < cur_node->parameters_.size(); i++){
     PsddParameter param = cur_node->parameters_[i];
-    param.parameter_ = (param.parameter_);
+    if (param.parameter_ > maxParameter)
+      maxParameter = param.parameter_;
+    if (param.parameter_ < minParameter)
+      minParameter = param.parameter_;
     parameter_vector[currentParam] = param.parameter_;
     currentParam++;
   }
@@ -615,7 +620,7 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, ap_uint<21> chil
 FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
                                     uintmax_t flag_index, FPGAPsddNodeStruct  fpga_node_vector[PSDD_SIZE],
                                     ap_uint<21> children_vector[TOTAL_CHILDREN],
-                                  float parameter_vector [TOTAL_PARAM]) {
+                                  ap_fixed<23,7,AP_RND > parameter_vector [TOTAL_PARAM]) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
   int currentChild = 0;
@@ -711,6 +716,8 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
   }
   std::cout << "TOTAL_CHILDREN: " << currentChild << std::endl;
   std::cout << "TOTAL_PARAM: " << currentParam << std::endl;
+std::cout << "max parameter: " << maxParameter << std::endl;
+std::cout << "min parameter: " << minParameter << std::endl;
 
   std::cout << "MAX_CHILDREN: " << max << std::endl;
   psdd_file.close();

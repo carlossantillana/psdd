@@ -20,7 +20,7 @@ extern "C" {
 #include <psdd/random_double_generator.h>
 #include <unordered_set>
 #include "ap_int.h"
-
+#include <ap_fixed.h>
 
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
@@ -30,6 +30,10 @@ extern "C" {
  const uint32_t MAX_CHILDREN = 57;
  const uint32_t TOTAL_CHILDREN = 1541021;
  const uint32_t TOTAL_PARAM = 770511;
+ const uint32_t NUM_LIT = 6714;
+ const uint32_t NUM_TOP = 396;
+ const uint32_t NUM_DESC = 573707;
+
 //For grids network
 //const uint32_t PSDD_SIZE = 51;
 //const uint32_t MAX_CHILDREN = 2;
@@ -180,8 +184,8 @@ struct FPGAPsddNodeStruct {
   ap_uint<21> children_offset;
   ap_uint<20> parameter_offset;
   short variable_index_;
-  float true_parameter_;
-  float false_parameter_;
+  ap_fixed<23,7,AP_RND > true_parameter_;
+  ap_fixed<23,7,AP_RND > false_parameter_;
   short literal_;
 } ;
 namespace fpga_vtree_util {
@@ -227,8 +231,8 @@ float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
                       ap_uint<20>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                      ap_uint<20> children_vector[TOTAL_CHILDREN],
-                      float parameter_vector[TOTAL_PARAM]);
+                      ap_uint<21> children_vector[TOTAL_CHILDREN],
+                      ap_fixed<23,7,AP_RND > parameter_vector[TOTAL_PARAM]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);

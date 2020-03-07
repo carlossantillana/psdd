@@ -606,7 +606,7 @@ float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                      ap_uint<20>  serialized_nodes [PSDD_SIZE],
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                      ap_uint<21> children_vector[TOTAL_CHILDREN],
-                     float parameter_vector[TOTAL_PARAM]) {
+                     ap_fixed<23,7,AP_RND > parameter_vector[TOTAL_PARAM]) {
  static float evaluation_cache [PSDD_SIZE];
  for(int j = PSDD_SIZE -1; j >= 0; j--){
 #pragma HLS pipeline
@@ -650,7 +650,7 @@ float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
        #pragma HLS pipeline
        uint32_t cur_prime_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
        uint32_t cur_sub_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
-       float tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] +  (parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i]);
+       float tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] +  float (parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i]);
        max_prob = (max_prob == -std::numeric_limits<float>::infinity() || max_prob < tmp) ? tmp : max_prob;
      }
       evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = max_prob;
