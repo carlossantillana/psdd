@@ -51,7 +51,8 @@ FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
                                                 uintmax_t flag_index);
   Vtree *vtree() const;
   FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-    ap_uint<21> children_vector [TOTAL_CHILDREN], ap_fixed<23,7,AP_RND > parameter_vector [TOTAL_PARAM]);
+    ap_uint<21> children_vector [TOTAL_CHILDREN], ap_fixed<18,7,AP_RND > parameter_vector [TOTAL_PARAM],
+    ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]);
   std::vector<FPGAPsddNode *> SampleParametersForMultipleFPGAPsdds(
       RandomDoubleGenerator *generator,
       const std::vector<FPGAPsddNode *> &root_psdd_nodes, uintmax_t flag_index);

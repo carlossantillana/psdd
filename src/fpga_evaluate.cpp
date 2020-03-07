@@ -42,7 +42,14 @@
    }
  }
 
- void loadFloats(const ap_fixed<23,7,AP_RND >* data_dram, ap_fixed<23,7,AP_RND >* data_local, int burstLength){
+ void loadFloats(const ap_fixed<18,7,AP_RND >* data_dram, ap_fixed<18,7,AP_RND >* data_local, int burstLength){
+   #pragma HLS inline off
+   loadFloat: for (int i = 0; i < burstLength; i++){
+   #pragma HLS pipeline
+     data_local[i] = data_dram[i];
+   }
+ }
+ void loadFloatsSmall(const ap_fixed<12,1,AP_RND >* data_dram, ap_fixed<12,1,AP_RND >* data_local, int burstLength){
    #pragma HLS inline off
    loadFloat: for (int i = 0; i < burstLength; i++){
    #pragma HLS pipeline
@@ -70,7 +77,8 @@
                       ap_uint<20>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       ap_uint<21> children_vector[TOTAL_CHILDREN],
-                      ap_fixed<23,7,AP_RND > parameter_vector[TOTAL_PARAM]) {
+                      ap_fixed<18,7,AP_RND > parameter_vector[TOTAL_PARAM],
+                    ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]) {
   float evaluation_cache [PSDD_SIZE];
   const std::bitset<MAX_VAR> local_variables = variables;
   const std::bitset<MAX_VAR> local_instantiation = instantiation;
@@ -80,8 +88,10 @@
   loadStructs(fpga_node_vector, local_fpga_node_vector, PsddBurstLength);
   ap_uint<21> local_children_vector[TOTAL_CHILDREN];
   load21Bit(children_vector, local_children_vector, ChildrenBurstLength);
-  ap_fixed<23,7,AP_RND > local_parameter_vector[TOTAL_PARAM];
+  ap_fixed<18,7,AP_RND > local_parameter_vector[TOTAL_PARAM];
   loadFloats(parameter_vector, local_parameter_vector, ParamBurstLength);
+  ap_fixed<12,1,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
+  loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
 #pragma HLS RESOURCE variable=local_fpga_node_vector core=XPM_MEMORY uram
   for(int j = PSDD_SIZE -1; j >= 0; j--){
  #pragma HLS pipeline
@@ -100,9 +110,9 @@
    } else if (local_fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
      if (local_variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
        if (instantiation[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-         evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_fpga_node_vector[cur_node_idx].true_parameter_;
+         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset];
        } else {
-         evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_fpga_node_vector[cur_node_idx].false_parameter_;
+         evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset +1];
        }
      } else {
        evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = 0;

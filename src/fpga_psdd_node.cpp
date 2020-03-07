@@ -606,7 +606,8 @@ float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                      ap_uint<20>  serialized_nodes [PSDD_SIZE],
                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                      ap_uint<21> children_vector[TOTAL_CHILDREN],
-                     ap_fixed<23,7,AP_RND > parameter_vector[TOTAL_PARAM]) {
+                     ap_fixed<18,7,AP_RND > parameter_vector[TOTAL_PARAM],
+                     ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]) {
  static float evaluation_cache [PSDD_SIZE];
  for(int j = PSDD_SIZE -1; j >= 0; j--){
 #pragma HLS pipeline
@@ -627,13 +628,14 @@ float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
   } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
     if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
       if (instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
-        evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = (fpga_node_vector[cur_node_idx].true_parameter_);
+        // evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].true_parameter_;
+        evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset];
       } else {
-        evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = (fpga_node_vector[cur_node_idx].false_parameter_);
+        // evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = (fpga_node_vector[cur_node_idx].false_parameter_);
+        evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset +1];
       }
     } else {
-      evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-          0;
+      evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
     }
   }
 }

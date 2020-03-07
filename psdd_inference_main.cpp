@@ -14,7 +14,8 @@ extern "C" {
 }
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
 ap_uint<21> children_vector [TOTAL_CHILDREN];
-ap_fixed<23,7,AP_RND > parameter_vector [TOTAL_PARAM];
+ap_fixed<18,7,AP_RND > parameter_vector [TOTAL_PARAM];
+ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM];
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -81,7 +82,7 @@ int main(int argc, const char *argv[]) {
   sdd_vtree_free(psdd_vtree);
   std::cout << "starting read psdd file\n";
   FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
-     children_vector, parameter_vector);
+     children_vector, parameter_vector, bool_param_vector);
   ap_uint<20> correctPsddSize = 0;
   for (auto i : fpga_node_vector){
         correctPsddSize = i.node_index_ > correctPsddSize ? i.node_index_ : correctPsddSize;
@@ -124,16 +125,18 @@ int main(int argc, const char *argv[]) {
   std::cout << "size of fpga_node_vector: " << sizeof(fpga_node_vector) << " Bytes" << std::endl;
   std::cout << "size of children_vector: " << sizeof(children_vector) << " Bytes" << std::endl;
   std::cout << "size of parameter_vector: " << sizeof(parameter_vector) << " Bytes" << std::endl;
-  std::cout << "total size: " << sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) << " Bytes == "  << (sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector)) /1000000 << " MegaBytes" << std::endl;
+  std::cout << "size of bool_parameter_vector: " << sizeof(bool_param_vector) << " Bytes" << std::endl;
+
+  std::cout << "total size: " << sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) + sizeof(bool_param_vector) << " Bytes == "  << (sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) + sizeof(bool_param_vector)) /1000000 << " MegaBytes" << std::endl;
 
 
   double fpga_marginals = EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
-    fpga_node_vector, children_vector, parameter_vector);
+    fpga_node_vector, children_vector, parameter_vector, bool_param_vector);
   std::cout << "finished fpga evaluate ------------------------\n";
 
   auto evaluation_cache = psdd_node_util::EvaluateToCompare(var_mask, reference_mpe_result.first, reference_serialized_psdd);
   auto evaluation_cache_fpga = fpga_psdd_node_util::EvaluateToCompare(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
-    fpga_node_vector, children_vector, parameter_vector);
+    fpga_node_vector, children_vector, parameter_vector, bool_param_vector);
   // Check difference layer by layer
   float difference = 0;
   for (int i =0; i < PSDD_SIZE; i++){
