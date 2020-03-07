@@ -178,12 +178,12 @@ public:
 };
 struct FPGAPsddNodeStruct {
   ap_uint<20> node_index_;
-  char node_type_;
-  short children_size;
+  ap_uint<2> node_type_;
+  char children_size;
   ap_uint<21> children_offset;
   ap_uint<20> parameter_offset;
   short variable_index_;
-  short bool_param_offset;
+  ap_uint<10> bool_param_offset;
   short literal_;
 } ;
 namespace fpga_vtree_util {

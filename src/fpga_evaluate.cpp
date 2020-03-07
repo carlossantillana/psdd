@@ -10,15 +10,7 @@
  const int PsddBurstLength = 580817;
  const int ChildrenBurstLength = 1541021;
  const int ParamBurstLength = 770511;
-
- // void loadInts(const uint32_t* data_dram, uint32_t* data_local, int burstLength){
- //   #pragma HLS inline off
- //   loadInts: for (int i = 0; i < burstLength; i++){
- //   #pragma HLS pipeline
- //     data_local[i] = data_dram[i];
- //   }
- // }
-
+ 
  void load20Bit(const ap_uint<20>* data_dram, ap_uint<20>* data_local, int burstLength){
    #pragma HLS inline off
    loadInts: for (int i = 0; i < burstLength; i++){
@@ -92,7 +84,16 @@
   loadFloats(parameter_vector, local_parameter_vector, ParamBurstLength);
   ap_fixed<12,1,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
   loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
-#pragma HLS RESOURCE variable=local_fpga_node_vector core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_evaluation_cache core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_serialized_nodes core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_evaluation_cache core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
+
+
   for(int j = PSDD_SIZE -1; j >= 0; j--){
  #pragma HLS pipeline
     uintmax_t cur_node_idx = local_serialized_nodes[j];

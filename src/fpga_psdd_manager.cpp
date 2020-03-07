@@ -587,6 +587,7 @@ float minParameter = 20;
 float maxBoolParam = -4000;
 float minBoolParam = 20;
 
+
 FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, ap_uint<21> children_vector[TOTAL_CHILDREN],
   int & currentChild, ap_fixed<18,7,AP_RND > parameter_vector [TOTAL_PARAM], int & currentParam,
   ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM], int & currentBoolParam){
@@ -629,8 +630,8 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, ap_uint<21> chil
 
     if (cur_node->false_parameter_.parameter_ > maxBoolParam)
         maxBoolParam = cur_node->false_parameter_.parameter_;
-      if (cur_node->false_parameter_.parameter_ < minBoolParam)
-        minBoolParam = cur_node->false_parameter_.parameter_;
+    if (cur_node->false_parameter_.parameter_ < minBoolParam)
+      minBoolParam = cur_node->false_parameter_.parameter_;
   }
   PsddStruct.literal_ = cur_node->literal_;
   return PsddStruct;
@@ -740,7 +741,6 @@ std::cout << "max parameter: " << maxParameter << std::endl;
 std::cout << "min parameter: " << minParameter << std::endl;
 std::cout << "max Bool parameter: " << maxBoolParam << std::endl;
 std::cout << "min Bool Parameter : " << minBoolParam << std::endl;
-
   std::cout << "MAX_CHILDREN: " << max << std::endl;
   psdd_file.close();
   return root_node;
