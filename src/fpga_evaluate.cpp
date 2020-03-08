@@ -10,7 +10,7 @@
  const int PsddBurstLength = 580817;
  const int ChildrenBurstLength = 1541021;
  const int ParamBurstLength = 770511;
- 
+
  void load20Bit(const ap_uint<20>* data_dram, ap_uint<20>* data_local, int burstLength){
    #pragma HLS inline off
    loadInts: for (int i = 0; i < burstLength; i++){

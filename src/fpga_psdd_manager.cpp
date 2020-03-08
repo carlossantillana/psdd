@@ -737,6 +737,8 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
   }
   std::cout << "TOTAL_CHILDREN: " << currentChild << std::endl;
   std::cout << "TOTAL_PARAM: " << currentParam << std::endl;
+  std::cout << "TOTAL_BOOL_PARAM: " << currentBoolParam *2 << std::endl;
+
 std::cout << "max parameter: " << maxParameter << std::endl;
 std::cout << "min parameter: " << minParameter << std::endl;
 std::cout << "max Bool parameter: " << maxBoolParam << std::endl;
