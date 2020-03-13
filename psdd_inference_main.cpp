@@ -99,12 +99,12 @@ int main(int argc, const char *argv[]) {
   auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
   auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, children_vector);
 
-  std::cout << "starting fpga getMPE\n";
-  auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
+  // std::cout << "starting fpga getMPE\n";
+  // auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
   auto reference_mpe_result = psdd_node_util::GetMPESolution(reference_serialized_psdd);
-  std::cout << "finished fpga getMPE\n";
-  std::cout << "fpga_mpe.first == reference_mpe.first: " << ((fpga_mpe_result.first  == reference_mpe_result.first)  ? "true" : "false" ) << std::endl;
-  std::cout << "fpga_mpe.second == reference_mpe.second: " << ((fpga_mpe_result.second.parameter()  == reference_mpe_result.second.parameter())  ? "true" : "false" ) << std::endl;
+  // std::cout << "finished fpga getMPE\n";
+  // std::cout << "fpga_mpe.first == reference_mpe.first: " << ((fpga_mpe_result.first  == reference_mpe_result.first)  ? "true" : "false" ) << std::endl;
+  // std::cout << "fpga_mpe.second == reference_mpe.second: " << ((fpga_mpe_result.second.parameter()  == reference_mpe_result.second.parameter())  ? "true" : "false" ) << std::endl;
 
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
@@ -120,44 +120,44 @@ int main(int argc, const char *argv[]) {
     fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
   }
   std::cout << "size of var_mask: " << sizeof(var_mask) << " Bytes" << std::endl;
-  std::cout << "size of fpga_mpe_result.first: " << sizeof(fpga_mpe_result.first) << " Bytes" << std::endl;
+  // std::cout << "size of fpga_mpe_result.first: " << sizeof(fpga_mpe_result.first) << " Bytes" << std::endl;
   std::cout << "size of fpga_serialized_psdd_: " << sizeof(fpga_serialized_psdd_) << " Bytes"<< std::endl;
   std::cout << "size of fpga_node_vector: " << sizeof(fpga_node_vector) << " Bytes" << std::endl;
   std::cout << "size of children_vector: " << sizeof(children_vector) << " Bytes" << std::endl;
   std::cout << "size of parameter_vector: " << sizeof(parameter_vector) << " Bytes" << std::endl;
   std::cout << "size of bool_parameter_vector: " << sizeof(bool_param_vector) << " Bytes" << std::endl;
 
-  std::cout << "total size: " << sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) + sizeof(bool_param_vector) << " Bytes == "  << (sizeof(var_mask) +  sizeof(fpga_mpe_result.first) + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) + sizeof(bool_param_vector)) /1000000 << " MegaBytes" << std::endl;
+  std::cout << "total size: " << sizeof(var_mask)  + sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) + sizeof(bool_param_vector) << " Bytes == "  << (sizeof(var_mask)+ sizeof(fpga_serialized_psdd_) + sizeof(fpga_node_vector) +sizeof(children_vector) + sizeof(parameter_vector) + sizeof(bool_param_vector)) /1000000 << " MegaBytes" << std::endl;
 
 
-  double fpga_marginals = EvaluateWithoutPointer(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
+  EvaluateWithoutPointer(var_mask, fpga_serialized_psdd_,
     fpga_node_vector, children_vector, parameter_vector, bool_param_vector);
   std::cout << "finished fpga evaluate ------------------------\n";
 
-  auto evaluation_cache = psdd_node_util::EvaluateToCompare(var_mask, reference_mpe_result.first, reference_serialized_psdd);
-  auto evaluation_cache_fpga = fpga_psdd_node_util::EvaluateToCompare(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
-    fpga_node_vector, children_vector, parameter_vector, bool_param_vector);
-  // Check difference layer by layer
-  float difference = 0;
-  for (int i =0; i < PSDD_SIZE; i++){
-    float tmpDiff = 0;
-    if (evaluation_cache.at(i).parameter_ != -std::numeric_limits<float>::infinity()) {
-      tmpDiff = std::pow((evaluation_cache_fpga[i] - evaluation_cache.at(i).parameter_),2);
-    }
-     // std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga[i]) << " difference: " << tmpDiff << std::endl;
-    if (tmpDiff > .1){
-      std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED \n";
-    }
-    difference += tmpDiff;
-  }
-  std::cout << "RMSE: " << sqrt(difference/PSDD_SIZE) << std::endl;
-  std::cout << "RMSE over output: " <<  abs(sqrt(difference/PSDD_SIZE) / reference_marginals.parameter()) << std::endl;
-
-  // printf("fpga marginal %.17e, transformed back to log scale: %.17e\n", fpga_marginals, log(fpga_marginals));
-  printf("fpga marginal %.17e,", fpga_marginals);
-
-  printf("reference  marginal %.17e\n", reference_marginals.parameter());
-  printf("approximate error between outputs: %.17e\n",  reference_marginals.parameter() - fpga_marginals);
+  // auto evaluation_cache = psdd_node_util::EvaluateToCompare(var_mask, reference_mpe_result.first, reference_serialized_psdd);
+  // auto evaluation_cache_fpga = fpga_psdd_node_util::EvaluateToCompare(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
+  //   fpga_node_vector, children_vector, parameter_vector, bool_param_vector);
+  // // Check difference layer by layer
+  // float difference = 0;
+  // for (int i =0; i < PSDD_SIZE; i++){
+  //   float tmpDiff = 0;
+  //   if (evaluation_cache.at(i).parameter_ != -std::numeric_limits<float>::infinity()) {
+  //     tmpDiff = std::pow((evaluation_cache_fpga[i] - evaluation_cache.at(i).parameter_),2);
+  //   }
+  //    // std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga[i]) << " difference: " << tmpDiff << std::endl;
+  //   if (tmpDiff > .1){
+  //     std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED \n";
+  //   }
+  //   difference += tmpDiff;
+  // }
+  // std::cout << "RMSE: " << sqrt(difference/PSDD_SIZE) << std::endl;
+  // std::cout << "RMSE over output: " <<  abs(sqrt(difference/PSDD_SIZE) / reference_marginals.parameter()) << std::endl;
+  //
+  // // printf("fpga marginal %.17e, transformed back to log scale: %.17e\n", fpga_marginals, log(fpga_marginals));
+  // // printf("fpga marginal %.17e,", fpga_marginals);
+  //
+  // printf("reference  marginal %.17e\n", reference_marginals.parameter());
+  // // printf("approximate error between outputs: %.17e\n",  reference_marginals.parameter() - fpga_marginals);
   // for (auto i = 0; i < 100; ++i){
   //     std::cout << "starting fpga evaluate\n";
   //     fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
