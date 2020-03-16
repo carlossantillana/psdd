@@ -22,7 +22,10 @@ extern "C" {
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
-
+//if software sim
+// const int NUM_QUERIES = MAX_VAR; //65536
+//if hardware sim
+const int NUM_QUERIES = 10; //65536
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
 class PsddLiteralNode;
@@ -219,6 +222,10 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                     const std::bitset<MAX_VAR> &instantiation,
                         const std::vector<PsddNode *> &serialized_nodes);
+double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
+                        bool instantiation[MAX_VAR],
+                       const std::vector<PsddNode *> &serialized_nodes,
+                     double results [NUM_QUERIES]);
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<PsddNode *> &nodes,

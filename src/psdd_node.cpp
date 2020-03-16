@@ -10,6 +10,7 @@
 #include <gmp.h>
 #include <iostream>
 #include <psdd/psdd_node.h>
+#include <psdd/fpga_evaluate.h>
 #include <queue>
 #include <random>
 #include <stack>
@@ -251,7 +252,6 @@ SddNode *ConvertPsddNodeToSddNode(
 
 // parents appear before children
 std::vector<PsddNode *> SerializePsddNodes(PsddNode *root) {
-  std::cout << "Serialize small \n";
   return SerializePsddNodes(std::vector<PsddNode *>({root}));
 }
 
@@ -259,18 +259,13 @@ std::vector<PsddNode *>
 SerializePsddNodes(const std::vector<PsddNode *> &root_nodes) {
   std::unordered_set<uintmax_t> node_explored;
   std::vector<PsddNode *> result;
-  std::cout << "Serialize Large\n";
   for (const auto cur_root_node : root_nodes) {
-    std::cout << "index " << cur_root_node->node_index() << std::endl;
     if (node_explored.find(cur_root_node->node_index()) ==
         node_explored.end()) {
       result.push_back(cur_root_node);
       node_explored.insert(cur_root_node->node_index());
-    } else {
-      std::cout << "cache out \n";
     }
   }
-  std::cout << "Second for loop \n";
   uintmax_t explore_index = 0;
   while (explore_index != result.size()) {
     PsddNode *cur_psdd_node = result[explore_index];
@@ -294,7 +289,6 @@ SerializePsddNodes(const std::vector<PsddNode *> &root_nodes) {
     }
     ++explore_index;
   }
-  std::cout << "reference nodes\n";
   return result;
 }
 
@@ -589,6 +583,61 @@ std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<M
   }
   return evaluation_cache;
 }
+
+double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
+                     bool instantiation[MAX_VAR],
+                     const std::vector<PsddNode *> &serialized_nodes,
+                     double results [NUM_QUERIES]) {
+  for (int m = 0; m < NUM_QUERIES; m++){
+    std::unordered_map<uintmax_t, Probability> evaluation_cache;
+    for (auto node_it = serialized_nodes.rbegin();
+         node_it != serialized_nodes.rend(); ++node_it) {
+      PsddNode *cur_node = *node_it;
+      if (cur_node->node_type() == LITERAL_NODE_TYPE) {
+        PsddLiteralNode *cur_lit = cur_node->psdd_literal_node();
+        if (variables[cur_lit->variable_index()]) {
+          if (instantiation[cur_lit->variable_index()] == cur_lit->sign()) {
+            evaluation_cache[cur_node->node_index()] =
+                Probability::CreateFromDecimal(1);
+          } else {
+            evaluation_cache[cur_node->node_index()] =
+                Probability::CreateFromDecimal(0);
+          }
+        } else {
+          evaluation_cache[cur_node->node_index()] =
+              Probability::CreateFromDecimal(1);
+        }
+      } else if (cur_node->node_type() == TOP_NODE_TYPE) {
+        PsddTopNode *cur_top = cur_node->psdd_top_node();
+        if (variables[cur_top->variable_index()]) {
+          if (instantiation[cur_top->variable_index()]) {
+            evaluation_cache[cur_node->node_index()] = cur_top->true_parameter();
+          } else {
+            evaluation_cache[cur_node->node_index()] = cur_top->false_parameter();
+          }
+        } else {
+          evaluation_cache[cur_node->node_index()] =
+              Probability::CreateFromDecimal(1);
+        }
+      } else {
+        PsddDecisionNode *cur_decn_node = cur_node->psdd_decision_node();
+        auto element_size = cur_decn_node->primes().size();
+        Probability cur_prob = Probability::CreateFromDecimal(0);
+        for (size_t i = 0; i < element_size; ++i) {
+          PsddNode *cur_prime = cur_decn_node->primes()[i];
+          PsddNode *cur_sub = cur_decn_node->subs()[i];
+          cur_prob = cur_prob + evaluation_cache[cur_prime->node_index()] *
+                                    evaluation_cache[cur_sub->node_index()] *
+                                    cur_decn_node->parameters()[i];
+        }
+        evaluation_cache[cur_node->node_index()] = cur_prob;
+      }
+    }
+      results[m] = evaluation_cache[serialized_nodes[0]->node_index()].parameter_;
+    }
+  return results;
+}
+
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation) {
   std::vector<PsddNode *> serialized_nodes = SerializePsddNodes(node);

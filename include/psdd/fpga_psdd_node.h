@@ -25,13 +25,13 @@ extern "C" {
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
+
 //For map_network network
 const uint32_t PSDD_SIZE = 580817;
 const uint32_t MAX_CHILDREN = 57;
 const uint32_t TOTAL_CHILDREN = 1541021;
 const uint32_t TOTAL_PARAM = 770511;
 const short TOTAL_BOOL_PARAM = 792;
-
 
 //For grids network
 // const uint32_t PSDD_SIZE = 51;

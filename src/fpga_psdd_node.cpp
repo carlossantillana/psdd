@@ -10,6 +10,7 @@
 #include <gmp.h>
 #include <iostream>
 #include <psdd/fpga_psdd_node.h>
+#include <psdd/fpga_evaluate.h>
 #include <psdd/psdd_node.h>
 #include <queue>
 #include <random>
@@ -545,7 +546,6 @@ mpz_class ModelCount(const std::vector<FPGAPsddNode *> &serialized_nodes) {
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      const std::vector<FPGAPsddNode *> &serialized_nodes) {
-  std::cout << "inside big evaluate for original fpga imp.\n";
   std::unordered_map<uintmax_t, Probability> evaluation_cache;
   bool first = true;
   for (auto node_it = serialized_nodes.rbegin();
@@ -601,65 +601,59 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
   return Evaluate(variables, instantiation, serialized_nodes);
 }
 
-float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
-                     const std::bitset<MAX_VAR> &instantiation,
-                     ap_uint<20>  serialized_nodes [PSDD_SIZE],
-                     FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                     ap_uint<21> children_vector[TOTAL_CHILDREN],
-                     ap_fixed<18,7,AP_RND > parameter_vector[TOTAL_PARAM],
-                     ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]) {
- static float evaluation_cache [PSDD_SIZE];
- for(int j = PSDD_SIZE -1; j >= 0; j--){
-#pragma HLS pipeline
-   uintmax_t cur_node_idx = serialized_nodes[j];
-   if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
-    if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
-      if ( instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_ > 0) ) {
-        evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-            0;
-      } else {
-        evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-            -std::numeric_limits<float>::infinity();
-      }
-    } else {
-      evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-          0;
-    }
-  } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
-    if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
-      if (instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
-        // evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = fpga_node_vector[cur_node_idx].true_parameter_;
-        evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset];
-      } else {
-        // evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = (fpga_node_vector[cur_node_idx].false_parameter_);
-        evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset +1];
-      }
-    } else {
-      evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
-    }
-  }
-}
-
- for(int j = PSDD_SIZE -1; j >= 0; j--){
- //#pragma HLS pipeline
-   uintmax_t cur_node_idx = serialized_nodes[j];
-   if (fpga_node_vector[cur_node_idx].node_type_ == DECISION_NODE_TYPE){
-   uint32_t element_size = fpga_node_vector[cur_node_idx].children_size;
-   float max_prob = -std::numeric_limits<float>::infinity();
-
-   assert(element_size <= MAX_CHILDREN);
-     for (size_t i = 0; i < element_size; ++i) {
-       #pragma HLS pipeline
-       uint32_t cur_prime_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
-       uint32_t cur_sub_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
-       float tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] +  float (parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i]);
-       max_prob = (max_prob == -std::numeric_limits<float>::infinity() || max_prob < tmp) ? tmp : max_prob;
-     }
-      evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = max_prob;
-   }
- }
- return evaluation_cache;
-}
+// float * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
+//                      const std::vector<FPGAPsddNode *> &serialized_nodes) {
+//    float results[NUM_QUERIES];
+//    for (int m = 0; m < NUM_QUERIES; m++){
+//      float evaluation_cache [PSDD_SIZE];
+//      bool local_instantiation[MAX_VAR] = {0};
+//      local_instantiation[m] = m;
+//      for(int j = PSDD_SIZE -1; j >= 0; j--){
+//        uintmax_t cur_node_idx = serialized_nodes[j];
+//        if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
+//         if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
+//           if (local_instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_ > 0) ) {
+//             evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
+//           } else {
+//             evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
+//                 -std::numeric_limits<float>::infinity();
+//           }
+//         } else {
+//           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
+//         }
+//       } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
+//         if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
+//           if (local_instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
+//             evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset];
+//           } else {
+//             evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset +1];
+//           }
+//         } else {
+//           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
+//         }
+//       }
+//     }
+//
+//      for(int j = PSDD_SIZE -1; j >= 0; j--){
+//        uintmax_t cur_node_idx = serialized_nodes[j];
+//        if (fpga_node_vector[cur_node_idx].node_type_ == DECISION_NODE_TYPE){
+//        uint32_t element_size = fpga_node_vector[cur_node_idx].children_size;
+//        float max_prob = -std::numeric_limits<float>::infinity();
+//
+//        assert(element_size <= MAX_CHILDREN);
+//          for (size_t i = 0; i < element_size; ++i) {
+//            uint32_t cur_prime_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
+//            uint32_t cur_sub_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
+//            float tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] +  float (parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i]);
+//            max_prob = (max_prob == -std::numeric_limits<float>::infinity() || max_prob < tmp) ? tmp : max_prob;
+//          }
+//           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = max_prob;
+//        }
+//      }
+//      results[m] = evaluation_cache[fpga_node_vector[serialized_nodes[0]].node_index_];
+//    }
+//    return results;
+//    }
 
 void WritePsddToFile(FPGAPsddNode *root_node, const char *output_filename) {
   auto serialized_psdds = SerializePsddNodes(root_node);
