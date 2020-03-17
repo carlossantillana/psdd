@@ -232,7 +232,7 @@ float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                       ap_uint<20>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       ap_uint<21> children_vector[TOTAL_CHILDREN],
-                      ap_fixed<18,7,AP_RND > parameter_vector[TOTAL_PARAM],
+                      ap_fixed<19,7,AP_RND > parameter_vector[TOTAL_PARAM],
                       ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,

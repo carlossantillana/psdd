@@ -15,7 +15,7 @@ extern "C" {
 }
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
 ap_uint<21> children_vector [TOTAL_CHILDREN];
-ap_fixed<18,7,AP_RND > parameter_vector [TOTAL_PARAM];
+ap_fixed<19,7,AP_RND > parameter_vector [TOTAL_PARAM];
 ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM];
 bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
   std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation);
