@@ -225,7 +225,8 @@ std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<M
 double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                         std::bitset<MAX_VAR> &instantiation,
                        const std::vector<PsddNode *> &serialized_nodes,
-                     double results [NUM_QUERIES]);
+                     double results [NUM_QUERIES],
+                     int flippers [242]);
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<PsddNode *> &nodes,

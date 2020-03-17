@@ -18,7 +18,7 @@ ap_uint<21> children_vector [TOTAL_CHILDREN];
 ap_fixed<19,7,AP_RND > parameter_vector [TOTAL_PARAM];
 ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM];
 bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
-  std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation);
+  std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, int flippers [242]);
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -85,10 +85,7 @@ int main(int argc, const char *argv[]) {
   FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
      children_vector, parameter_vector, bool_param_vector);
   ap_uint<20> correctPsddSize = 0;
-  for (auto i : fpga_node_vector){
-        correctPsddSize = i.node_index_ > correctPsddSize ? i.node_index_ : correctPsddSize;
-  }
-  std:: cout << "PSDD_SIZE: " << correctPsddSize +1 << std::endl;
+
   uint32_t root_node_idx = result_node->node_index_;
 
   std::vector<SddLiteral> variables = vtree_util::VariablesUnderVtree(psdd_manager->vtree());
@@ -101,12 +98,18 @@ int main(int argc, const char *argv[]) {
   //Read mpe_query
   std::bitset<MAX_VAR> instantiation;
   std::ifstream File;
+  int flippers [242];
+  int total=242;
   File.open("mpe.txt");
   for(int a = 1; a <= MAX_VAR; a++){
     bool tmp;
     File >> tmp;
     instantiation[MAX_VAR - a] = tmp;
+
+    if (tmp == 1)
+    flippers[total--] = MAX_VAR - a;
   }
+  std::cout << "total: " << total << std::endl;
   File.close();
   std::cout << "starting fpga evaluate ----------------------------------\n";
   ap_uint<20> fpga_serialized_psdd_ [PSDD_SIZE];
@@ -117,60 +120,34 @@ int main(int argc, const char *argv[]) {
   //FPGA
   float result [NUM_QUERIES] = {0};
   EvaluateWithoutPointer(var_mask, instantiation, fpga_serialized_psdd_,
-    fpga_node_vector, children_vector, parameter_vector, bool_param_vector, result);
+    fpga_node_vector, children_vector, parameter_vector, bool_param_vector, result, flippers);
     std::cout << "finished fpga evaluate ------------------------\n";
-    bool validResults = verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation);
+    bool validResults = verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
     delete (psdd_manager);
     delete (reference_psdd_manager);
 
   }
 
   //CSIM
-  // bool verifyResults(double [NUM_QUERIES] results, int type){
-    // auto evaluation_cache = psdd_node_util::EvaluateToCompare(var_mask, reference_mpe_result.first, reference_serialized_psdd);
-    // auto evaluation_cache_fpga = fpga_psdd_node_util::EvaluateToCompare(var_mask, fpga_mpe_result.first, fpga_serialized_psdd_,
-    //   fpga_node_vector, children_vector, parameter_vector, bool_param_vector);
-    // // Check difference layer by layer
-    // float difference = 0;
-    // for (int i =0; i < PSDD_SIZE; i++){
-    //   float tmpDiff = 0;
-    //   if (evaluation_cache.at(i).parameter_ != -std::numeric_limits<float>::infinity()) {
-    //     tmpDiff = std::pow((evaluation_cache_fpga[i] - evaluation_cache.at(i).parameter_),2);
-    //   }
-    //    // std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga[i]) << " difference: " << tmpDiff << std::endl;
-    //   if (tmpDiff > .1){
-    //     std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED \n";
-    //   }
-    //   difference += tmpDiff;
-    // }
-    // std::cout << "RMSE: " << sqrt(difference/PSDD_SIZE) << std::endl;
-    // std::cout << "RMSE over output: " <<  abs(sqrt(difference/PSDD_SIZE) / reference_marginals.parameter()) << std::endl;
-    //
-    // // printf("fpga marginal %.17e, transformed back to log scale: %.17e\n", fpga_marginals, log(fpga_marginals));
-    // // printf("fpga marginal %.17e,", fpga_marginals);
-    //
-    // printf("reference  marginal %.17e\n", reference_marginals.parameter());
-    // // printf("approximate error between outputs: %.17e\n",  reference_marginals.parameter() - fpga_marginals);
-    // for (auto i = 0; i < 100; ++i){
-    //     std::cout << "starting fpga evaluate\n";
-    //     fpga_psdd_node_util::Evaluate(var_mask, fpga_mpe_result.first, fpga_serialized_psdd);
-    //       std::cout << "finished fpga getMPE\n";
-    //
-    // }
-  // }
+
 
   //FPGA
   bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
-     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation){
+     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, int flippers [242]){
     PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
     auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
     double reference_results [NUM_QUERIES] = {0};
-    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results);
+    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
     float difference = 0;
+    int num_queries_clean = NUM_QUERIES;
     for (int i =0; i < NUM_QUERIES; i++){
       float tmpDiff = 0;
       std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << results[i] << std::endl;
+      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
       tmpDiff = std::pow((reference_results[i] - results[i]),2);
+    } else{
+      num_queries_clean--;
+    }
        // std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga[i]) << " difference: " << tmpDiff << std::endl;
       if (tmpDiff > .1){
         std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED \n";
