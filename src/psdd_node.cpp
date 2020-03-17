@@ -585,8 +585,8 @@ std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<M
 }
 
 double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
-                     bool instantiation[MAX_VAR],
-                     const std::vector<PsddNode *> &serialized_nodes,
+                        std::bitset<MAX_VAR> &instantiation,
+                       const std::vector<PsddNode *> &serialized_nodes,
                      double results [NUM_QUERIES]) {
   for (int m = 0; m < NUM_QUERIES; m++){
     std::unordered_map<uintmax_t, Probability> evaluation_cache;

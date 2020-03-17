@@ -42,28 +42,21 @@
      data_local[i] = data_dram[i];
    }
  }
- void loadBool(const bool* data_dram, bool* data_local, int burstLength){
-   #pragma HLS inline off
-   loadBool: for (int i = 0; i < burstLength; i++){
-   #pragma HLS pipeline
-     data_local[i] = data_dram[i];
-   }
- }
+
  void load(ap_uint<20>  local_serialized_nodes [PSDD_SIZE], ap_uint<20>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
    FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], ap_uint<21> local_children_vector[TOTAL_CHILDREN], ap_uint<21> children_vector[TOTAL_CHILDREN], ap_fixed<18,7,AP_RND > local_parameter_vector[TOTAL_PARAM],
-   ap_fixed<18,7,AP_RND > parameter_vector[TOTAL_PARAM], ap_fixed<12,1,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM], bool local_instantiation[MAX_VAR], bool instantiation[MAX_VAR]){
+   ap_fixed<18,7,AP_RND > parameter_vector[TOTAL_PARAM], ap_fixed<12,1,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]){
    load20Bit(serialized_nodes, local_serialized_nodes, PsddBurstLength);
    loadStructs(fpga_node_vector, local_fpga_node_vector, PsddBurstLength);
    load21Bit(children_vector, local_children_vector, ChildrenBurstLength);
    loadFloats(parameter_vector, local_parameter_vector, ParamBurstLength);
    loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
-   loadBool(instantiation, local_instantiation, MAX_VAR);
    return;
  }
 
 //FPGA
  void EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
-                      bool instantiation[MAX_VAR],
+                      std::bitset<MAX_VAR> & instantiation,
                       ap_uint<20>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       ap_uint<21> children_vector[TOTAL_CHILDREN],
@@ -71,7 +64,7 @@
                       ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
 					            float results[NUM_QUERIES]) {
   const std::bitset<MAX_VAR> local_variables = variables;
-  bool local_instantiation[MAX_VAR];
+  std::bitset<MAX_VAR> local_instantiation = instantiation;
   ap_uint<20> local_serialized_nodes [PSDD_SIZE];
   FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
   ap_uint<21> local_children_vector[TOTAL_CHILDREN];
@@ -79,7 +72,7 @@
   ap_fixed<12,1,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
   load(local_serialized_nodes, serialized_nodes, local_fpga_node_vector,
     fpga_node_vector, local_children_vector, children_vector, local_parameter_vector,
-    parameter_vector, local_bool_param_vector, bool_param_vector, local_instantiation, instantiation);
+    parameter_vector, local_bool_param_vector, bool_param_vector);
 
 std::cout << std::endl;
 #pragma HLS RESOURCE variable=local_serialized_nodes core=XPM_MEMORY uram

@@ -18,7 +18,7 @@ ap_uint<21> children_vector [TOTAL_CHILDREN];
 ap_fixed<18,7,AP_RND > parameter_vector [TOTAL_PARAM];
 ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM];
 bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
-  std::bitset<MAX_VAR> var_mask, bool instantiation[MAX_VAR]);
+  std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation);
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -99,11 +99,13 @@ int main(int argc, const char *argv[]) {
   std::bitset<MAX_VAR> var_mask;
   var_mask.set();
   //Read mpe_query
+  std::bitset<MAX_VAR> instantiation;
   std::ifstream File;
-  bool instantiation[MAX_VAR] = {0};
   File.open("mpe.txt");
-  for(int a = 0; a < MAX_VAR; a++){
-    File >> instantiation[a];
+  for(int a = 1; a <= MAX_VAR; a++){
+    bool tmp;
+    File >> tmp;
+    instantiation[MAX_VAR - a] = tmp;
   }
   File.close();
   std::cout << "starting fpga evaluate ----------------------------------\n";
@@ -159,7 +161,7 @@ int main(int argc, const char *argv[]) {
 
   //FPGA
   bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
-     std::bitset<MAX_VAR> var_mask, bool instantiation[MAX_VAR]){
+     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation){
     PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
     auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
     double reference_results [NUM_QUERIES] = {0};
