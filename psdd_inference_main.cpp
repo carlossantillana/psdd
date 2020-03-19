@@ -100,18 +100,18 @@ int main(int argc, const char *argv[]) {
   std::ifstream File;
   int flippers [242];
   int total=242;
-  File.open("mpe.txt");
-  for(int a = 1; a <= MAX_VAR; a++){
-    bool tmp;
-    File >> tmp;
-    instantiation[MAX_VAR - a] = tmp;
-
-    if (tmp == 1)
-    flippers[total--] = MAX_VAR - a;
-  }
-  std::cout << "total: " << total << std::endl;
+  // File.open("mpe.txt");
+  // // int REVERT_LATER = 0;
+  // for(int a = 1; a <= MAX_VAR; a++){
+  //   bool tmp;
+  //   File >> tmp;
+  //
+  //   if (tmp == 1 ){
+  //     flippers[total--] = MAX_VAR - a;
+  //
+  //   }
+  // }
   File.close();
-  std::cout << "starting fpga evaluate ----------------------------------\n";
   ap_uint<20> fpga_serialized_psdd_ [PSDD_SIZE];
   for (int i = 0; i < PSDD_SIZE; i++){
     fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
@@ -121,8 +121,7 @@ int main(int argc, const char *argv[]) {
   float result [NUM_QUERIES] = {0};
   EvaluateWithoutPointer(var_mask, instantiation, fpga_serialized_psdd_,
     fpga_node_vector, children_vector, parameter_vector, bool_param_vector, result, flippers);
-    std::cout << "finished fpga evaluate ------------------------\n";
-    bool validResults = verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
+    // bool validResults = verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
     delete (psdd_manager);
     delete (reference_psdd_manager);
 

@@ -635,7 +635,7 @@ double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
       }
     }
       results[m] = evaluation_cache[serialized_nodes[0]->node_index()].parameter_;
-      instantiation [flippers[m % 242]] = !instantiation [flippers[m % 242]];
+      // instantiation [flippers[m % 242]] = !instantiation [flippers[m % 242]];
 
     }
   return results;

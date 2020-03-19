@@ -186,7 +186,7 @@ struct FPGAPsddNodeStruct {
   ap_uint<20> parameter_offset;
   short variable_index_;
   ap_uint<10> bool_param_offset;
-  short literal_;
+  int32_t literal_;
 } ;
 namespace fpga_vtree_util {
 std::vector<Vtree *> SerializeVtree(Vtree *root);

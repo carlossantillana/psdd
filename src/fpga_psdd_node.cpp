@@ -253,26 +253,20 @@ SddNode *ConvertPsddNodeToSddNode(
 
 // parents appear before children
 std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root) {
-  std::cout << "inside small serialize\n";
   return SerializePsddNodes(std::vector<FPGAPsddNode *>({root}));
 }
 
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
   std::unordered_set<uintmax_t> node_explored;
-  std::cout << "inside big serialize\n";
   std::vector<FPGAPsddNode*> result;
-  std::cout << "starting first for loop in serialize\n";
   for (const auto cur_root_node : root_nodes) {
     if (node_explored.find(cur_root_node->node_index()) ==
         node_explored.end()) {
       result.push_back(cur_root_node);
       node_explored.insert(cur_root_node->node_index());
-    }else {
-      std::cout << "cache out\n";
     }
   }
-  std::cout << "starting second for loop in serialize\n";
   uintmax_t explore_index = 0;
   while (explore_index != result.size()) {
     FPGAPsddNode *cur_psdd_node = result[explore_index];
@@ -308,20 +302,15 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node, FPGAPsddNod
 std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]
                                                 ,ap_uint<21> children_vector[TOTAL_CHILDREN]) {
   std::unordered_set<uintmax_t> node_explored;
-  std::cout << "inside big serialize\n";
   std::vector<uint32_t> result;
-  std::cout << "starting first for loop in serialize\n";
   for (int i = 0 ; i < root_nodes.size() ; i++ ) {
     uint32_t cur_root_node_idx = root_nodes[i];
     if (node_explored.find(fpga_node_vector[cur_root_node_idx].node_index_) ==
         node_explored.end()) {
       result.push_back(cur_root_node_idx);
       node_explored.insert(fpga_node_vector[cur_root_node_idx].node_index_);
-    }else {
-      std::cout << "cache out\n";
     }
   }
-  std::cout << "starting second for loop in serialize\n";
   uintmax_t explore_index = 0;
   while (explore_index != result.size()) {
     uint32_t cur_psdd_node_idx = result[explore_index];
@@ -596,7 +585,6 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      FPGAPsddNode *root_node) {
-  std::cout << "inside small evaluate\n";
   std::vector<FPGAPsddNode *> serialized_nodes = SerializePsddNodes(root_node);
   return Evaluate(variables, instantiation, serialized_nodes);
 }

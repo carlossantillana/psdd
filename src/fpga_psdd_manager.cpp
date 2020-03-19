@@ -726,24 +726,6 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename,
       root_node = cur_node;
     }
   }
-  double total = 0;
-  double max  = 0;
-  for (auto i : children){
-    std::cout << "num children: " << i.first << " times: " << i.second << std::endl;
-    if (i.first > max){
-      max = i.first;
-    }
-    total+= i.first + i.second;
-  }
-  std::cout << "TOTAL_CHILDREN: " << currentChild << std::endl;
-  std::cout << "TOTAL_PARAM: " << currentParam << std::endl;
-  std::cout << "TOTAL_BOOL_PARAM: " << currentBoolParam *2 << std::endl;
-
-std::cout << "max parameter: " << maxParameter << std::endl;
-std::cout << "min parameter: " << minParameter << std::endl;
-std::cout << "max Bool parameter: " << maxBoolParam << std::endl;
-std::cout << "min Bool Parameter : " << minBoolParam << std::endl;
-  std::cout << "MAX_CHILDREN: " << max << std::endl;
   psdd_file.close();
   return root_node;
 }
