@@ -18,12 +18,13 @@ extern "C" {
 #include <psdd/psdd_parameter.h>
 #include <psdd/random_double_generator.h>
 #include <unordered_set>
+#include "ap_int.h"
 
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
 //if software sim
-const int NUM_QUERIES = MAX_VAR; //65536
+const int NUM_QUERIES = 3; //65536
 //if hardware sim
 // const int NUM_QUERIES = 50; //65536
 using BatchedPsddValue = std::vector<bool>;
@@ -226,7 +227,7 @@ double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                         std::bitset<MAX_VAR> &instantiation,
                        const std::vector<PsddNode *> &serialized_nodes,
                      double results [NUM_QUERIES],
-                     int flippers [242]);
+                     ap_uint<12> flippers [55]);
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<PsddNode *> &nodes,

@@ -8,17 +8,18 @@
 #include <psdd/optionparser.h>
 #include <psdd/fpga_psdd_node.h>
 #include <psdd/fpga_evaluate.h>
-#include<fstream>
+#include <fstream>
 
 extern "C" {
 #include <sdd/sddapi.h>
 }
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
-ap_uint<21> children_vector [TOTAL_CHILDREN];
-ap_fixed<19,7,AP_RND > parameter_vector [TOTAL_PARAM];
-ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM];
+ap_uint<22> children_vector [TOTAL_CHILDREN];
+ap_fixed<21,8,AP_RND > parameter_vector [TOTAL_PARAM];
+ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM];
+ap_uint<12> flippers [55];
 bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
-  std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, int flippers [242]);
+  std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, ap_uint<12> flippers [55]);
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -84,7 +85,7 @@ int main(int argc, const char *argv[]) {
   sdd_vtree_free(psdd_vtree);
   FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
      children_vector, parameter_vector, bool_param_vector);
-  ap_uint<20> correctPsddSize = 0;
+  ap_uint<21> correctPsddSize = 0;
 
   uint32_t root_node_idx = result_node->node_index_;
 
@@ -98,21 +99,16 @@ int main(int argc, const char *argv[]) {
   //Read mpe_query
   std::bitset<MAX_VAR> instantiation;
   std::ifstream File;
-  int flippers [242];
-  int total=242;
-  // File.open("mpe.txt");
-  // // int REVERT_LATER = 0;
-  // for(int a = 1; a <= MAX_VAR; a++){
-  //   bool tmp;
-  //   File >> tmp;
-  //
-  //   if (tmp == 1 ){
-  //     flippers[total--] = MAX_VAR - a;
-  //
-  //   }
-  // }
+  File.open("allPossibleSolutions.txt");
+  // int REVERT_LATER = 0;
+  for(int a = 0; a < 55; a++){
+    int tmp;
+    File >> tmp;
+    flippers[a] = tmp;
+  }
+
   File.close();
-  ap_uint<20> fpga_serialized_psdd_ [PSDD_SIZE];
+  ap_uint<21> fpga_serialized_psdd_ [PSDD_SIZE];
   for (int i = 0; i < PSDD_SIZE; i++){
     fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
   }
@@ -121,7 +117,7 @@ int main(int argc, const char *argv[]) {
   float result [NUM_QUERIES] = {0};
   EvaluateWithoutPointer(var_mask, instantiation, fpga_serialized_psdd_,
     fpga_node_vector, children_vector, parameter_vector, bool_param_vector, result, flippers);
-    // bool validResults = verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
+    bool validResults = verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
     delete (psdd_manager);
     delete (reference_psdd_manager);
 
@@ -132,7 +128,7 @@ int main(int argc, const char *argv[]) {
 
   //FPGA
   bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
-     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, int flippers [242]){
+     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, ap_uint<12> flippers [55]){
     PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
     auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
     double reference_results [NUM_QUERIES] = {0};

@@ -588,9 +588,12 @@ double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                         std::bitset<MAX_VAR> &instantiation,
                        const std::vector<PsddNode *> &serialized_nodes,
                      double results [NUM_QUERIES],
-                   int flippers [242]) {
-  for (int m = 0; m < NUM_QUERIES; m++){
+                   ap_uint<12> flippers [55]) {
+  for (int m = 0; m <  NUM_QUERIES; m++){
     std::unordered_map<uintmax_t, Probability> evaluation_cache;
+    instantiation.reset();
+    instantiation.set(flippers[m%55]);
+
     for (auto node_it = serialized_nodes.rbegin();
          node_it != serialized_nodes.rend(); ++node_it) {
       PsddNode *cur_node = *node_it;
@@ -635,8 +638,6 @@ double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
       }
     }
       results[m] = evaluation_cache[serialized_nodes[0]->node_index()].parameter_;
-      // instantiation [flippers[m % 242]] = !instantiation [flippers[m % 242]];
-
     }
   return results;
 }

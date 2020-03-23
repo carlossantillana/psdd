@@ -179,7 +179,7 @@ public:
   uintmax_t false_data_count_;
 };
 struct FPGAPsddNodeStruct {
-  ap_uint<20> node_index_;
+  ap_uint<21> node_index_;
   ap_uint<2> node_type_;
   char children_size;
   ap_uint<21> children_offset;
@@ -207,9 +207,9 @@ std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]
-                              ,ap_uint<21> children_vector[TOTAL_CHILDREN]);
+                              ,ap_uint<22> children_vector[TOTAL_CHILDREN]);
 std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes,
-          FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], ap_uint<21> children_vector[TOTAL_CHILDREN]);
+          FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], ap_uint<22> children_vector[TOTAL_CHILDREN]);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,
@@ -229,11 +229,11 @@ uint32_t get_variable_index(FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 
 float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
-                      ap_uint<20>  serialized_nodes [PSDD_SIZE],
+                      ap_uint<21>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                      ap_uint<21> children_vector[TOTAL_CHILDREN],
-                      ap_fixed<19,7,AP_RND > parameter_vector[TOTAL_PARAM],
-                      ap_fixed<12,1,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]);
+                      ap_uint<22> children_vector[TOTAL_CHILDREN],
+                      ap_fixed<21,8,AP_RND > parameter_vector[TOTAL_PARAM],
+                      ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
