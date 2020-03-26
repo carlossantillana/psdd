@@ -25,8 +25,12 @@ find_package(OpenCL REQUIRED)
 
 file(GLOB PSDD_TEST_SRC_FILES "test/*.cpp")
 file(GLOB LIB_PSDD_SRC_FILES "src/*.h" "src/*.cpp" "src/*.c")
+file(GLOB LIB_XCL_SRC_FILES "../../../libs/xcl2/*.hpp" "../../../libs/xcl2/*.cpp" )
+
 #add_executable(psdd_test ${PSDD_TEST_SRC_FILES})
 add_library(psdd ${LIB_PSDD_SRC_FILES} )
+add_library(xcl2 ${LIB_XCL_SRC_FILES} )
+
 add_executable(psdd_inference psdd_inference_main.cpp)
 #target_link_libraries(psdd_test psdd ${gtest} ${gtest_main} ${gmock} ${gmock_main} ${sdd} gmp pthread)
-target_link_libraries(psdd_inference psdd sdd gmp OpenCL )
+target_link_libraries(psdd_inference psdd sdd gmp OpenCL xcl2 )
