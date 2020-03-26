@@ -9,6 +9,7 @@
 #include <psdd/fpga_psdd_node.h>
 #include <psdd/fpga_evaluate.h>
 #include <fstream>
+#include <xcl2/xcl2.hpp>
 
 extern "C" {
 #include <sdd/sddapi.h>

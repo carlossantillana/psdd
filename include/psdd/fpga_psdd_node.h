@@ -4,6 +4,7 @@
 
 #ifndef FPGA_STRUCTURED_BAYESIAN_NETWORK_PSDD_NODE_H
 #define FPGA_STRUCTURED_BAYESIAN_NETWORK_PSDD_NODE_H
+#include <cstddef>
 
 #include <cstdint>
 #include <random>

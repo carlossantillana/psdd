@@ -4,7 +4,7 @@
 
 #ifndef STRUCTURED_BAYESIAN_NETWORK_PSDD_NODE_H
 #define STRUCTURED_BAYESIAN_NETWORK_PSDD_NODE_H
-
+#include <cstddef>
 #include <cstdint>
 #include <random>
 #include <unordered_map>

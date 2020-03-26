@@ -2,6 +2,8 @@
 // Created by Yujia Shen on 10/19/17.
 //
 
+#include <cstddef>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>

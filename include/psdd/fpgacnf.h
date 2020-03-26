@@ -6,6 +6,8 @@
 #define STRUCTURED_BAYESIAN_NETWORK_FPGA_CNF_H
 
 #include <vector>
+#include <cstddef>
+
 #include <psdd/fpga_psdd_node.h>
 #include <psdd/fpga_psdd_manager.h>
 
