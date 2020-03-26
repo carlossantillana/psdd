@@ -168,18 +168,24 @@ int main(int argc, const char *argv[]) {
                              result_size_bytes, &result);
     inBufVec.push_back(buffer_in1);
     inBufVec.push_back(buffer_in2);
+    inBufVec.push_back(buffer_in3);
+    inBufVec.push_back(buffer_in4);
+    inBufVec.push_back(buffer_in5);
+    inBufVec.push_back(buffer_in6);
+    inBufVec.push_back(buffer_in7);
+    inBufVec.push_back(buffer_in8);
     outBufVec.push_back(buffer_output);
 
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
 
-    auto krnl_vector_add = cl::KernelFunctor<cl::Buffer&, cl::Buffer&,
-                                             cl::Buffer&, int>(kernel);
+    auto krnl_vector_add = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&,
+                                             cl::Buffer&>(kernel);
 
     //Launch the Kernel
     //fix input to this kernel
     krnl_vector_add(cl::EnqueueArgs(q, cl::NDRange(1, 1, 1), cl::NDRange(1, 1, 1)),
-                    buffer_in1, buffer_in2, buffer_output, 55);
+                    buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6, buffer_in7, buffer_in8, buffer_output);
 
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
