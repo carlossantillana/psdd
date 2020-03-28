@@ -65,8 +65,8 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
  }
 
 //FPGA
- void EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
-                         std::bitset<MAX_VAR> & instantiation,
+ void EvaluateWithoutPointer(bool variables[MAX_VAR],
+                         bool instantiation[55],
                       ap_uint<21>  serialized_nodes [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       ap_uint<22> children_vector[TOTAL_CHILDREN],
@@ -74,7 +74,7 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
                       ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
 					            float results[NUM_QUERIES], ap_uint<12> flippers [55]) {
   //Load to FPGA
-  const std::bitset<MAX_VAR> local_variables = variables;
+  // const std::bitset<MAX_VAR> local_variables = variables;
   ap_uint<12> local_flippers [55];
   ap_uint<21> local_serialized_nodes [PSDD_SIZE];
   FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
@@ -89,20 +89,20 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
 #pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
+// #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
 
   for (int m = 0; m <  NUM_QUERIES; m++){
     float evaluation_cache [PSDD_SIZE];
-    std::bitset<MAX_VAR> local_instantiation = instantiation;
-    local_instantiation[local_flippers[m%55]] = !local_instantiation[local_flippers[m%55]];
+    // std::bitset<MAX_VAR> local_instantiation = instantiation;
+    instantiation[local_flippers[m%55]] = !instantiation[local_flippers[m%55]];
 
 #pragma HLS RESOURCE variable=local_evaluation_cache core=XPM_MEMORY uram
     for(int j = PSDD_SIZE -1; j >= 0; j--){
 #pragma HLS pipeline
       uintmax_t cur_node_idx = local_serialized_nodes[j];
       if (local_fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
-       if (local_variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-         if (local_instantiation[local_fpga_node_vector[cur_node_idx].variable_index_] == (local_fpga_node_vector[cur_node_idx].literal_ > 0) ) {
+       if (variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
+         if (instantiation[local_fpga_node_vector[cur_node_idx].variable_index_] == (local_fpga_node_vector[cur_node_idx].literal_ > 0) ) {
            evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = 0;
          } else {
            evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] =
@@ -112,8 +112,8 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = 0;
        }
      } else if (local_fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
-       if (local_variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-         if (local_instantiation[local_fpga_node_vector[cur_node_idx].variable_index_]) {
+       if (variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
+         if (instantiation[local_fpga_node_vector[cur_node_idx].variable_index_]) {
            evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset];
          } else {
            evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset +1];

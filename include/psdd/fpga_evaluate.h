@@ -10,7 +10,7 @@
  const int ChildrenBurstLength = 1541021;
  const int ParamBurstLength = 770511;
 //FPGA
-void EvaluateWithoutPointer(const std::bitset<MAX_VAR> &variables,
+void EvaluateWithoutPointer(bool variables[MAX_VAR],
                       std::bitset<MAX_VAR> & instantiation,
                       ap_uint<21> fpga_serialized_psdd_evaluate [PSDD_SIZE],
                       FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],

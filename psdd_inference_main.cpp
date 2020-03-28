@@ -133,17 +133,25 @@ int main(int argc, const char *argv[]) {
   size_t result_size_bytes = sizeof(result[0]) * NUM_QUERIES;
   // EvaluateWithoutPointer(var_mask, instantiation, fpga_serialized_psdd_,
   //   fpga_node_vector, children_vector, parameter_vector, bool_param_vector, result, flippers);
+  std::cout << "before get devices\n";
     vector<cl::Device> devices = xcl::get_xil_devices();
     cl::Device device = devices[0];
+    std::cout << "before context\n";
 
     cl::Context context(device);
     cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
     string device_name = device.getInfo<CL_DEVICE_NAME>();
+    std::cout << "before device name" << device_name << std::endl;
+    std::cout << "before find binary file\n";
 
-    string binaryFile = xcl::find_binary_file(device_name, "src/fpga_evaluate");
+    string binaryFile = xcl::find_binary_file(device_name, "fpga_evaluate");
+    std::cout << "before import_binary_file\n";
+
     cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
     devices.resize(1);
     cl::Program program(context, devices, bins);
+    std::cout << "before kernel\n";
+
     cl::Kernel kernel(program, "fpga_evaluate");
 
     //Allocate Buffer in Global Memory
@@ -168,24 +176,21 @@ int main(int argc, const char *argv[]) {
                              result_size_bytes, &result);
     inBufVec.push_back(buffer_in1);
     inBufVec.push_back(buffer_in2);
-    inBufVec.push_back(buffer_in3);
-    inBufVec.push_back(buffer_in4);
-    inBufVec.push_back(buffer_in5);
-    inBufVec.push_back(buffer_in6);
-    inBufVec.push_back(buffer_in7);
-    inBufVec.push_back(buffer_in8);
     outBufVec.push_back(buffer_output);
 
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
+    std::cout << "before kernl_add\n";
 
-    auto krnl_vector_add = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&,
+    auto krnl_vector_add = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&,cl::Buffer&, cl::Buffer&,cl::Buffer&, cl::Buffer&,
                                              cl::Buffer&>(kernel);
+             std::cout << "before lauch kernel\n";
 
     //Launch the Kernel
     //fix input to this kernel
     krnl_vector_add(cl::EnqueueArgs(q, cl::NDRange(1, 1, 1), cl::NDRange(1, 1, 1)),
                     buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6, buffer_in7, buffer_in8, buffer_output);
+                    std::cout << "before enqueue mem\n";
 
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
