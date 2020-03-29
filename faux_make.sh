@@ -9,7 +9,14 @@ mkdir -p xclbin
 
 #Breaks here
 #xocc
-/opt/Xilinx/SDx/2018.3.op2405991/bin/xocc -c --xp "param:compiler.preserveHlsOutput=1" --xp "param:compiler.generateExtraRunData=true" --xp param:prop:kernel.EvaluateWithoutPointer.kernel_flags="-std=c++0x"  -s -k fpga_evaluate  -o xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xo -t sw_emu --platform /home/centos/src/project_data/aws-fpga/SDAccel/aws_platform/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm ./src/fpga_evaluate.cpp   -I/home/centos/src/project_data/aws-fpga/SDAccel/examples/xilinx/getting_started/cs-259-19f/psdd/include
+/opt/Xilinx/SDx/2018.3.op2405991/bin/xocc -c --xp "param:compiler.preserveHlsOutput=1" --xp "param:compiler.generateExtraRunData=true" --xp param:prop:kernel.fpga_evalute.kernel_flags="-std=c++0x"  -s -k fpga_evaluate  -o xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xo -t sw_emu --platform /home/centos/src/project_data/aws-fpga/SDAccel/aws_platform/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm ./src/fpga_evaluate.cpp   -I/home/centos/src/project_data/aws-fpga/SDAccel/examples/xilinx/getting_started/cs-259-19f/psdd/include
+
+#makes xcl bin
+mkdir -p xclbin
+
+
+/opt/Xilinx/SDx/2018.3.op2405991/bin/xocc -l --xp "param:compiler.preserveHlsOutput=1" --xp "param:compiler.generateExtraRunData=true"  --xp param:prop:kernel.fpga_evalute.kernel_flags="-std=c++0x" -s -o xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xclbin -t sw_emu --platform /home/centos/src/project_data/aws-fpga/SDAccel/aws_platform/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xo
+
 
 #runs emconfigutil
 /opt/Xilinx/SDx/2018.3.op2405991/bin/emconfigutil --platform /home/centos/src/project_data/aws-fpga/SDAccel/aws_platform/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm --nd 1

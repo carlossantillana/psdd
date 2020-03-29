@@ -22,6 +22,7 @@ extern "C" {
 #include <unordered_set>
 #include "ap_int.h"
 #include <ap_fixed.h>
+#include <psdd/fpga_kernel_psdd_node.h>
 
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
@@ -179,16 +180,7 @@ public:
   uintmax_t true_data_count_;
   uintmax_t false_data_count_;
 };
-struct FPGAPsddNodeStruct {
-  ap_uint<21> node_index_;
-  ap_uint<2> node_type_;
-  char children_size;
-  ap_uint<21> children_offset;
-  ap_uint<20> parameter_offset;
-  short variable_index_;
-  ap_uint<10> bool_param_offset;
-  int32_t literal_;
-} ;
+
 namespace fpga_vtree_util {
 std::vector<Vtree *> SerializeVtree(Vtree *root);
 Vtree *CopyVtree(Vtree *root);

@@ -1,23 +1,16 @@
 #ifndef FPGA_STRUCTURED_BAYESIAN_NETWORK_EVALUATE_H
 #define FPGA_STRUCTURED_BAYESIAN_NETWORK_EVALUATE_H
-#include <psdd/fpga_psdd_node.h>
-//For Small
-//const int PsddBurstLength = 51;
-//const int ChildrenBurstLength = 156;
-//const int ParamBurstLength = 78;
-//For Large
- const int PsddBurstLength = 580817;
- const int ChildrenBurstLength = 1541021;
- const int ParamBurstLength = 770511;
-//FPGA
-void EvaluateWithoutPointer(bool variables[MAX_VAR],
+#include <psdd/fpga_kernel_psdd_node.h>
+#include <bitset>
+
+
+void fpga_evaluate(bool variables[MAX_VAR],
                       std::bitset<MAX_VAR> & instantiation,
-                      ap_uint<21> fpga_serialized_psdd_evaluate [PSDD_SIZE],
-                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                      ap_uint<22> children_vector[TOTAL_CHILDREN],
-                      ap_fixed<21,8,AP_RND > parameter_vector [TOTAL_PARAM],
-                      ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
-  					          float results[NUM_QUERIES], ap_uint<12> flippers [55]);
-//CSIM
+                      ap_uint<21> fpga_serialized_psdd_evaluate [580817],
+                      FPGAPsddNodeStruct fpga_node_vector[580817],
+                      ap_uint<22> children_vector[1541021],
+                      ap_fixed<21,8,AP_RND > parameter_vector [770511],
+                      ap_fixed<14,2,AP_RND > bool_param_vector [792],
+  					          float results[3], ap_uint<12> flippers [55]);
 
 #endif // FPGA_STRUCTURED_BAYESIAN_NETWORK_EVALUATE_H
