@@ -13,14 +13,15 @@
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
+#define  MAX_VAR 65536
+
 
 //For map_network network
-
-
-const int PsddBurstLength = 580817;
-const int ChildrenBurstLength = 1541021;
-const int ParamBurstLength = 770511;
-#define  MAX_VAR 65536
+const uint PSDD_SIZE = 580817;
+const uint MAX_CHILDREN = 57;
+const uint TOTAL_CHILDREN = 1541021;
+const uint TOTAL_PARAM = 770511;
+const short TOTAL_BOOL_PARAM = 792;
 
 
 struct FPGAPsddNodeStruct {
