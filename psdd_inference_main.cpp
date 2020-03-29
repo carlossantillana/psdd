@@ -14,17 +14,18 @@
 #include <cmath>
 #include <vector>
 #include <string>
-using std::string;
-using std::vector;
-
 extern "C" {
 #include <sdd/sddapi.h>
 }
+using std::string;
+using std::vector;
+
 FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
 ap_uint<22> children_vector [TOTAL_CHILDREN];
 ap_fixed<21,8,AP_RND > parameter_vector [TOTAL_PARAM];
 ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM];
 ap_uint<12> flippers [55];
+
 bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
   std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, ap_uint<12> flippers [55]);
 struct Arg : public option::Arg {
@@ -115,7 +116,7 @@ int main(int argc, const char *argv[]) {
 
   File.close();
   ap_uint<21> fpga_serialized_psdd_ [PSDD_SIZE];
-  for (int i = 0; i < PSDD_SIZE; i++){
+  for (uint i = 0; i < PSDD_SIZE; i++){
     fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
   }
 
@@ -176,6 +177,13 @@ int main(int argc, const char *argv[]) {
                              result_size_bytes, &result);
     inBufVec.push_back(buffer_in1);
     inBufVec.push_back(buffer_in2);
+    inBufVec.push_back(buffer_in3);
+    inBufVec.push_back(buffer_in4);
+    inBufVec.push_back(buffer_in5);
+    inBufVec.push_back(buffer_in6);
+    inBufVec.push_back(buffer_in7);
+    inBufVec.push_back(buffer_in8);
+
     outBufVec.push_back(buffer_output);
 
     //Copy input data to device global memory
@@ -198,13 +206,13 @@ int main(int argc, const char *argv[]) {
 
 
     bool validResults = verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
+    if (!validResults){
+      std::cout << "error too large\n something went wrong\n";
+    }
     delete (psdd_manager);
     delete (reference_psdd_manager);
 
   }
-
-  //CSIM
-
 
   //FPGA
   bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
@@ -229,6 +237,10 @@ int main(int argc, const char *argv[]) {
       }
       difference += tmpDiff;
     }
-    std::cout << "RMSE: " << sqrt(difference/NUM_QUERIES) << std::endl;
+    double RMSE = sqrt(difference/NUM_QUERIES);
+    std::cout << "RMSE: " << RMSE << std::endl;
+    if (RMSE > .1){
+      return false;
+    }
       return true;
   }

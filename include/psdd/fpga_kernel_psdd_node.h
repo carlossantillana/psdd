@@ -15,14 +15,12 @@
 #define TOP_NODE_TYPE 3
 #define  MAX_VAR 65536
 
-
 //For map_network network
 const uint PSDD_SIZE = 580817;
 const uint MAX_CHILDREN = 57;
 const uint TOTAL_CHILDREN = 1541021;
 const uint TOTAL_PARAM = 770511;
 const short TOTAL_BOOL_PARAM = 792;
-
 
 struct FPGAPsddNodeStruct {
   ap_uint<21> node_index_;
