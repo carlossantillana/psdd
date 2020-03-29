@@ -73,7 +73,7 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
                       ap_uint<22> children_vector[TOTAL_CHILDREN],
                       ap_fixed<21,8,AP_RND > parameter_vector[TOTAL_PARAM],
                       ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
-					            float results[3], ap_uint<12> flippers [55]) {
+					            ap_uint<12> flippers [55], float results[3]) {
   //Load to FPGA
   const std::bitset<MAX_VAR> local_variables = variables;
   ap_uint<12> local_flippers [55];

@@ -134,24 +134,18 @@ int main(int argc, const char *argv[]) {
   size_t result_size_bytes = sizeof(result[0]) * NUM_QUERIES;
   // EvaluateWithoutPointer(var_mask, instantiation, fpga_serialized_psdd_,
   //   fpga_node_vector, children_vector, parameter_vector, bool_param_vector, result, flippers);
-  std::cout << "before get devices\n";
     vector<cl::Device> devices = xcl::get_xil_devices();
     cl::Device device = devices[0];
-    std::cout << "before context\n";
 
     cl::Context context(device);
     cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
     string device_name = device.getInfo<CL_DEVICE_NAME>();
-    std::cout << "before device name" << device_name << std::endl;
-    std::cout << "before find binary file\n";
 
     string binaryFile = xcl::find_binary_file(device_name, "fpga_evaluate");
-    std::cout << "before import_binary_file\n";
 
     cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
     devices.resize(1);
     cl::Program program(context, devices, bins);
-    std::cout << "before kernel\n";
 
     cl::Kernel kernel(program, "fpga_evaluate");
 
@@ -162,19 +156,19 @@ int main(int argc, const char *argv[]) {
     cl::Buffer buffer_in2(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                           instantiation_size_bytes, &instantiation);
     cl::Buffer buffer_in3(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          fpga_serialized_psdd_size_bytes, &fpga_serialized_psdd);
+                          fpga_serialized_psdd_size_bytes, &fpga_serialized_psdd[0]);
     cl::Buffer buffer_in4(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          fpga_node_vector_size_bytes, &fpga_node_vector);
+                          fpga_node_vector_size_bytes, &fpga_node_vector[0]);
     cl::Buffer buffer_in5(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          children_vector_size_bytes, &children_vector);
+                          children_vector_size_bytes, &children_vector[0]);
     cl::Buffer buffer_in6(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          parameter_vector_size_bytes, &parameter_vector);
+                          parameter_vector_size_bytes, &parameter_vector[0]);
     cl::Buffer buffer_in7(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          bool_param_vector_size_bytes, &bool_param_vector);
+                          bool_param_vector_size_bytes, &bool_param_vector[0]);
     cl::Buffer buffer_in8(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          flippers_size_bytes, &flippers);
+                          flippers_size_bytes, &flippers[0]);
     cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
-                             result_size_bytes, &result);
+                             result_size_bytes, &result[0]);
     inBufVec.push_back(buffer_in1);
     inBufVec.push_back(buffer_in2);
     inBufVec.push_back(buffer_in3);
@@ -188,17 +182,14 @@ int main(int argc, const char *argv[]) {
 
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
-    std::cout << "before kernl_add\n";
 
     auto krnl_vector_add = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&,cl::Buffer&, cl::Buffer&,cl::Buffer&, cl::Buffer&,
                                              cl::Buffer&>(kernel);
-             std::cout << "before lauch kernel\n";
 
     //Launch the Kernel
     //fix input to this kernel
     krnl_vector_add(cl::EnqueueArgs(q, cl::NDRange(1, 1, 1), cl::NDRange(1, 1, 1)),
                     buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6, buffer_in7, buffer_in8, buffer_output);
-                    std::cout << "before enqueue mem\n";
 
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
