@@ -588,9 +588,9 @@ float maxBoolParam = -4000;
 float minBoolParam = 20;
 
 
-FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> children_vector,
-  int & currentChild, std::vector<ap_fixed<21,8,AP_RND>, aligned_allocator<ap_fixed<21,8,AP_RND>>> parameter_vector, int & currentParam,
-  std::vector<ap_fixed<14,2,AP_RND>, aligned_allocator<ap_fixed<14,2,AP_RND>>> bool_param_vector, int & currentBoolParam){
+FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> &children_vector,
+  int & currentChild, std::vector<ap_fixed<21,8,AP_RND>, aligned_allocator<ap_fixed<21,8,AP_RND>>> &parameter_vector, int & currentParam,
+  std::vector<ap_fixed<14,2,AP_RND>, aligned_allocator<ap_fixed<14,2,AP_RND>>>& bool_param_vector, int & currentBoolParam){
   FPGAPsddNodeStruct PsddStruct;
   PsddStruct.node_index_ = cur_node->node_index_;
   PsddStruct.node_type_ = cur_node->node_type_;
@@ -636,9 +636,9 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_u
   PsddStruct.literal_ = cur_node->literal_;
   return PsddStruct;
 }
-FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> fpga_node_vector,
-  std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> children_vector, std::vector<ap_fixed<21,8,AP_RND>, aligned_allocator<ap_fixed<21,8,AP_RND>>>  parameter_vector ,
-  std::vector<ap_fixed<14,2,AP_RND>, aligned_allocator<ap_fixed<14,2,AP_RND>>> bool_param_vector ) {
+FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> &fpga_node_vector,
+  std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> &children_vector, std::vector<ap_fixed<21,8,AP_RND>, aligned_allocator<ap_fixed<21,8,AP_RND>>> &parameter_vector ,
+  std::vector<ap_fixed<14,2,AP_RND>, aligned_allocator<ap_fixed<14,2,AP_RND>>> &bool_param_vector ) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
   int currentChild = 0;

@@ -25,8 +25,8 @@ std::vector<ap_fixed<21,8,AP_RND>, aligned_allocator<ap_fixed<21,8,AP_RND>>> par
 std::vector<ap_fixed<14,2,AP_RND>, aligned_allocator<ap_fixed<14,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
 std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers (55);
 
-bool verifyResults(std::vector<float, aligned_allocator<float>> results , const char *psdd_filename, PsddManager *reference_psdd_manager,
-   std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers );
+bool verifyResults(std::vector<float, aligned_allocator<float>> &results , const char *psdd_filename, PsddManager *reference_psdd_manager,
+   std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> &flippers );
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -177,14 +177,16 @@ std::cout << "right before kernel def\n";
     // krnl_vector_add(cl::EnqueueArgs(q, cl::NDRange(1, 1, 1), cl::NDRange(1, 1, 1)),
     //                 buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6, buffer_in7, buffer_in8, buffer_output);
     std::cout << "setting args\n";
-    kernel.setArg(0, var_mask);
-    kernel.setArg(1, instantiation);
+    kernel.setArg(0, sizeof(var_mask));
+    kernel.setArg(1, sizeof(instantiation));
     kernel.setArg(2, buffer_in1);
     kernel.setArg(3, buffer_in2);
     kernel.setArg(4, buffer_in3);
     kernel.setArg(5, buffer_in4);
     kernel.setArg(6, buffer_in5);
     kernel.setArg(7, buffer_in6);
+    kernel.setArg(8, buffer_output);
+
 std::cout << "enque task\n";
     q.enqueueTask(kernel);
     //Copy Result from Device Global Memory to Host Local Memory
@@ -203,8 +205,8 @@ std::cout << "finished kernel\n";
   }
 
   //FPGA
-  bool verifyResults(std::vector<float, aligned_allocator<float>> results , const char *psdd_filename, PsddManager *reference_psdd_manager,
-     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers ){
+  bool verifyResults(std::vector<float, aligned_allocator<float>> &results , const char *psdd_filename, PsddManager *reference_psdd_manager,
+     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> &flippers ){
     PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
     auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
     double reference_results [NUM_QUERIES] = {0};

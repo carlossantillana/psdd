@@ -73,7 +73,7 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
                       const ap_uint<22> *children_vector,
                       const ap_fixed<21,8,AP_RND > *parameter_vector,
                       const ap_fixed<14,2,AP_RND > *bool_param_vector,
-					            const ap_uint<12> *flippers, float *results) {
+					            const ap_uint<12> *flippers, float *result) {
   //Load to FPGA
   #pragma HLS interface m_axi port = serialized_nodes offset = slave bundle = gmem
   #pragma HLS interface m_axi port = fpga_node_vector offset = slave bundle = gmem
@@ -81,7 +81,7 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
   #pragma HLS interface m_axi port = parameter_vector offset = slave bundle = gmem
   #pragma HLS interface m_axi port = bool_param_vector offset = slave bundle = gmem
   #pragma HLS interface m_axi port = flippers offset = slave bundle = gmem
-  #pragma HLS interface m_axi port = results offset = slave bundle = gmem
+  #pragma HLS interface m_axi port = result offset = slave bundle = gmem
   #pragma HLS interface s_axilite port = variables bundle = control
   #pragma HLS interface s_axilite port = instantiation bundle = control
   #pragma HLS interface s_axilite port = serialized_nodes bundle = control
@@ -90,8 +90,14 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
   #pragma HLS interface s_axilite port = parameter_vector bundle = control
   #pragma HLS interface s_axilite port = bool_param_vector bundle = control
   #pragma HLS interface s_axilite port = flippers bundle = control
-  #pragma HLS interface s_axilite port = results bundle = control
+  #pragma HLS interface s_axilite port = result bundle = control
   #pragma HLS interface s_axilite port = return bundle = control
+
+  std::cout << "inside fpga_evaluate\n";
+  std::cout << "var_mask:" << variables << std::endl;
+  std::cout << "fpga_node_vector[0]: " << fpga_node_vector[0].node_index_ << std::endl;
+  std::cout << "children_vector: " << children_vector[0] << std::endl;
+
   const std::bitset<MAX_VAR> local_variables = variables;
   ap_uint<12> local_flippers [55];
   ap_uint<21> local_serialized_nodes [PSDD_SIZE];
@@ -160,7 +166,7 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = max_prob;
       }
     }
-    results[m] = evaluation_cache[local_fpga_node_vector[serialized_nodes[0]].node_index_];
+    result[m] = evaluation_cache[local_fpga_node_vector[serialized_nodes[0]].node_index_];
 
   }
 }

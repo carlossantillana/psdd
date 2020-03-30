@@ -591,7 +591,7 @@ double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                         std::bitset<MAX_VAR> &instantiation,
                        const std::vector<PsddNode *> &serialized_nodes,
                      double results [NUM_QUERIES],
-                   std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers) {
+                   std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> &flippers) {
   for (int m = 0; m <  NUM_QUERIES; m++){
     std::unordered_map<uintmax_t, Probability> evaluation_cache;
     instantiation.reset();
