@@ -19,6 +19,7 @@ extern "C" {
 #include <psdd/random_double_generator.h>
 #include <unordered_set>
 #include "ap_int.h"
+#include <xcl2/xcl2.hpp>
 
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
@@ -225,7 +226,7 @@ double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                         std::bitset<MAX_VAR> &instantiation,
                        const std::vector<PsddNode *> &serialized_nodes,
                      double results [NUM_QUERIES],
-                     ap_uint<12> flippers [55]);
+                     std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers);
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<PsddNode *> &nodes,

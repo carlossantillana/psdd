@@ -6,6 +6,8 @@
 #define PSDD_FPGA_PSDD_MANAGER_H
 #include <psdd/fpga_psdd_node.h>
 #include <psdd/fpga_psdd_unique_table.h>
+#include <xcl2/xcl2.hpp>
+
 extern "C" {
 #include <sdd/sddapi.h>
 };
@@ -50,9 +52,9 @@ FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
   std::pair<FPGAPsddNode *, PsddParameter> Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2,
                                                 uintmax_t flag_index);
   Vtree *vtree() const;
-  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-    ap_uint<22> children_vector [TOTAL_CHILDREN], ap_fixed<21,8,AP_RND > parameter_vector [TOTAL_PARAM],
-    ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]);
+  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> fpga_node_vector,
+    std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> children_vector, std::vector<ap_fixed<21,8,AP_RND>, aligned_allocator<ap_fixed<21,8,AP_RND>>>  parameter_vector ,
+    std::vector<ap_fixed<14,2,AP_RND>, aligned_allocator<ap_fixed<14,2,AP_RND>>> bool_param_vector );
   std::vector<FPGAPsddNode *> SampleParametersForMultipleFPGAPsdds(
       RandomDoubleGenerator *generator,
       const std::vector<FPGAPsddNode *> &root_psdd_nodes, uintmax_t flag_index);

@@ -51,11 +51,11 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
    }
  }
 
- void load(ap_uint<21>  local_serialized_nodes [PSDD_SIZE], ap_uint<21>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
-   FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], ap_uint<22> local_children_vector[TOTAL_CHILDREN], ap_uint<22> children_vector[TOTAL_CHILDREN],
-    ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], ap_fixed<21,8,AP_RND > parameter_vector[TOTAL_PARAM],
-    ap_fixed<14,2,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
-     ap_uint<12> local_flippers [55], ap_uint<12> flippers [55]){
+ void load(ap_uint<21>  local_serialized_nodes [PSDD_SIZE], const ap_uint<21>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
+   const FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE], ap_uint<22> local_children_vector[TOTAL_CHILDREN], const ap_uint<22> children_vector[TOTAL_CHILDREN],
+    ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], const ap_fixed<21,8,AP_RND > parameter_vector[TOTAL_PARAM],
+    ap_fixed<14,2,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], const ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
+     ap_uint<12> local_flippers [55], const ap_uint<12> flippers [55]){
    load12Bit(flippers, local_flippers, 55);
    load20Bit(serialized_nodes, local_serialized_nodes, PSDD_SIZE);
    loadStructs(fpga_node_vector, local_fpga_node_vector, PSDD_SIZE);
@@ -67,14 +67,31 @@ void load12Bit(const ap_uint<12>* data_dram, ap_uint<12>* data_local, int burstL
 
 //FPGA
  void fpga_evaluate(const std::bitset<MAX_VAR> &variables,
-                      std::bitset<MAX_VAR> & instantiation,
-                      ap_uint<21>  serialized_nodes [PSDD_SIZE],
-                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
-                      ap_uint<22> children_vector[TOTAL_CHILDREN],
-                      ap_fixed<21,8,AP_RND > parameter_vector[TOTAL_PARAM],
-                      ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
-					            ap_uint<12> flippers [55], float results[3]) {
+                      const std::bitset<MAX_VAR> & instantiation,
+                      const ap_uint<21> *serialized_nodes,
+                      const FPGAPsddNodeStruct *fpga_node_vector,
+                      const ap_uint<22> *children_vector,
+                      const ap_fixed<21,8,AP_RND > *parameter_vector,
+                      const ap_fixed<14,2,AP_RND > *bool_param_vector,
+					            const ap_uint<12> *flippers, float *results) {
   //Load to FPGA
+  #pragma HLS interface m_axi port = serialized_nodes offset = slave bundle = gmem
+  #pragma HLS interface m_axi port = fpga_node_vector offset = slave bundle = gmem
+  #pragma HLS interface m_axi port = children_vector offset = slave bundle = gmem
+  #pragma HLS interface m_axi port = parameter_vector offset = slave bundle = gmem
+  #pragma HLS interface m_axi port = bool_param_vector offset = slave bundle = gmem
+  #pragma HLS interface m_axi port = flippers offset = slave bundle = gmem
+  #pragma HLS interface m_axi port = results offset = slave bundle = gmem
+  #pragma HLS interface s_axilite port = variables bundle = control
+  #pragma HLS interface s_axilite port = instantiation bundle = control
+  #pragma HLS interface s_axilite port = serialized_nodes bundle = control
+  #pragma HLS interface s_axilite port = fpga_node_vector bundle = control
+  #pragma HLS interface s_axilite port = children_vector bundle = control
+  #pragma HLS interface s_axilite port = parameter_vector bundle = control
+  #pragma HLS interface s_axilite port = bool_param_vector bundle = control
+  #pragma HLS interface s_axilite port = flippers bundle = control
+  #pragma HLS interface s_axilite port = results bundle = control
+  #pragma HLS interface s_axilite port = return bundle = control
   const std::bitset<MAX_VAR> local_variables = variables;
   ap_uint<12> local_flippers [55];
   ap_uint<21> local_serialized_nodes [PSDD_SIZE];

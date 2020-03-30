@@ -19,15 +19,14 @@ extern "C" {
 }
 using std::string;
 using std::vector;
+std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>>  fpga_node_vector (PSDD_SIZE);
+std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> children_vector (TOTAL_CHILDREN);
+std::vector<ap_fixed<21,8,AP_RND>, aligned_allocator<ap_fixed<21,8,AP_RND>>> parameter_vector (TOTAL_PARAM);
+std::vector<ap_fixed<14,2,AP_RND>, aligned_allocator<ap_fixed<14,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
+std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers (55);
 
-FPGAPsddNodeStruct fpga_node_vector [PSDD_SIZE];
-ap_uint<22> children_vector [TOTAL_CHILDREN];
-ap_fixed<21,8,AP_RND > parameter_vector [TOTAL_PARAM];
-ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM];
-ap_uint<12> flippers [55];
-
-bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
-  std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, ap_uint<12> flippers [55]);
+bool verifyResults(std::vector<float, aligned_allocator<float>> results , const char *psdd_filename, PsddManager *reference_psdd_manager,
+   std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers );
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -73,6 +72,7 @@ const option::Descriptor usage[] = {
     {0, 0, 0, 0, 0, 0}};
 
 int main(int argc, const char *argv[]) {
+  std::cout << "starting main\n";
   argc -= (argc > 0);
   argv += (argc > 0); // skip program name argv[0] if present
   option::Stats stats(usage, argc, argv);
@@ -99,7 +99,7 @@ int main(int argc, const char *argv[]) {
 
   std::vector<SddLiteral> variables = vtree_util::VariablesUnderVtree(psdd_manager->vtree());
   auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
-  auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
+  // auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
   auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, children_vector);
 
   std::bitset<MAX_VAR> var_mask;
@@ -115,16 +115,15 @@ int main(int argc, const char *argv[]) {
   }
 
   File.close();
-  ap_uint<21> fpga_serialized_psdd_ [PSDD_SIZE];
+  std::vector<ap_uint<21>,aligned_allocator<ap_uint<21>>> fpga_serialized_psdd_ (PSDD_SIZE);   //Input Matrix 1
+
   for (uint i = 0; i < PSDD_SIZE; i++){
     fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
   }
-
+std::cout << "right before fpga\n";
   //FPGA
-  float result [NUM_QUERIES] = {0};
+  std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
   //init Sizes
-  size_t var_mask_size_bytes = sizeof(var_mask);
-  size_t instantiation_size_bytes = sizeof(instantiation);
   size_t fpga_serialized_psdd_size_bytes = sizeof(fpga_serialized_psdd_[0]) * PSDD_SIZE;
   size_t fpga_node_vector_size_bytes = sizeof(fpga_node_vector[0]) * PSDD_SIZE;
   size_t children_vector_size_bytes = sizeof(children_vector[0]) * TOTAL_CHILDREN;
@@ -134,68 +133,66 @@ int main(int argc, const char *argv[]) {
   size_t result_size_bytes = sizeof(result[0]) * NUM_QUERIES;
   // EvaluateWithoutPointer(var_mask, instantiation, fpga_serialized_psdd_,
   //   fpga_node_vector, children_vector, parameter_vector, bool_param_vector, result, flippers);
+  std::cout << "right before get devices\n";
     vector<cl::Device> devices = xcl::get_xil_devices();
     cl::Device device = devices[0];
 
     cl::Context context(device);
     cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
     string device_name = device.getInfo<CL_DEVICE_NAME>();
-
+std::cout << "right before find binary file\n";
     string binaryFile = xcl::find_binary_file(device_name, "fpga_evaluate");
-
+std::cout << "right before import\n";
     cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
     devices.resize(1);
     cl::Program program(context, devices, bins);
-
+std::cout << "right before kernel def\n";
     cl::Kernel kernel(program, "fpga_evaluate");
 
     //Allocate Buffer in Global Memory
-    vector<cl::Memory> inBufVec, outBufVec;
     cl::Buffer buffer_in1(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          var_mask_size_bytes, &var_mask);
+                          fpga_serialized_psdd_size_bytes, fpga_serialized_psdd.data());
     cl::Buffer buffer_in2(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          instantiation_size_bytes, &instantiation);
+                          fpga_node_vector_size_bytes, fpga_node_vector.data());
     cl::Buffer buffer_in3(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          fpga_serialized_psdd_size_bytes, &fpga_serialized_psdd[0]);
+                          children_vector_size_bytes, children_vector.data());
     cl::Buffer buffer_in4(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          fpga_node_vector_size_bytes, &fpga_node_vector[0]);
+                          parameter_vector_size_bytes, parameter_vector.data());
     cl::Buffer buffer_in5(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          children_vector_size_bytes, &children_vector[0]);
+                          bool_param_vector_size_bytes, bool_param_vector.data());
     cl::Buffer buffer_in6(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          parameter_vector_size_bytes, &parameter_vector[0]);
-    cl::Buffer buffer_in7(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          bool_param_vector_size_bytes, &bool_param_vector[0]);
-    cl::Buffer buffer_in8(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          flippers_size_bytes, &flippers[0]);
+                          flippers_size_bytes, flippers.data());
     cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
-                             result_size_bytes, &result[0]);
-    inBufVec.push_back(buffer_in1);
-    inBufVec.push_back(buffer_in2);
-    inBufVec.push_back(buffer_in3);
-    inBufVec.push_back(buffer_in4);
-    inBufVec.push_back(buffer_in5);
-    inBufVec.push_back(buffer_in6);
-    inBufVec.push_back(buffer_in7);
-    inBufVec.push_back(buffer_in8);
-
-    outBufVec.push_back(buffer_output);
+                             result_size_bytes, result.data());
 
     //Copy input data to device global memory
-    q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
-
-    auto krnl_vector_add = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&,cl::Buffer&, cl::Buffer&,cl::Buffer&, cl::Buffer&,
-                                             cl::Buffer&>(kernel);
-
-    //Launch the Kernel
-    //fix input to this kernel
-    krnl_vector_add(cl::EnqueueArgs(q, cl::NDRange(1, 1, 1), cl::NDRange(1, 1, 1)),
-                    buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6, buffer_in7, buffer_in8, buffer_output);
-
+    std::cout << "right before copy input data\n";
+    q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6}, 0/* 0 means from host*/);
+    //
+    // auto krnl_vector_add = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&,cl::Buffer&, cl::Buffer&,cl::Buffer&, cl::Buffer&,
+    //                                          cl::Buffer&>(kernel);
+    //
+    // //Launch the Kernel
+    // //fix input to this kernel
+    // krnl_vector_add(cl::EnqueueArgs(q, cl::NDRange(1, 1, 1), cl::NDRange(1, 1, 1)),
+    //                 buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6, buffer_in7, buffer_in8, buffer_output);
+    std::cout << "setting args\n";
+    kernel.setArg(0, var_mask);
+    kernel.setArg(1, instantiation);
+    kernel.setArg(2, buffer_in1);
+    kernel.setArg(3, buffer_in2);
+    kernel.setArg(4, buffer_in3);
+    kernel.setArg(5, buffer_in4);
+    kernel.setArg(6, buffer_in5);
+    kernel.setArg(7, buffer_in6);
+std::cout << "enque task\n";
+    q.enqueueTask(kernel);
     //Copy Result from Device Global Memory to Host Local Memory
-    q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
+    std::cout << "copy result\n";
+    q.enqueueMigrateMemObjects({buffer_output}, CL_MIGRATE_MEM_OBJECT_HOST);
     q.finish();
 
-
+std::cout << "finished kernel\n";
     bool validResults = verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
     if (!validResults){
       std::cout << "error too large\n something went wrong\n";
@@ -206,8 +203,8 @@ int main(int argc, const char *argv[]) {
   }
 
   //FPGA
-  bool verifyResults(float * results, const char *psdd_filename, PsddManager *reference_psdd_manager,
-     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, ap_uint<12> flippers [55]){
+  bool verifyResults(std::vector<float, aligned_allocator<float>> results , const char *psdd_filename, PsddManager *reference_psdd_manager,
+     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers ){
     PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
     auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
     double reference_results [NUM_QUERIES] = {0};
