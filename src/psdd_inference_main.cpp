@@ -126,6 +126,9 @@ std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
 
 // End of My CODE
 
+//Their CODE
+
+
   //Allocate Memory in Host Memory
   size_t fpga_serialized_psdd_size_bytes = sizeof(fpga_serialized_psdd_[0]) * PSDD_SIZE;
   size_t fpga_node_vector_size_bytes = sizeof(fpga_node_vector[0]) * PSDD_SIZE;
@@ -192,9 +195,7 @@ std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
 //OPENCL HOST CODE AREA END
 
   // Compare the results of the Device to the simulation
-  bool fail = false;
-  cout << "TEST " << (fail ? "FAILED" : "PASSED") << endl;
-  return (fail ? EXIT_FAILURE :  EXIT_SUCCESS);
+  return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
 }
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &results , const char *psdd_filename, PsddManager *reference_psdd_manager,
