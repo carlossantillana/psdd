@@ -226,7 +226,7 @@ double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                         std::bitset<MAX_VAR> &instantiation,
                        const std::vector<PsddNode *> &serialized_nodes,
                      double results [NUM_QUERIES],
-                     std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> &flippers);
+                     std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers);
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<PsddNode *> &nodes,

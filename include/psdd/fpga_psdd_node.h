@@ -167,6 +167,16 @@ public:
   uintmax_t true_data_count_;
   uintmax_t false_data_count_;
 };
+struct PsddNodeStruct {
+  ap_uint<32> node_index_;
+  ap_uint<8> node_type_;
+  char children_size;
+  ap_uint<32> children_offset;
+  ap_uint<32> parameter_offset;
+  short variable_index_;
+  ap_uint<32> bool_param_offset;
+  int32_t literal_;
+};
 
 namespace fpga_vtree_util {
 std::vector<Vtree *> SerializeVtree(Vtree *root);
@@ -187,9 +197,9 @@ std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> &fpga_node_vector
-                                                ,std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> &children_vector);
+                                                ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector);
 std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> &fpga_node_vector
-                                                  ,std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> &children_vector);
+                                                  ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,

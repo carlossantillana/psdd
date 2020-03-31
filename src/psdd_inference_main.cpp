@@ -18,13 +18,13 @@ using std::endl;
 using std::string;
 using std::vector;
 std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>>  fpga_node_vector (PSDD_SIZE);
-std::vector<ap_uint<22>,aligned_allocator<ap_uint<22>>> children_vector (TOTAL_CHILDREN);
-std::vector<ap_fixed<21,8,AP_RND>, aligned_allocator<ap_fixed<21,8,AP_RND>>> parameter_vector (TOTAL_PARAM);
-std::vector<ap_fixed<14,2,AP_RND>, aligned_allocator<ap_fixed<14,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
-std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> flippers (55);
+std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> children_vector (TOTAL_CHILDREN);
+std::vector<ap_fixed<32,10,AP_RND>, aligned_allocator<ap_fixed<32,10,AP_RND>>> parameter_vector (TOTAL_PARAM);
+std::vector<ap_fixed<32,4,AP_RND>, aligned_allocator<ap_fixed<32,4,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
+std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (55);
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &results , const char *psdd_filename, PsddManager *reference_psdd_manager,
-   std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> &flippers );
+   std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers );
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
  sdd_vtree_free(psdd_vtree);
  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
     children_vector, parameter_vector, bool_param_vector);
- ap_uint<21> correctPsddSize = 0;
+ ap_uint<32> correctPsddSize = 0;
 
  uint32_t root_node_idx = result_node->node_index_;
 
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
  std::bitset<MAX_VAR> var_mask;
  var_mask.set();
  //Read mpe_query
- std::bitset<MAX_VAR> instantiation;
+  std::bitset<MAX_VAR> instantiation;
  std::ifstream File;
  File.open("allPossibleSolutions.txt");
  for(int a = 0; a < 55; a++){
@@ -116,18 +116,13 @@ int main(int argc, char** argv)
  }
 
  File.close();
- std::vector<ap_uint<21>,aligned_allocator<ap_uint<21>>> fpga_serialized_psdd_ (PSDD_SIZE);   //Input Matrix 1
+ std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> fpga_serialized_psdd_ (PSDD_SIZE);   //Input Matrix 1
 
  for (uint i = 0; i < PSDD_SIZE; i++){
    fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
  }
 std::cout << "right before fpga\n";
 std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
-
-// End of My CODE
-
-//Their CODE
-
 
   //Allocate Memory in Host Memory
   size_t fpga_serialized_psdd_size_bytes = sizeof(fpga_serialized_psdd_[0]) * PSDD_SIZE;
@@ -199,7 +194,7 @@ std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
 }
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &results , const char *psdd_filename, PsddManager *reference_psdd_manager,
-    std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<12>, aligned_allocator<ap_uint<12>>> &flippers ){
+    std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers ){
    PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    double reference_results [NUM_QUERIES] = {0};
