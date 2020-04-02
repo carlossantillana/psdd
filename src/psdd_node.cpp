@@ -12,7 +12,6 @@
 #include <gmp.h>
 #include <iostream>
 #include <psdd/psdd_node.h>
-#include <psdd/fpga_evaluate.h>
 #include <queue>
 #include <random>
 #include <stack>

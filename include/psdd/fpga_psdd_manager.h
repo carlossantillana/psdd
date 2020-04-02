@@ -52,7 +52,7 @@ FPGAPsddNode *NormalizeFPGAPsddNode(Vtree *target_vtree_node,
   std::pair<FPGAPsddNode *, PsddParameter> Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2,
                                                 uintmax_t flag_index);
   Vtree *vtree() const;
-  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> &fpga_node_vector,
+  FPGAPsddNode *ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector,
     std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector, std::vector<ap_fixed<32,10,AP_RND>, aligned_allocator<ap_fixed<32,10,AP_RND>>> & parameter_vector ,
     std::vector<ap_fixed<32,4,AP_RND>, aligned_allocator<ap_fixed<32,4,AP_RND>>> &bool_param_vector );
   std::vector<FPGAPsddNode *> SampleParametersForMultipleFPGAPsdds(

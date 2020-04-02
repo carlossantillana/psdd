@@ -91,6 +91,8 @@ public:
   uintmax_t user_data() const;
   uint32_t variable_index() const;
   int32_t literal() const;
+  uint32_t children_offset() const;
+
 
   void SetUserData(uintmax_t user_data);
   bool activation_flag() const;
@@ -166,16 +168,7 @@ public:
   PsddParameter false_parameter_;
   uintmax_t true_data_count_;
   uintmax_t false_data_count_;
-};
-struct PsddNodeStruct {
-  ap_uint<32> node_index_;
-  ap_uint<8> node_type_;
-  char children_size;
-  ap_uint<32> children_offset;
-  ap_uint<32> parameter_offset;
-  short variable_index_;
-  ap_uint<32> bool_param_offset;
-  int32_t literal_;
+  uint32_t children_offset_;
 };
 
 namespace fpga_vtree_util {
@@ -196,9 +189,9 @@ namespace fpga_psdd_node_util {
 std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
-std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> &fpga_node_vector
+std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
                                                 ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector);
-std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> &fpga_node_vector
+std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
                                                   ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
@@ -215,12 +208,12 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 Probability Evaluate(const std::bitset<MAX_VAR> &variables,
                      const std::bitset<MAX_VAR> &instantiation,
                      FPGAPsddNode *root_node);
-uint32_t get_variable_index(FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE]);
+uint32_t get_variable_index(PsddNodeStruct fpga_node_vector[PSDD_SIZE]);
 
 float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                       const std::bitset<MAX_VAR> &instantiation,
                       ap_uint<21>  serialized_nodes [PSDD_SIZE],
-                      FPGAPsddNodeStruct fpga_node_vector[PSDD_SIZE],
+                      PsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       ap_uint<22> children_vector[TOTAL_CHILDREN],
                       ap_fixed<21,8,AP_RND > parameter_vector[TOTAL_PARAM],
                       ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]);

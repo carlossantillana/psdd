@@ -588,14 +588,14 @@ float maxBoolParam = -4000;
 float minBoolParam = 20;
 
 
-FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector,
+PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector,
   int & currentChild, std::vector<ap_fixed<32,10,AP_RND>, aligned_allocator<ap_fixed<32,10,AP_RND>>> &parameter_vector, int & currentParam,
   std::vector<ap_fixed<32,4,AP_RND>, aligned_allocator<ap_fixed<32,4,AP_RND>>>& bool_param_vector, int & currentBoolParam){
-  FPGAPsddNodeStruct PsddStruct;
+  PsddNodeStruct PsddStruct;
   PsddStruct.node_index_ = cur_node->node_index_;
   PsddStruct.node_type_ = cur_node->node_type_;
   PsddStruct.children_size = cur_node->primes_.size();
-  PsddStruct.children_offset = currentChild;
+  PsddStruct.children_offset = cur_node->children_offset_;
   PsddStruct.parameter_offset = currentParam;
   for (int i = 0; i < cur_node->primes_.size(); i++){
     uint32_t prime = cur_node->primes_[i]->node_index_;
@@ -632,11 +632,13 @@ FPGAPsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_u
         maxBoolParam = cur_node->false_parameter_.parameter_;
     if (cur_node->false_parameter_.parameter_ < minBoolParam)
       minBoolParam = cur_node->false_parameter_.parameter_;
+  } else{
+    PsddStruct.bool_param_offset = 0;
   }
   PsddStruct.literal_ = cur_node->literal_;
   return PsddStruct;
 }
-FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<FPGAPsddNodeStruct,aligned_allocator<FPGAPsddNodeStruct>> &fpga_node_vector,
+FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector,
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector, std::vector<ap_fixed<32,10,AP_RND>, aligned_allocator<ap_fixed<32,10,AP_RND>>> &parameter_vector ,
   std::vector<ap_fixed<32,4,AP_RND>, aligned_allocator<ap_fixed<32,4,AP_RND>>> &bool_param_vector ) {
   std::ifstream psdd_file;
@@ -666,9 +668,11 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       int32_t literal;
       iss >> node_index >> vtree_index >> literal;
       FPGAPsddNode *cur_node = GetFPGAPsddLiteralNode(literal, flag_index);
+      cur_node->children_offset_ = currentChild;
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node, children_vector,
          currentChild, parameter_vector, currentParam, bool_param_vector, currentBoolParam);
       construct_fpga_cache[node_index] = cur_node;
+      currentChild = cur_node->children_offset_;
       root_node = cur_node;
     } else if (line[0] == 'T') {
       std::istringstream iss(line.substr(1, std::string::npos));
@@ -682,9 +686,10 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       FPGAPsddNode *cur_node = GetFPGAPsddTopNode(
           variable_index, flag_index, PsddParameter::CreateFromLog(pos_log_pr),
           PsddParameter::CreateFromLog(neg_log_pr));
+          cur_node->children_offset_ = currentChild;
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
          children_vector, currentChild, parameter_vector, currentParam, bool_param_vector, currentBoolParam);
-
+         currentChild = cur_node->children_offset_;
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     } else {
@@ -717,9 +722,11 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       }
       FPGAPsddNode *cur_node =
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
+        cur_node->children_offset_ = currentChild;
+
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
         children_vector, currentChild, parameter_vector, currentParam, bool_param_vector, currentBoolParam);
-
+        currentChild = cur_node->children_offset_;
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     }

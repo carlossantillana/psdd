@@ -20,4 +20,7 @@ mkdir -p xclbin
 /opt/Xilinx/SDx/2018.3.op2405991/bin/emconfigutil --platform /home/centos/src/project_data/aws-fpga/SDAccel/aws_platform/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm --nd 1
 
 #runs program
-XCL_EMULATION_MODE=sw_emu ./psdd_inference ../weighted_map_network.psdd  ../weighted_map_network.vtree
+#Large network
+# XCL_EMULATION_MODE=sw_emu ./psdd_inference ../weighted_map_network.psdd  ../weighted_map_network.vtree
+#small network
+XCL_EMULATION_MODE=sw_emu ./psdd_inference ../grids.psdd  ../grids.vtree
