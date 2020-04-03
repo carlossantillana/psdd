@@ -133,8 +133,15 @@ std::cout << "right before fpga\n";
   size_t result_size_bytes = sizeof(int) * 3;
   std::vector<int, aligned_allocator<int>> result (3);
 
+  #define DATA_SIZE 4096
+  size_t vector_size_bytes = sizeof(int) * DATA_SIZE;
+  std::vector<int,aligned_allocator<int>> source_hw_results(DATA_SIZE);
+
+  std::vector<int,aligned_allocator<int>> source_in1(DATA_SIZE);
+  std::vector<int,aligned_allocator<int>> source_in2(DATA_SIZE);
+  cl_int err;
+
   // OPENCL HOST CODE AREA START
-      cl_int err;
       // get_xil_devices() is a utility API which will find the xilinx
       // platforms and will return list of devices connected to Xilinx platform
       std::vector<cl::Device> devices = xcl::get_xil_devices();
@@ -159,19 +166,20 @@ std::cout << "right before fpga\n";
       // Buffers are allocated using CL_MEM_USE_HOST_PTR for efficient memory and
       // Device-to-host communication
       OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-              fpga_serialized_psdd_size_bytes, fpga_serialized_psdd_.data(), &err));
+              vector_size_bytes, source_in1.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in2   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-              fpga_node_vector_size_bytes, fpga_node_vector.data(), &err));
+              vector_size_bytes, source_in2.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
-              result_size_bytes, result.data(), &err));
+              vector_size_bytes, source_hw_results.data(), &err));
 
       // Copy input data to device global memory
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2},0/* 0 means from host*/));
 
+      int size = DATA_SIZE;
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in2));
       OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(3, NUM_QUERIES));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(3, size));
 
       // Launch the Kernel
       // For HLS kernels global and local size is always (1,1,1). So, it is recommended
@@ -184,7 +192,7 @@ std::cout << "right before fpga\n";
   // OPENCL HOST CODE AREA END
 std::cout << "results\n";
 for (int i =0; i < 3; i++){
-  std::cout << result[i] << ", ";
+  std::cout << source_hw_results[i] << ", ";
 }
 std::cout << std::endl;
  // Compare the results of the Device to the simulation
