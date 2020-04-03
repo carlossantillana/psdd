@@ -122,8 +122,6 @@ int main(int argc, char** argv)
  for (uint i = 0; i < PSDD_SIZE; i++){
    fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
  }
-std::cout << "right before fpga\n";
-
   //Allocate Memory in Host Memory
   size_t fpga_serialized_psdd_size_bytes = sizeof(fpga_serialized_psdd_[0]) * PSDD_SIZE;
   size_t fpga_node_vector_size_bytes = sizeof(fpga_node_vector[0]) * PSDD_SIZE;
@@ -131,20 +129,11 @@ std::cout << "right before fpga\n";
   size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_PARAM;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
   size_t flippers_size_bytes = sizeof(flippers[0]) * 55;
-  size_t result_size_bytes = sizeof(float) * 32;
-  std::vector<float, aligned_allocator<float>> result (32);
-
-  #define DATA_SIZE 4096
-  size_t vector_size_bytes = sizeof(int) * DATA_SIZE;
-  std::vector<int,aligned_allocator<int>> source_hw_results(DATA_SIZE);
-
-  std::vector<int,aligned_allocator<int>> source_in1(DATA_SIZE);
-  std::vector<int,aligned_allocator<int>> source_in2(DATA_SIZE);
+  size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
+  std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
   cl_int err;
 
   // OPENCL HOST CODE AREA START
-      // get_xil_devices() is a utility API which will find the xilinx
-      // platforms and will return list of devices connected to Xilinx platform
       std::vector<cl::Device> devices = xcl::get_xil_devices();
       cl::Device device = devices[0];
 
@@ -152,20 +141,13 @@ std::cout << "right before fpga\n";
       OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE, &err));
       OCL_CHECK(err, std::string device_name = device.getInfo<CL_DEVICE_NAME>(&err));
 
-      // find_binary_file() is a utility API which will search the xclbin file for
-      // targeted mode (sw_emu/hw_emu/hw) and for targeted platforms.
       std::string binaryFile = xcl::find_binary_file(device_name,"fpga_evaluate");
 
-      // import_binary_file() ia a utility API which will load the binaryFile
-      // and will return Binaries.
       cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
       devices.resize(1);
       OCL_CHECK(err, cl::Program program(context, devices, bins, NULL, &err));
       OCL_CHECK(err, cl::Kernel krnl_vector_add(program,"fpga_evaluate", &err));
 
-      // Allocate Buffer in Global Memory
-      // Buffers are allocated using CL_MEM_USE_HOST_PTR for efficient memory and
-      // Device-to-host communication
       OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
               fpga_serialized_psdd_size_bytes, fpga_serialized_psdd_.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in2   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
@@ -183,7 +165,6 @@ std::cout << "right before fpga\n";
 
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6},0/* 0 means from host*/));
 
-      int size = DATA_SIZE;
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in2));
       OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in3));
@@ -200,25 +181,20 @@ std::cout << "right before fpga\n";
 
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
       q.finish();
+
   // OPENCL HOST CODE AREA END
 std::cout << "results\n";
-for (int i =0; i < 32; i++){
+for (int i =0; i < NUM_QUERIES; i++){
   std::cout << result[i] << ", ";
 }
 std::cout << "\n ground truth\n";
 
-for (int i =0; i < 32; i++){
-  if (i %2 == 0)
-  std::cout << bool_param_vector[i] << ", ";
-  else
-  std::cout << parameter_vector[i] << ", ";
-
+for (int i =0; i < NUM_QUERIES; i++){
+  std::cout << fpga_node_vector[i].node_index_ << ", ";
 }
 std::cout << std::endl;
  // Compare the results of the Device to the simulation
-  // return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
-  return 0;
-
+  return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
 }
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const char *psdd_filename, PsddManager *reference_psdd_manager,
