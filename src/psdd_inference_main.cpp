@@ -17,11 +17,6 @@ using std::cout;
 using std::endl;
 using std::string;
 using std::vector;
-std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>>  fpga_node_vector (PSDD_SIZE);
-std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> children_vector (TOTAL_CHILDREN);
-std::vector<ap_fixed<32,10,AP_RND>, aligned_allocator<ap_fixed<32,10,AP_RND>>> parameter_vector (TOTAL_PARAM);
-std::vector<ap_fixed<32,4,AP_RND>, aligned_allocator<ap_fixed<32,4,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
-std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (55);
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const char *psdd_filename, PsddManager *reference_psdd_manager,
    std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers );
@@ -74,6 +69,12 @@ int main(int argc, char** argv)
 {
   //My Code
   std::cout << "starting main\n";
+  std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>>  fpga_node_vector (PSDD_SIZE);
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> children_vector (TOTAL_CHILDREN);
+  std::vector<ap_fixed<32,10,AP_RND>, aligned_allocator<ap_fixed<32,10,AP_RND>>> parameter_vector (TOTAL_PARAM);
+  std::vector<ap_fixed<32,4,AP_RND>, aligned_allocator<ap_fixed<32,4,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
+  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (55);
+
  argc -= (argc > 0);
  argv += (argc > 0); // skip program name argv[0] if present
  option::Stats stats(usage, argc, argv);
@@ -166,9 +167,9 @@ std::cout << "right before fpga\n";
       // Buffers are allocated using CL_MEM_USE_HOST_PTR for efficient memory and
       // Device-to-host communication
       OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-              vector_size_bytes, source_in1.data(), &err));
+              fpga_serialized_psdd_size_bytes, fpga_serialized_psdd_.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in2   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-              vector_size_bytes, source_in2.data(), &err));
+              fpga_node_vector_size_bytes, fpga_node_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
               vector_size_bytes, source_hw_results.data(), &err));
 
@@ -193,6 +194,11 @@ std::cout << "right before fpga\n";
 std::cout << "results\n";
 for (int i =0; i < 3; i++){
   std::cout << source_hw_results[i] << ", ";
+}
+std::cout << "\n ground truth\n";
+
+for (int i =0; i < 3; i++){
+  std::cout << fpga_node_vector[i].node_type_ << ", ";
 }
 std::cout << std::endl;
  // Compare the results of the Device to the simulation
