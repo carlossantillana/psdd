@@ -3,9 +3,17 @@
 #include <assert.h>
 
 extern "C" {
+
+  void loadChar(char* data_local, int burstLength, char value){
+    #pragma HLS inline off
+    loadChar: for (int i = 0; i < burstLength; i++){
+    #pragma HLS pipeline
+      data_local[i] = value;
+    }
+  }
   void load12Bit(const ap_uint<32>* data_dram, ap_uint<12>* data_local, int burstLength){
     #pragma HLS inline off
-    loadInts: for (int i = 0; i < burstLength; i++){
+    load12Bit: for (int i = 0; i < burstLength; i++){
     #pragma HLS pipeline
       data_local[i] = data_dram[i];
     }
@@ -13,14 +21,30 @@ extern "C" {
 
    void load20Bit(const ap_uint<32>* data_dram, ap_uint<21>* data_local, int burstLength){
      #pragma HLS inline off
-     loadInts: for (int i = 0; i < burstLength; i++){
+     load20Bit: for (int i = 0; i < burstLength; i++){
      #pragma HLS pipeline
        data_local[i] = data_dram[i];
      }
    }
    void load21Bit(const ap_uint<32>* data_dram, ap_uint<22>* data_local, int burstLength){
      #pragma HLS inline off
-     loadInts: for (int i = 0; i < burstLength; i++){
+     load21Bit: for (int i = 0; i < burstLength; i++){
+     #pragma HLS pipeline
+       data_local[i] = data_dram[i];
+     }
+   }
+
+   void loadFloatsSmall(const ap_fixed<32,4,AP_RND >* data_dram, ap_fixed<14,2,AP_RND >* data_local, int burstLength){
+     #pragma HLS inline off
+     loadFloatSmall: for (int i = 0; i < burstLength; i++){
+     #pragma HLS pipeline
+       data_local[i] = data_dram[i];
+     }
+   }
+
+   void loadFloats(const ap_fixed<32,10,AP_RND >* data_dram, ap_fixed<21,8,AP_RND >* data_local, int burstLength){
+     #pragma HLS inline off
+     loadFloat: for (int i = 0; i < burstLength; i++){
      #pragma HLS pipeline
        data_local[i] = data_dram[i];
      }
@@ -41,32 +65,19 @@ extern "C" {
      }
    }
 
-   void loadFloats(const ap_fixed<32,10,AP_RND >* data_dram, ap_fixed<21,8,AP_RND >* data_local, int burstLength){
-     #pragma HLS inline off
-     loadFloat: for (int i = 0; i < burstLength; i++){
-     #pragma HLS pipeline
-       data_local[i] = data_dram[i];
-     }
-   }
-   void loadFloatsSmall(const ap_fixed<32,4,AP_RND >* data_dram, ap_fixed<14,2,AP_RND >* data_local, int burstLength){
-     #pragma HLS inline off
-     loadFloatSmall: for (int i = 0; i < burstLength; i++){
-     #pragma HLS pipeline
-       data_local[i] = data_dram[i];
-     }
-   }
-
-   void load(ap_uint<21>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
+   void load(char local_variables[MAX_VAR], char local_instantiation[MAX_VAR], ap_uint<21>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
      const ap_uint<256> fpga_node_vector[PSDD_SIZE], ap_uint<22> local_children_vector[TOTAL_CHILDREN], const ap_uint<32> children_vector[TOTAL_CHILDREN],
       ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], const ap_fixed<32,10,AP_RND > parameter_vector[TOTAL_PARAM],
       ap_fixed<14,2,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], const ap_fixed<32,4,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
        ap_uint<12> local_flippers [55], const ap_uint<32> flippers [55]){
+     loadChar(local_variables, MAX_VAR, 1);
+     loadChar(local_instantiation, MAX_VAR, 0);
      load12Bit(flippers, local_flippers, 55);
      load20Bit(serialized_nodes, local_serialized_nodes, PSDD_SIZE);
-     loadStructs(fpga_node_vector, local_fpga_node_vector, PSDD_SIZE);
      load21Bit(children_vector, local_children_vector, TOTAL_CHILDREN);
-     loadFloats(parameter_vector, local_parameter_vector, TOTAL_PARAM);
      loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
+     loadFloats(parameter_vector, local_parameter_vector, TOTAL_PARAM);
+     loadStructs(fpga_node_vector, local_fpga_node_vector, PSDD_SIZE);
      return;
    }
 
@@ -99,16 +110,15 @@ void fpga_evaluate(
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
 assert(num_queries <= 4096);  // this helps HLS estimate the loop trip count
-// std::bitset<MAX_VAR> local_variables;
-// local_variables.set();
-
+char local_variables [MAX_VAR];
+char local_instantiation [MAX_VAR];
 ap_uint<12> local_flippers [55];
 ap_uint<21> local_serialized_nodes [PSDD_SIZE];
 FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
 ap_uint<22> local_children_vector[TOTAL_CHILDREN];
 ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM];
 ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
-load(local_serialized_nodes, serialized_nodes, local_fpga_node_vector,
+load(local_variables, local_instantiation, local_serialized_nodes, serialized_nodes, local_fpga_node_vector,
 fpga_node_vector, local_children_vector, children_vector, local_parameter_vector,
 parameter_vector, local_bool_param_vector, bool_param_vector, local_flippers, flippers);
 
@@ -116,7 +126,7 @@ parameter_vector, local_bool_param_vector, bool_param_vector, local_flippers, fl
 #pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
-// #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
 
     for (int j = 0 ; j < num_queries ; j++){
       #pragma HLS pipeline
