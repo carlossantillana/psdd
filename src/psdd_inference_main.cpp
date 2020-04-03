@@ -131,8 +131,8 @@ std::cout << "right before fpga\n";
   size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_PARAM;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
   size_t flippers_size_bytes = sizeof(flippers[0]) * 55;
-  size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
-  std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
+  size_t result_size_bytes = sizeof(float) * 32;
+  std::vector<float, aligned_allocator<float>> result (32);
 
   #define DATA_SIZE 4096
   size_t vector_size_bytes = sizeof(int) * DATA_SIZE;
@@ -170,35 +170,49 @@ std::cout << "right before fpga\n";
               fpga_serialized_psdd_size_bytes, fpga_serialized_psdd_.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in2   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
               fpga_node_vector_size_bytes, fpga_node_vector.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in3  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                children_vector_size_bytes, children_vector.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in4  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                  parameter_vector_size_bytes, parameter_vector.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                  bool_param_vector_size_bytes, bool_param_vector.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in6  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                  flippers_size_bytes, flippers.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
               result_size_bytes, result.data(), &err));
 
-      // Copy input data to device global memory
-      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2},0/* 0 means from host*/));
+      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6},0/* 0 means from host*/));
 
       int size = DATA_SIZE;
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in2));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(3, NUM_QUERIES));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in3));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in4));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in5));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in6));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_output));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(7, NUM_QUERIES));
 
       // Launch the Kernel
       // For HLS kernels global and local size is always (1,1,1). So, it is recommended
       // to always use enqueueTask() for invoking HLS kernel
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
-      // Copy Result from Device Global Memory to Host Local Memory
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
       q.finish();
   // OPENCL HOST CODE AREA END
 std::cout << "results\n";
-for (int i =0; i < NUM_QUERIES; i++){
+for (int i =0; i < 32; i++){
   std::cout << result[i] << ", ";
 }
 std::cout << "\n ground truth\n";
 
-for (int i =0; i < NUM_QUERIES; i++){
-  std::cout << fpga_node_vector[i].node_type_ << ", ";
+for (int i =0; i < 32; i++){
+  if (i %2 == 0)
+  std::cout << bool_param_vector[i] << ", ";
+  else
+  std::cout << parameter_vector[i] << ", ";
+
 }
 std::cout << std::endl;
  // Compare the results of the Device to the simulation
