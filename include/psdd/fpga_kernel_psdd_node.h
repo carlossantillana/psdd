@@ -41,13 +41,13 @@ struct FPGAPsddNodeStruct {
 };
 struct PsddNodeStruct {
   ap_uint<32> node_index_;
-  ap_uint<8> node_type_;
-  char children_size;
+  ap_uint<32> node_type_;
+  ap_uint<32> children_size;
   ap_uint<32> children_offset;
   ap_uint<32> parameter_offset;
-  short variable_index_;
+  ap_uint<32> variable_index_;
   ap_uint<32> bool_param_offset;
-  int32_t literal_;
+  ap_uint<32> literal_;
 };
 
 #endif // STRUCTURED_BAYESIAN_NETWORK_PSDD_NODE_H

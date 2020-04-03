@@ -131,8 +131,8 @@ std::cout << "right before fpga\n";
   size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_PARAM;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
   size_t flippers_size_bytes = sizeof(flippers[0]) * 55;
-  size_t result_size_bytes = sizeof(int) * 3;
-  std::vector<int, aligned_allocator<int>> result (3);
+  size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
+  std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
 
   #define DATA_SIZE 4096
   size_t vector_size_bytes = sizeof(int) * DATA_SIZE;
@@ -171,7 +171,7 @@ std::cout << "right before fpga\n";
       OCL_CHECK(err, cl::Buffer buffer_in2   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
               fpga_node_vector_size_bytes, fpga_node_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
-              vector_size_bytes, source_hw_results.data(), &err));
+              result_size_bytes, result.data(), &err));
 
       // Copy input data to device global memory
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2},0/* 0 means from host*/));
@@ -180,7 +180,7 @@ std::cout << "right before fpga\n";
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in2));
       OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(3, size));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(3, NUM_QUERIES));
 
       // Launch the Kernel
       // For HLS kernels global and local size is always (1,1,1). So, it is recommended
@@ -192,12 +192,12 @@ std::cout << "right before fpga\n";
       q.finish();
   // OPENCL HOST CODE AREA END
 std::cout << "results\n";
-for (int i =0; i < 3; i++){
-  std::cout << source_hw_results[i] << ", ";
+for (int i =0; i < NUM_QUERIES; i++){
+  std::cout << result[i] << ", ";
 }
 std::cout << "\n ground truth\n";
 
-for (int i =0; i < 3; i++){
+for (int i =0; i < NUM_QUERIES; i++){
   std::cout << fpga_node_vector[i].node_type_ << ", ";
 }
 std::cout << std::endl;
