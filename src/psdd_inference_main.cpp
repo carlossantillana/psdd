@@ -71,8 +71,8 @@ int main(int argc, char** argv)
   std::cout << "starting main\n";
   std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>>  fpga_node_vector (PSDD_SIZE);
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> children_vector (TOTAL_CHILDREN);
-  std::vector<ap_fixed<32,10,AP_RND>, aligned_allocator<ap_fixed<32,10,AP_RND>>> parameter_vector (TOTAL_PARAM);
-  std::vector<ap_fixed<32,4,AP_RND>, aligned_allocator<ap_fixed<32,4,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
+  std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_PARAM);
+  std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (55);
 
  argc -= (argc > 0);
@@ -183,16 +183,16 @@ int main(int argc, char** argv)
       q.finish();
 
   // OPENCL HOST CODE AREA END
-std::cout << "results\n";
-for (int i =0; i < NUM_QUERIES; i++){
-  std::cout << result[i] << ", ";
-}
-std::cout << "\n ground truth\n";
-
-for (int i =0; i < NUM_QUERIES; i++){
-  std::cout << fpga_node_vector[i].node_index_ << ", ";
-}
-std::cout << std::endl;
+// std::cout << "results\n";
+// for (int i =0; i < NUM_QUERIES; i++){
+//   std::cout << result[i] << ", ";
+// }
+// std::cout << "\n ground truth\n";
+//
+// for (int i =0; i < NUM_QUERIES; i++){
+//   std::cout << fpga_node_vector[i].node_index_ << ", ";
+// }
+// std::cout << std::endl;
  // Compare the results of the Device to the simulation
   return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
 }
