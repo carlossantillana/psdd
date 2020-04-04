@@ -174,26 +174,12 @@ int main(int argc, char** argv)
       OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_output));
       OCL_CHECK(err, err = krnl_vector_add.setArg(7, NUM_QUERIES));
 
-      // Launch the Kernel
-      // For HLS kernels global and local size is always (1,1,1). So, it is recommended
-      // to always use enqueueTask() for invoking HLS kernel
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
       q.finish();
 
   // OPENCL HOST CODE AREA END
-// std::cout << "results\n";
-// for (int i =0; i < NUM_QUERIES; i++){
-//   std::cout << result[i] << ", ";
-// }
-// std::cout << "\n ground truth\n";
-//
-// for (int i =0; i < NUM_QUERIES; i++){
-//   std::cout << fpga_node_vector[i].node_index_ << ", ";
-// }
-// std::cout << std::endl;
- // Compare the results of the Device to the simulation
   return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
 }
 
@@ -222,7 +208,9 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    double RMSE = sqrt(difference/NUM_QUERIES);
    std::cout << "RMSE: " << RMSE << std::endl;
    if (RMSE > .1){
+     std::cout << "TEST FAILED\n";
      return false;
    }
+   std::cout << "TEST PASSED\n";
      return true;
  }

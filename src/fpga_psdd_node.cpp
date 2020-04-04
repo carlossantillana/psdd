@@ -315,8 +315,6 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
   while (explore_index != result.size()) {
     uint32_t cur_psdd_node_idx = result[explore_index];
     if (fpga_node_vector[cur_psdd_node_idx].node_type_ == 2) {
-        // std::vector<uintmax_t> primes ((children_vector + fpga_node_vector[cur_psdd_node_idx].children_offset), (children_vector + (fpga_node_vector[cur_psdd_node_idx].children_offset + fpga_node_vector[cur_psdd_node_idx].children_size )));
-       // std::vector<uintmax_t> subs ((children_vector + fpga_node_vector[cur_psdd_node_idx].children_offset + fpga_node_vector[cur_psdd_node_idx].children_size), (children_vector + fpga_node_vector[cur_psdd_node_idx].children_offset + fpga_node_vector[cur_psdd_node_idx].children_size * 2));
       for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size; i++ ) {
         uint32_t cur_prime_idx = fpga_node_vector[children_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset]].node_index_;
         if (node_explored.find(fpga_node_vector[cur_prime_idx].node_index_) ==

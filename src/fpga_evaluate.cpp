@@ -1,8 +1,6 @@
 #include <psdd/fpga_kernel_psdd_node.h>
 #include <assert.h>
 #include <iostream>
-#include <bitset>
-
 
 extern "C" {
 
@@ -68,13 +66,13 @@ extern "C" {
      }
    }
 
-   void load(char local_variables[MAX_VAR], ap_uint<21>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
+   void load(char local_variables[MAX_VAR], char local_instantiation[MAX_VAR], ap_uint<21>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
      const ap_uint<256> fpga_node_vector[PSDD_SIZE], ap_uint<22> local_children_vector[TOTAL_CHILDREN], const ap_uint<32> children_vector[TOTAL_CHILDREN],
       ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], const ap_fixed<32,8,AP_RND > parameter_vector[TOTAL_PARAM],
       ap_fixed<14,2,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
        ap_uint<12> local_flippers [55], const ap_uint<32> flippers [55]){
      loadChar(local_variables, MAX_VAR, 1);
-     // loadChar(local_instantiation, MAX_VAR, 0);
+     loadChar(local_instantiation, MAX_VAR, 0);
      load12Bit(flippers, local_flippers, 55);
      load21Bit(serialized_nodes, local_serialized_nodes, PSDD_SIZE);
      load22Bit(children_vector, local_children_vector, TOTAL_CHILDREN);
@@ -113,14 +111,14 @@ void fpga_evaluate(
 
 assert(num_queries <= 4096);  // this helps HLS estimate the loop trip count
 static char local_variables [MAX_VAR];
-// static char local_instantiation [MAX_VAR];
+static char local_instantiation [MAX_VAR];
 static ap_uint<12> local_flippers [55];
 static ap_uint<21> local_serialized_nodes [PSDD_SIZE];
 static FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
 static ap_uint<22> local_children_vector[TOTAL_CHILDREN];
 static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM];
 static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
-load(local_variables, local_serialized_nodes, serialized_nodes, local_fpga_node_vector,
+load(local_variables, local_instantiation, local_serialized_nodes, serialized_nodes, local_fpga_node_vector,
 fpga_node_vector, local_children_vector, children_vector, local_parameter_vector,
 parameter_vector, local_bool_param_vector, bool_param_vector, local_flippers, flippers);
 
@@ -132,9 +130,11 @@ parameter_vector, local_bool_param_vector, bool_param_vector, local_flippers, fl
 
 for (int m = 0; m < num_queries; m++){
   static float evaluation_cache [PSDD_SIZE];
-  std::bitset<MAX_VAR> local_instantiation;
-  local_instantiation[local_flippers[m%55]] = !local_instantiation[local_flippers[m%55]];
+  // std::bitset<MAX_VAR> local_instantiation;
+  if (m >0)
+  local_instantiation[local_flippers[m-1%55]] = !local_instantiation[local_flippers[m-1%55]];
 
+  local_instantiation[local_flippers[m%55]] = !local_instantiation[local_flippers[m%55]];
 #pragma HLS RESOURCE variable=local_evaluation_cache core=XPM_MEMORY uram
   for(int j = PSDD_SIZE -1; j >= 0; j--){
 #pragma HLS pipeline
