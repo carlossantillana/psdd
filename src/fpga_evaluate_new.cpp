@@ -4,16 +4,16 @@
 
 extern "C" {
 
-  void loadBool(bool* data_local, int burstLength, char value){
+  void loadChar(char* data_local, int burstLength, char value){
     #pragma HLS inline off
-    loadBool: for (int i = 0; i < burstLength; i++){
+    loadChar: for (int i = 0; i < burstLength; i++){
     #pragma HLS pipeline
       data_local[i] = value;
     }
   }
   void load12Bit(const ap_uint<32>* data_dram, ap_uint<12>* data_local, int burstLength){
     #pragma HLS inline off
-    load9Bit: for (int i = 0; i < burstLength; i++){
+    load12Bit: for (int i = 0; i < burstLength; i++){
     #pragma HLS pipeline
       data_local[i] = data_dram[i](11,0);
     }
@@ -24,6 +24,7 @@ extern "C" {
      load20Bit: for (int i = 0; i < burstLength; i++){
      #pragma HLS pipeline
        data_local[i] = data_dram[i](20,0);
+       // std::cout << "(local, origin): " << data_local[i].to_string() << ", " << data_dram[i] << std::endl;
      }
    }
    void load22Bit(const ap_uint<32>* data_dram, ap_uint<22>* data_local, int burstLength){
@@ -59,20 +60,20 @@ extern "C" {
        data_local[i].children_size = data_dram[i](95, 64);
        data_local[i].children_offset = data_dram[i](127, 96);
        data_local[i].parameter_offset = data_dram[i](159, 128);
-       data_local[i].variable_index_ = data_dram[i](173, 160);
+       data_local[i].variable_index_ = data_dram[i](191, 160);
        data_local[i].bool_param_offset = data_dram[i](223, 192);
-       data_local[i].literal_ = data_dram[i](236, 224);
+       data_local[i].literal_ = data_dram[i](255, 224);
      }
    }
 
-   void load(bool local_variables[MAX_VAR], bool local_instantiation[MAX_VAR], ap_uint<21>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
+   void load(char local_variables[MAX_VAR], char local_instantiation[MAX_VAR], ap_uint<21>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
      const ap_uint<256> fpga_node_vector[PSDD_SIZE], ap_uint<22> local_children_vector[TOTAL_CHILDREN], const ap_uint<32> children_vector[TOTAL_CHILDREN],
       ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], const ap_fixed<32,8,AP_RND > parameter_vector[TOTAL_PARAM],
       ap_fixed<14,2,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
-      ap_uint<12> local_flippers [50], const ap_uint<32> flippers [50]){
-     loadBool(local_variables, MAX_VAR, 1);
-     loadBool(local_instantiation, MAX_VAR, 0);
-     load12Bit(flippers, local_flippers, 50);
+       ap_uint<12> local_flippers [55], const ap_uint<32> flippers [55]){
+     loadChar(local_variables, MAX_VAR, 1);
+     loadChar(local_instantiation, MAX_VAR, 0);
+     load12Bit(flippers, local_flippers, 55);
      load21Bit(serialized_nodes, local_serialized_nodes, PSDD_SIZE);
      load22Bit(children_vector, local_children_vector, TOTAL_CHILDREN);
      loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
@@ -109,9 +110,9 @@ void fpga_evaluate(
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
 assert(num_queries <= 4096);  // this helps HLS estimate the loop trip count
-static bool local_variables [MAX_VAR];
-static bool local_instantiation [MAX_VAR];
-static ap_uint<12> local_flippers [50];
+static char local_variables [MAX_VAR];
+static char local_instantiation [MAX_VAR];
+static ap_uint<12> local_flippers [55];
 static ap_uint<21> local_serialized_nodes [PSDD_SIZE];
 static FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
 static ap_uint<22> local_children_vector[TOTAL_CHILDREN];
@@ -119,7 +120,7 @@ static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM];
 static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
 load(local_variables, local_instantiation, local_serialized_nodes, serialized_nodes, local_fpga_node_vector,
 fpga_node_vector, local_children_vector, children_vector, local_parameter_vector,
-parameter_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers);
+parameter_vector, local_bool_param_vector, bool_param_vector, local_flippers, flippers);
 
 #pragma HLS RESOURCE variable=local_serialized_nodes core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
@@ -130,9 +131,9 @@ parameter_vector, local_bool_param_vector, bool_param_vector,local_flippers, fli
 for (int m = 0; m < num_queries; m++){
   static float evaluation_cache [PSDD_SIZE];
   if (m >0)
-  local_instantiation[local_flippers[m-1%50]] = !local_instantiation[local_flippers[m-1%50]];
+  local_instantiation[local_flippers[m-1%55]] = !local_instantiation[local_flippers[m-1%55]];
 
-  local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
+  local_instantiation[local_flippers[m%55]] = !local_instantiation[local_flippers[m%55]];
 #pragma HLS RESOURCE variable=local_evaluation_cache core=XPM_MEMORY uram
   for(int j = PSDD_SIZE -1; j >= 0; j--){
 #pragma HLS pipeline
@@ -179,9 +180,7 @@ for (int m = 0; m < num_queries; m++){
        evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = max_prob;
     }
   }
-  //For more than one query, less precise
   // result[m] = evaluation_cache[local_fpga_node_vector[serialized_nodes[0]].node_index_];
-  //For one query more precise
   for(int i = 0; i < PSDD_SIZE; i++){
     #pragma HLS pipeline
       result[i] = evaluation_cache[i];

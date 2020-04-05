@@ -73,7 +73,7 @@ int main(int argc, char** argv)
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> children_vector (TOTAL_CHILDREN);
   std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_PARAM);
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
-  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (55);
+  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (50);
 
  argc -= (argc > 0);
  argv += (argc > 0); // skip program name argv[0] if present
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
   std::bitset<MAX_VAR> instantiation;
  std::ifstream File;
  File.open("allPossibleSolutions.txt");
- for(int a = 0; a < 55; a++){
+ for(int a = 0; a < 50; a++){
    int tmp;
    File >> tmp;
    flippers[a] = tmp;
@@ -118,19 +118,27 @@ int main(int argc, char** argv)
 
  File.close();
  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> fpga_serialized_psdd_ (PSDD_SIZE);   //Input Matrix 1
+int maxLit = 0;
+int minLit = 10000;
 
  for (uint i = 0; i < PSDD_SIZE; i++){
    fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
+   int curLit = fpga_node_vector[i].variable_index_;
+   if (curLit > maxLit && curLit < 30000)
+   maxLit = curLit;
+   if (curLit < minLit && curLit > -30000)
+   minLit = curLit;
  }
+ std::cout << "maxLit " << maxLit << " minLit: " << minLit << std::endl;
   //Allocate Memory in Host Memory
   size_t fpga_serialized_psdd_size_bytes = sizeof(fpga_serialized_psdd_[0]) * PSDD_SIZE;
   size_t fpga_node_vector_size_bytes = sizeof(fpga_node_vector[0]) * PSDD_SIZE;
   size_t children_vector_size_bytes = sizeof(children_vector[0]) * TOTAL_CHILDREN;
   size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_PARAM;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
-  size_t flippers_size_bytes = sizeof(flippers[0]) * 55;
-  size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
-  std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
+  size_t flippers_size_bytes = sizeof(flippers[0]) * 50;
+  size_t result_size_bytes = sizeof(float) * PSDD_SIZE;
+  std::vector<float, aligned_allocator<float>> result (PSDD_SIZE);
   cl_int err;
 
   // OPENCL HOST CODE AREA START
@@ -187,19 +195,20 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
     std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers ){
    PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
-   double reference_results [NUM_QUERIES] = {0};
+   //NUM_QUERIES   vvv
+   double reference_results [580817] = {0};
    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
    float difference = 0;
    int num_queries_clean = NUM_QUERIES;
-   for (int i =0; i < NUM_QUERIES; i++){
+   // Change back to num _queries
+   for (int i =0; i < PSDD_SIZE; i++){
      float tmpDiff = 0;
-     std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
+     // std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
      tmpDiff = std::pow((reference_results[i] - result[i]),2);
    } else{
      num_queries_clean--;
    }
-      // std::cout << "node index: " << i << " reference prob: " << evaluation_cache.at(i).parameter_ << " fpga prob " << log(evaluation_cache_fpga[i]) << " difference: " << tmpDiff << std::endl;
      if (tmpDiff > .1){
        std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED \n";
      }

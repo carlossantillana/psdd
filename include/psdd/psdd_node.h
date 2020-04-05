@@ -24,7 +24,7 @@ extern "C" {
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
-const int NUM_QUERIES = 3;
+const int NUM_QUERIES = 1;
 
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
@@ -222,10 +222,10 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
 std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                     const std::bitset<MAX_VAR> &instantiation,
                         const std::vector<PsddNode *> &serialized_nodes);
-double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
+void EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                         std::bitset<MAX_VAR> &instantiation,
                        const std::vector<PsddNode *> &serialized_nodes,
-                     double results [NUM_QUERIES],
+                     double results [580817],
                      std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers);
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);

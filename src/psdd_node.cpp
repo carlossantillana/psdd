@@ -586,15 +586,15 @@ std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<M
   return evaluation_cache;
 }
 
-double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
+void  EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                         std::bitset<MAX_VAR> &instantiation,
                        const std::vector<PsddNode *> &serialized_nodes,
-                     double results [NUM_QUERIES],
+                     double results [580817],
                    std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers) {
   for (int m = 0; m <  NUM_QUERIES; m++){
     std::unordered_map<uintmax_t, Probability> evaluation_cache;
     instantiation.reset();
-    instantiation.set(flippers[m%55]);
+    instantiation.set(flippers[m%50]);
 
     for (auto node_it = serialized_nodes.rbegin();
          node_it != serialized_nodes.rend(); ++node_it) {
@@ -639,9 +639,13 @@ double * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
         evaluation_cache[cur_node->node_index()] = cur_prob;
       }
     }
-      results[m] = evaluation_cache[serialized_nodes[0]->node_index()].parameter_;
+      // results[m] = evaluation_cache[serialized_nodes[0]->node_index()].parameter_;
+      for(int i = 0; i < 580817; i++){
+        results[i] = evaluation_cache[i].parameter_;
+      }
     }
-  return results;
+
+  return;
 }
 
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,

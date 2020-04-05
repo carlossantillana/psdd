@@ -16,18 +16,18 @@
 #define  MAX_VAR 65536
 
 //For map_network network
-// const uint PSDD_SIZE = 580817;
-// const uint MAX_CHILDREN = 57;
-// const uint TOTAL_CHILDREN = 1541021;
-// const uint TOTAL_PARAM = 770511;
-// const short TOTAL_BOOL_PARAM = 792;
+const uint PSDD_SIZE = 580817;
+const uint MAX_CHILDREN = 57;
+const uint TOTAL_CHILDREN = 1541021;
+const uint TOTAL_PARAM = 770511;
+const short TOTAL_BOOL_PARAM = 792;
 
 //For grids network
-const uint PSDD_SIZE = 51;
-const uint MAX_CHILDREN = 2;
-const uint TOTAL_CHILDREN = 156;
-const uint TOTAL_PARAM = 78;
-const short TOTAL_BOOL_PARAM = 48;
+// const uint PSDD_SIZE = 51;
+// const uint MAX_CHILDREN = 2;
+// const uint TOTAL_CHILDREN = 156;
+// const uint TOTAL_PARAM = 78;
+// const short TOTAL_BOOL_PARAM = 48;
 
 struct FPGAPsddNodeStruct {
   ap_uint<21> node_index_;
@@ -35,9 +35,9 @@ struct FPGAPsddNodeStruct {
   char children_size;
   ap_uint<21> children_offset;
   ap_uint<20> parameter_offset;
-  short variable_index_;
+  ap_int<14> variable_index_;
   ap_uint<10> bool_param_offset;
-  int32_t literal_;
+  ap_int<13> literal_;
 };
 struct PsddNodeStruct {
   ap_uint<32> node_index_;
