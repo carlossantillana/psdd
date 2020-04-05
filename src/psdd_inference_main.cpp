@@ -118,18 +118,10 @@ int main(int argc, char** argv)
 
  File.close();
  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> fpga_serialized_psdd_ (PSDD_SIZE);   //Input Matrix 1
-int maxLit = 0;
-int minLit = 10000;
 
  for (uint i = 0; i < PSDD_SIZE; i++){
    fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
-   int curLit = fpga_node_vector[i].variable_index_;
-   if (curLit > maxLit && curLit < 30000)
-   maxLit = curLit;
-   if (curLit < minLit && curLit > -30000)
-   minLit = curLit;
  }
- std::cout << "maxLit " << maxLit << " minLit: " << minLit << std::endl;
   //Allocate Memory in Host Memory
   size_t fpga_serialized_psdd_size_bytes = sizeof(fpga_serialized_psdd_[0]) * PSDD_SIZE;
   size_t fpga_node_vector_size_bytes = sizeof(fpga_node_vector[0]) * PSDD_SIZE;
@@ -210,7 +202,7 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
      num_queries_clean--;
    }
      if (tmpDiff > .1){
-       std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED \n";
+       std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED (result: " << result[i] << ")\n";
      }
      difference += tmpDiff;
    }

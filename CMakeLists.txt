@@ -26,7 +26,7 @@ find_package(OpenCL REQUIRED)
 
 file(GLOB PSDD_TEST_SRC_FILES "test/*.cpp")
 file(GLOB LIB_PSDD_SRC_FILES "src/*.h" "src/*.cpp" "src/*.c")
-file(GLOB LIB_XCL_SRC_FILES "../../../libs/xcl2/*.hpp" "../../../libs/xcl2/*.cpp" )
+file(GLOB LIB_XCL_SRC_FILES "../../libs/xcl2/*.hpp" "../../libs/xcl2/*.cpp" )
 
 #add_executable(psdd_test ${PSDD_TEST_SRC_FILES})
 add_library(psdd ${LIB_PSDD_SRC_FILES} )

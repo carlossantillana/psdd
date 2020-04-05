@@ -26,11 +26,11 @@ extern "C" {
        data_local[i] = data_dram[i](20,0);
      }
    }
-   void load22Bit(const ap_uint<32>* data_dram, ap_uint<22>* data_local, int burstLength){
+   void load20Bit(const ap_uint<32>* data_dram, ap_uint<20>* data_local, int burstLength){
      #pragma HLS inline off
      load21Bit: for (int i = 0; i < burstLength; i++){
      #pragma HLS pipeline
-       data_local[i] = data_dram[i](21,0);
+       data_local[i] = data_dram[i](19,0);
      }
    }
 
@@ -65,16 +65,16 @@ extern "C" {
      }
    }
 
-   void load(bool local_variables[MAX_VAR], bool local_instantiation[MAX_VAR], ap_uint<21>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
-     const ap_uint<256> fpga_node_vector[PSDD_SIZE], ap_uint<22> local_children_vector[TOTAL_CHILDREN], const ap_uint<32> children_vector[TOTAL_CHILDREN],
+   void load(bool local_variables[MAX_VAR], bool local_instantiation[MAX_VAR], ap_uint<20>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
+     const ap_uint<256> fpga_node_vector[PSDD_SIZE], ap_uint<20> local_children_vector[TOTAL_CHILDREN], const ap_uint<32> children_vector[TOTAL_CHILDREN],
       ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], const ap_fixed<32,8,AP_RND > parameter_vector[TOTAL_PARAM],
       ap_fixed<14,2,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
       ap_uint<12> local_flippers [50], const ap_uint<32> flippers [50]){
      loadBool(local_variables, MAX_VAR, 1);
      loadBool(local_instantiation, MAX_VAR, 0);
      load12Bit(flippers, local_flippers, 50);
-     load21Bit(serialized_nodes, local_serialized_nodes, PSDD_SIZE);
-     load22Bit(children_vector, local_children_vector, TOTAL_CHILDREN);
+     load20Bit(serialized_nodes, local_serialized_nodes, PSDD_SIZE);
+     load20Bit(children_vector, local_children_vector, TOTAL_CHILDREN);
      loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
      loadFloats(parameter_vector, local_parameter_vector, TOTAL_PARAM);
      loadStructs(fpga_node_vector, local_fpga_node_vector, PSDD_SIZE);
@@ -112,15 +112,15 @@ assert(num_queries <= 4096);  // this helps HLS estimate the loop trip count
 static bool local_variables [MAX_VAR];
 static bool local_instantiation [MAX_VAR];
 static ap_uint<12> local_flippers [50];
-static ap_uint<21> local_serialized_nodes [PSDD_SIZE];
+static ap_uint<20> local_serialized_nodes [PSDD_SIZE];
 static FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
-static ap_uint<22> local_children_vector[TOTAL_CHILDREN];
+static ap_uint<20> local_children_vector[TOTAL_CHILDREN];
 static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM];
 static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
 load(local_variables, local_instantiation, local_serialized_nodes, serialized_nodes, local_fpga_node_vector,
 fpga_node_vector, local_children_vector, children_vector, local_parameter_vector,
 parameter_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers);
-
+static float evaluation_cache [PSDD_SIZE];
 #pragma HLS RESOURCE variable=local_serialized_nodes core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
@@ -128,7 +128,6 @@ parameter_vector, local_bool_param_vector, bool_param_vector,local_flippers, fli
 #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
 
 for (int m = 0; m < num_queries; m++){
-  static float evaluation_cache [PSDD_SIZE];
   if (m >0)
   local_instantiation[local_flippers[m-1%50]] = !local_instantiation[local_flippers[m-1%50]];
 
@@ -181,12 +180,11 @@ for (int m = 0; m < num_queries; m++){
   }
   //For more than one query, less precise
   // result[m] = evaluation_cache[local_fpga_node_vector[serialized_nodes[0]].node_index_];
-  //For one query more precise
-  for(int i = 0; i < PSDD_SIZE; i++){
-    #pragma HLS pipeline
-      result[i] = evaluation_cache[i];
-  }
 }
-
+//For one query more precise causes II to hit 15
+LoadResult:for(int i = 0; i < PSDD_SIZE; i++){
+  #pragma HLS pipeline
+    result[i] = evaluation_cache[i];
+  }
 }
 }

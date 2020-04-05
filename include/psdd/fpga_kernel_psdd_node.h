@@ -30,9 +30,9 @@ const short TOTAL_BOOL_PARAM = 792;
 // const short TOTAL_BOOL_PARAM = 48;
 
 struct FPGAPsddNodeStruct {
-  ap_uint<21> node_index_;
+  ap_uint<20> node_index_;
   ap_uint<2> node_type_;
-  char children_size;
+  ap_uint<6> children_size;
   ap_uint<21> children_offset;
   ap_uint<20> parameter_offset;
   ap_int<14> variable_index_;
