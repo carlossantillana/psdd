@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 include_directories(include)
 include_directories("/opt/Xilinx/Vivado/2018.3.op2405991/include/")
-include_directories("/home/centos/src/project_data/aws-fpga/SDAccel/examples/xilinx/libs/")
+include_directories("/dev/project_data/aws-fpga/SDAccel/examples/xilinx_2018.3/libs/")
 include_directories("/usr/include/")
 
 if(APPLE)
