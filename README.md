@@ -9,6 +9,8 @@ https://github.com/aws/aws-fpga
 and follow setup instructions found here
 https://github.com/aws/aws-fpga/tree/master/SDAccel
 
+**NOTE you need to source sdaccel_setup.sh every time**
+
 the clone this repo psdd into path SDAccel/examples/xilinx_2018.3/getting_started of repo mentioned above
 
 #### Download datasets from this link
@@ -27,7 +29,7 @@ If running on centos this can be done by running the two commands
 
 `yum install devtoolset-9`
 
-`source devtoolset-9`
+`source scl_source enable devtoolset-9`
 
 #### Edit Makefiles to use your directory
 Change $project_dir and $platform_dir to your paths.
