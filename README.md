@@ -11,7 +11,8 @@ https://github.com/aws/aws-fpga/tree/master/SDAccel
 
 **NOTE: you need to source sdaccel_setup.sh every time you start up your instance**
 
-Then clone this repo psdd into path SDAccel/examples/xilinx_2018.3/getting_started of repo mentioned above
+**Then clone this repo psdd into path SDAccel/examples/xilinx_2018.3/getting_started of repo mentioned above**
+if not you will have to edit the makefiles even more
 
 #### Download datasets from this link
 https://drive.google.com/open?id=1dyMke7JY5UURVj4wGWxfSsAp3jExwYvw
