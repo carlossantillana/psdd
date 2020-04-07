@@ -1,6 +1,7 @@
 #initialize to your local path
-project_dir="/dev/project_data/aws-fpga/SDAccel/examples/xilinx_2018.3/getting_started/cs-259-19f/psdd"
-platform_dir="/dev/project_data/aws-fpga/SDAccel/aws_platform"
+project_dir="$AWS_FPGA_REPO_DIR/SDAccel/examples/xilinx_2018.3/getting_started/psdd"
+platform_dir="$AWS_FPGA_REPO_DIR/SDAccel/aws_platform"
+
 # creates .o of project
 cmake .
 
