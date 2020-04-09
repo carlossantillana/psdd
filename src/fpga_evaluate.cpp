@@ -54,7 +54,7 @@ extern "C" {
      #pragma HLS inline off
      loadStruct: for (int i = 0; i < burstLength; i++){
      #pragma HLS pipeline
-       data_local[i].node_index_ = data_dram[i](31, 0);
+       data_local[i].node_index_ = data_dram[i](19, 0);
        data_local[i].node_type_ = data_dram[i](33,32);
        data_local[i].children_size = data_dram[i](95, 64);
        data_local[i].children_offset = data_dram[i](127, 96);
@@ -108,28 +108,32 @@ assert(num_queries <= 4096);  // this helps HLS estimate the loop trip count
 static bool local_variables [MAX_VAR];
 static bool local_instantiation [MAX_VAR];
 static ap_uint<12> local_flippers [50];
-static FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
 static ap_uint<20> local_children_vector[TOTAL_CHILDREN];
 static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM];
 static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
+static FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
+
 load(local_variables, local_instantiation, local_fpga_node_vector,
 fpga_node_vector, local_children_vector, children_vector, local_parameter_vector,
 parameter_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers);
 static float evaluation_cache [PSDD_SIZE];
-#pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
 
-for (int m = 0; m < num_queries; m++){
+#pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_flippers core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
+
+
+for (uint m = 0; m < num_queries; m++){
   if (m >0)
   local_instantiation[local_flippers[m-1%50]] = !local_instantiation[local_flippers[m-1%50]];
 
   local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
 #pragma HLS RESOURCE variable=local_evaluation_cache core=XPM_MEMORY uram
-  for(int j = 0; j < PSDD_SIZE; j++){
+  for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
 #pragma HLS pipeline
-    uint cur_node_idx = j;
     if (local_fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
      if (local_variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
        if (local_instantiation[local_fpga_node_vector[cur_node_idx].variable_index_] == (local_fpga_node_vector[cur_node_idx].literal_ > 0) ) {
@@ -154,18 +158,17 @@ for (int m = 0; m < num_queries; m++){
    }
  }
 
-  for(int j = 0; j < PSDD_SIZE; j++){
+  for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
 //  #pragma HLS pipeline
-    uint cur_node_idx = j;
     if (local_fpga_node_vector[cur_node_idx].node_type_ == DECISION_NODE_TYPE){
     uint element_size = local_fpga_node_vector[cur_node_idx].children_size;
     float max_prob = -std::numeric_limits<float>::infinity();
 
     assert(element_size <= MAX_CHILDREN);
-      for (size_t i = 0; i < element_size; ++i) {
+      for (uint i = 0; i < element_size; ++i) {
 #pragma HLS pipeline
         uint cur_prime_idx = local_fpga_node_vector[local_children_vector[local_fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
-        uint cur_sub_idx = local_fpga_node_vector[children_vector[local_fpga_node_vector[cur_node_idx].children_offset + local_fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
+        uint cur_sub_idx = local_fpga_node_vector[local_children_vector[local_fpga_node_vector[cur_node_idx].children_offset + local_fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
         float tmp = evaluation_cache[local_fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[local_fpga_node_vector[cur_sub_idx].node_index_] +  float (local_parameter_vector[local_fpga_node_vector[cur_node_idx].parameter_offset + i]);
         max_prob = (max_prob == -std::numeric_limits<float>::infinity() || max_prob < tmp) ? tmp : max_prob;
       }
@@ -177,7 +180,7 @@ for (int m = 0; m < num_queries; m++){
   // result[m] = evaluation_cache[local_fpga_node_vector[serialized_nodes[0]].node_index_];
 }
 //For one query more precise causes II to hit 15
-LoadResult:for(int i = 0; i < PSDD_SIZE; i++){
+LoadResult:for(uint i = 0; i < PSDD_SIZE; i++){
   #pragma HLS pipeline
     result[i] = evaluation_cache[i];
   }
