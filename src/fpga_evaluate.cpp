@@ -65,7 +65,7 @@ extern "C" {
      }
    }
 
-   void load(bool local_variables[MAX_VAR], bool local_instantiation[MAX_VAR], ap_uint<20>  local_serialized_nodes [PSDD_SIZE], const ap_uint<32>  serialized_nodes [PSDD_SIZE], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
+   void load(bool local_variables[MAX_VAR], bool local_instantiation[MAX_VAR], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
      const ap_uint<256> fpga_node_vector[PSDD_SIZE], ap_uint<20> local_children_vector[TOTAL_CHILDREN], const ap_uint<32> children_vector[TOTAL_CHILDREN],
       ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], const ap_fixed<32,8,AP_RND > parameter_vector[TOTAL_PARAM],
       ap_fixed<14,2,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
@@ -73,7 +73,6 @@ extern "C" {
      loadBool(local_variables, MAX_VAR, 1);
      loadBool(local_instantiation, MAX_VAR, 0);
      load12Bit(flippers, local_flippers, 50);
-     load20Bit(serialized_nodes, local_serialized_nodes, PSDD_SIZE);
      load20Bit(children_vector, local_children_vector, TOTAL_CHILDREN);
      loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
      loadFloats(parameter_vector, local_parameter_vector, TOTAL_PARAM);
@@ -82,7 +81,6 @@ extern "C" {
    }
 
 void fpga_evaluate(
-        const ap_uint<32>* serialized_nodes, // Read-Only Vector 1
         const ap_uint<256> *fpga_node_vector, // Read-Only Vector 2
         const ap_uint<32> *children_vector,
         const ap_fixed<32,8,AP_RND> *parameter_vector,
@@ -91,14 +89,12 @@ void fpga_evaluate(
         float *result,       // Output Result
         int num_queries)
 {
-#pragma HLS INTERFACE m_axi port=serialized_nodes  offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=fpga_node_vector  offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=children_vector  offset=slave bundle=gmem
 #pragma HLS interface m_axi port = parameter_vector offset = slave bundle = gmem
 #pragma HLS interface m_axi port = bool_param_vector offset = slave bundle = gmem
 #pragma HLS interface m_axi port = flippers offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port=result offset=slave bundle=gmem
-#pragma HLS INTERFACE s_axilite port=serialized_nodes  bundle=control
 #pragma HLS INTERFACE s_axilite port=fpga_node_vector  bundle=control
 #pragma HLS INTERFACE s_axilite port=children_vector  bundle=control
 #pragma HLS interface s_axilite port = parameter_vector bundle = control
@@ -112,16 +108,14 @@ assert(num_queries <= 4096);  // this helps HLS estimate the loop trip count
 static bool local_variables [MAX_VAR];
 static bool local_instantiation [MAX_VAR];
 static ap_uint<12> local_flippers [50];
-static ap_uint<20> local_serialized_nodes [PSDD_SIZE];
 static FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
 static ap_uint<20> local_children_vector[TOTAL_CHILDREN];
 static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM];
 static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
-load(local_variables, local_instantiation, local_serialized_nodes, serialized_nodes, local_fpga_node_vector,
+load(local_variables, local_instantiation, local_fpga_node_vector,
 fpga_node_vector, local_children_vector, children_vector, local_parameter_vector,
 parameter_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers);
 static float evaluation_cache [PSDD_SIZE];
-#pragma HLS RESOURCE variable=local_serialized_nodes core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
@@ -133,9 +127,9 @@ for (int m = 0; m < num_queries; m++){
 
   local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
 #pragma HLS RESOURCE variable=local_evaluation_cache core=XPM_MEMORY uram
-  for(int j = PSDD_SIZE -1; j >= 0; j--){
+  for(int j = 0; j < PSDD_SIZE; j++){
 #pragma HLS pipeline
-    uint cur_node_idx = local_serialized_nodes[j];
+    uint cur_node_idx = j;
     if (local_fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
      if (local_variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
        if (local_instantiation[local_fpga_node_vector[cur_node_idx].variable_index_] == (local_fpga_node_vector[cur_node_idx].literal_ > 0) ) {
@@ -160,9 +154,9 @@ for (int m = 0; m < num_queries; m++){
    }
  }
 
-  for(int j = PSDD_SIZE -1; j >= 0; j--){
+  for(int j = 0; j < PSDD_SIZE; j++){
 //  #pragma HLS pipeline
-    uint cur_node_idx = local_serialized_nodes[j];
+    uint cur_node_idx = j;
     if (local_fpga_node_vector[cur_node_idx].node_type_ == DECISION_NODE_TYPE){
     uint element_size = local_fpga_node_vector[cur_node_idx].children_size;
     float max_prob = -std::numeric_limits<float>::infinity();
@@ -179,6 +173,7 @@ for (int m = 0; m < num_queries; m++){
     }
   }
   //For more than one query, less precise
+  //Doesn't work now, maybe just hard code it or pass in only first value of serialized_nodes
   // result[m] = evaluation_cache[local_fpga_node_vector[serialized_nodes[0]].node_index_];
 }
 //For one query more precise causes II to hit 15

@@ -8,7 +8,7 @@ cmake .
 make
 
 #runs xcpp
-/opt/Xilinx/SDx/2018.3.op2405991/bin/xcpp -Wall -O0 -g -std=c++0x -I$project_dir/include -I/opt/Xilinx/Vivado/2018.3.op2405991/include -L$project_dir/lib/linux --I$project_dir/../../libs/  -I./src/ -I../../libs/xcl2 -I/opt/xilinx/xrt/include/ src/psdd_inference_main.cpp ../../libs/xcl2/xcl2.cpp -o psdd_inference -L/opt/xilinx/xrt/lib/ -lOpenCL -lpthread  -Wl,-rpath,$project_dir/lib/linux libpsdd.a -lsdd -lgmp -lOpenCL libxcl2.a
+/opt/Xilinx/SDx/2018.3.op2405991/bin/xcpp -Wall -O0 -g -std=c++0x -I$project_dir/include -I/opt/Xilinx/Vivado/2018.3.op2405991/include -L$project_dir/lib/linux -I$project_dir/../../libs/  -I./src/ -I../../libs/xcl2 -I/opt/xilinx/xrt/include/ src/psdd_inference_main.cpp ../../libs/xcl2/xcl2.cpp -o psdd_inference -L/opt/xilinx/xrt/lib/ -lOpenCL -lpthread  -Wl,-rpath,$project_dir/lib/linux libpsdd.a -lsdd -lgmp -lOpenCL libxcl2.a
 
 #makes xcl bin
 mkdir -p xclbin

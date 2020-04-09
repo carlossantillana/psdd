@@ -117,13 +117,8 @@ int main(int argc, char** argv)
  }
 
  File.close();
- std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> fpga_serialized_psdd_ (PSDD_SIZE);   //Input Matrix 1
 
- for (uint i = 0; i < PSDD_SIZE; i++){
-   fpga_serialized_psdd_[i] = fpga_serialized_psdd_evaluate[i];
- }
   //Allocate Memory in Host Memory
-  size_t fpga_serialized_psdd_size_bytes = sizeof(fpga_serialized_psdd_[0]) * PSDD_SIZE;
   size_t fpga_node_vector_size_bytes = sizeof(fpga_node_vector[0]) * PSDD_SIZE;
   size_t children_vector_size_bytes = sizeof(children_vector[0]) * TOTAL_CHILDREN;
   size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_PARAM;
@@ -149,30 +144,27 @@ int main(int argc, char** argv)
       OCL_CHECK(err, cl::Kernel krnl_vector_add(program,"fpga_evaluate", &err));
 
       OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-              fpga_serialized_psdd_size_bytes, fpga_serialized_psdd_.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in2   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
               fpga_node_vector_size_bytes, fpga_node_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in3  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+      OCL_CHECK(err, cl::Buffer buffer_in2  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                 children_vector_size_bytes, children_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in4  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+      OCL_CHECK(err, cl::Buffer buffer_in3  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   parameter_vector_size_bytes, parameter_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+      OCL_CHECK(err, cl::Buffer buffer_in4  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   bool_param_vector_size_bytes, bool_param_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in6  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+      OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   flippers_size_bytes, flippers.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
               result_size_bytes, result.data(), &err));
 
-      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5, buffer_in6},0/* 0 means from host*/));
+      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5},0/* 0 means from host*/));
 
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in2));
       OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in3));
       OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in4));
       OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in5));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in6));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(7, NUM_QUERIES));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_output));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(6, NUM_QUERIES));
 
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
