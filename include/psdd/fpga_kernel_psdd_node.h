@@ -21,6 +21,7 @@ const uint MAX_CHILDREN = 57;
 const uint TOTAL_CHILDREN = 1541021;
 const uint TOTAL_PARAM = 770511;
 const short TOTAL_BOOL_PARAM = 792;
+const short TOTAL_LITERALS = 6714;
 
 //For grids network
 // const uint PSDD_SIZE = 51;
@@ -36,8 +37,6 @@ struct FPGAPsddNodeStruct {
   ap_uint<21> children_offset;
   ap_uint<20> parameter_offset;
   ap_int<14> variable_index_;
-  ap_uint<10> bool_param_offset;
-  ap_int<13> literal_;
 };
 struct PsddNodeStruct {
   ap_uint<32> node_index_;

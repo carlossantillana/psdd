@@ -74,6 +74,8 @@ int main(int argc, char** argv)
   std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_PARAM);
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (50);
+  std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_vector (TOTAL_LITERALS);
+
 
  argc -= (argc > 0);
  argv += (argc > 0); // skip program name argv[0] if present
@@ -94,7 +96,7 @@ int main(int argc, char** argv)
  PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
  sdd_vtree_free(psdd_vtree);
  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
-    children_vector, parameter_vector, bool_param_vector);
+    children_vector, parameter_vector, bool_param_vector, literal_vector);
  ap_uint<32> correctPsddSize = 0;
 
  uint32_t root_node_idx = result_node->node_index_;
@@ -124,6 +126,7 @@ int main(int argc, char** argv)
   size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_PARAM;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
   size_t flippers_size_bytes = sizeof(flippers[0]) * 50;
+  size_t literal_vector_size_bytes = sizeof(literal_vector[0]) * TOTAL_LITERALS;
   size_t result_size_bytes = sizeof(float) * PSDD_SIZE;
   std::vector<float, aligned_allocator<float>> result (PSDD_SIZE);
   cl_int err;
@@ -153,6 +156,8 @@ int main(int argc, char** argv)
                   bool_param_vector_size_bytes, bool_param_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   flippers_size_bytes, flippers.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in6  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                  literal_vector_size_bytes, literal_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
               result_size_bytes, result.data(), &err));
 
@@ -163,8 +168,9 @@ int main(int argc, char** argv)
       OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in3));
       OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in4));
       OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in5));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(6, NUM_QUERIES));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in6));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_output));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(7, NUM_QUERIES));
 
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
@@ -180,12 +186,12 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    //NUM_QUERIES   vvv
-   double reference_results [580817] = {0};
+   double reference_results [PSDD_SIZE] = {0};
    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
    float difference = 0;
    int num_queries_clean = NUM_QUERIES;
    // Change back to num _queries
-   for (int i =0; i < PSDD_SIZE; i++){
+   for (uint i =0; i < PSDD_SIZE; i++){
      float tmpDiff = 0;
      // std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){

@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 include_directories(include)
 include_directories("/opt/Xilinx/Vivado/2018.3.op2405991/include/")
 include_directories("$ENV{AWS_FPGA_REPO_DIR}/SDAccel/examples/xilinx_2018.3/libs/")
+include_directories("$ENV{XILINX_XRT}/include/")
 include_directories("/usr/include/")
 
 if(APPLE)

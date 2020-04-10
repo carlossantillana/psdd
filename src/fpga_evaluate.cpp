@@ -3,7 +3,6 @@
 #include <iostream>
 
 extern "C" {
-
   void loadBool(bool* data_local, int burstLength, char value){
     #pragma HLS inline off
     loadBool: for (int i = 0; i < burstLength; i++){
@@ -18,7 +17,13 @@ extern "C" {
       data_local[i] = data_dram[i](11,0);
     }
   }
-
+  void load13Bit(const ap_int<32>* data_dram, ap_int<13>* data_local, int burstLength){
+    #pragma HLS inline off
+    load9Bit: for (int i = 0; i < burstLength; i++){
+    #pragma HLS pipeline
+      data_local[i] = data_dram[i](12,0);
+    }
+  }
    void load21Bit(const ap_uint<32>* data_dram, ap_uint<21>* data_local, int burstLength){
      #pragma HLS inline off
      load20Bit: for (int i = 0; i < burstLength; i++){
@@ -60,21 +65,19 @@ extern "C" {
        data_local[i].children_offset = data_dram[i](127, 96);
        data_local[i].parameter_offset = data_dram[i](159, 128);
        data_local[i].variable_index_ = data_dram[i](173, 160);
-       data_local[i].bool_param_offset = data_dram[i](223, 192);
-       data_local[i].literal_ = data_dram[i](236, 224);
-     }
+    }
    }
 
    void load(bool local_variables[MAX_VAR], bool local_instantiation[MAX_VAR], FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE],
      const ap_uint<256> fpga_node_vector[PSDD_SIZE], ap_uint<20> local_children_vector[TOTAL_CHILDREN], const ap_uint<32> children_vector[TOTAL_CHILDREN],
-      ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], const ap_fixed<32,8,AP_RND > parameter_vector[TOTAL_PARAM],
-      ap_fixed<14,2,AP_RND > local_bool_param_vector [TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM],
-      ap_uint<12> local_flippers [50], const ap_uint<32> flippers [50]){
+      ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM], ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM], const ap_fixed<32,8,AP_RND > parameter_vector[TOTAL_PARAM],
+      ap_uint<12> local_flippers [50], const ap_uint<32> flippers [50], ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS]){
      loadBool(local_variables, MAX_VAR, 1);
      loadBool(local_instantiation, MAX_VAR, 0);
      load12Bit(flippers, local_flippers, 50);
+     load13Bit(literal_vector, local_literal_vector, TOTAL_LITERALS);
      load20Bit(children_vector, local_children_vector, TOTAL_CHILDREN);
-     loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
+    loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
      loadFloats(parameter_vector, local_parameter_vector, TOTAL_PARAM);
      loadStructs(fpga_node_vector, local_fpga_node_vector, PSDD_SIZE);
      return;
@@ -86,20 +89,23 @@ void fpga_evaluate(
         const ap_fixed<32,8,AP_RND> *parameter_vector,
         const ap_fixed<32,2,AP_RND> *bool_param_vector,
         const ap_uint<32> *flippers,
+        const ap_int<32> *literal_vector,
         float *result,       // Output Result
         int num_queries)
 {
 #pragma HLS INTERFACE m_axi port=fpga_node_vector  offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=children_vector  offset=slave bundle=gmem
-#pragma HLS interface m_axi port = parameter_vector offset = slave bundle = gmem
-#pragma HLS interface m_axi port = bool_param_vector offset = slave bundle = gmem
-#pragma HLS interface m_axi port = flippers offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = parameter_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = bool_param_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = flippers offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = literal_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port=result offset=slave bundle=gmem
 #pragma HLS INTERFACE s_axilite port=fpga_node_vector  bundle=control
 #pragma HLS INTERFACE s_axilite port=children_vector  bundle=control
-#pragma HLS interface s_axilite port = parameter_vector bundle = control
-#pragma HLS interface s_axilite port = bool_param_vector bundle = control
-#pragma HLS interface s_axilite port = flippers bundle = control
+#pragma HLS INTERFACE s_axilite port = parameter_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = bool_param_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = flippers bundle = control
+#pragma HLS INTERFACE s_axilite port = literal_vector bundle = control
 #pragma HLS INTERFACE s_axilite port=result bundle=control
 #pragma HLS INTERFACE s_axilite port=num_queries bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
@@ -112,10 +118,13 @@ static ap_uint<20> local_children_vector[TOTAL_CHILDREN];
 static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_PARAM];
 static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
 static FPGAPsddNodeStruct local_fpga_node_vector[PSDD_SIZE];
+static ap_int<13> local_literal_vector [TOTAL_LITERALS];
+short currentLiteral = 0;
+short current_bool_param = 0;
 
 load(local_variables, local_instantiation, local_fpga_node_vector,
-fpga_node_vector, local_children_vector, children_vector, local_parameter_vector,
-parameter_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers);
+fpga_node_vector, local_children_vector, children_vector, local_bool_param_vector, bool_param_vector, local_parameter_vector,
+parameter_vector,local_flippers, flippers, local_literal_vector, literal_vector);
 static float evaluation_cache [PSDD_SIZE];
 
 #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
@@ -124,7 +133,7 @@ static float evaluation_cache [PSDD_SIZE];
 #pragma HLS RESOURCE variable=local_children_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
 #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
-
+#pragma HLS RESOURCE variable=local_literal_vector core=XPM_MEMORY uram
 
 for (uint m = 0; m < num_queries; m++){
   if (m >0)
@@ -136,7 +145,7 @@ for (uint m = 0; m < num_queries; m++){
 #pragma HLS pipeline
     if (local_fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
      if (local_variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-       if (local_instantiation[local_fpga_node_vector[cur_node_idx].variable_index_] == (local_fpga_node_vector[cur_node_idx].literal_ > 0) ) {
+       if (local_instantiation[local_fpga_node_vector[cur_node_idx].variable_index_] == (local_literal_vector[currentLiteral++] > 0) ) {
          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = 0;
        } else {
          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] =
@@ -148,9 +157,11 @@ for (uint m = 0; m < num_queries; m++){
    } else if (local_fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
      if (local_variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
        if (local_instantiation[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-         evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[local_fpga_node_vector[cur_node_idx].bool_param_offset];
+         evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[current_bool_param++];
+         current_bool_param++;
        } else {
-         evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[local_fpga_node_vector[cur_node_idx].bool_param_offset +1];
+         evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[current_bool_param +1];
+         current_bool_param+= 2;
        }
      } else {
        evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = 0;
