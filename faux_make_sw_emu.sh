@@ -14,13 +14,13 @@ make
 mkdir -p xclbin
 
 #xocc compiles makes xo file
-/opt/Xilinx/SDx/2018.3.op2405991/bin/xocc -g -c --xp "param:compiler.preserveHlsOutput=1" --xp "param:compiler.generateExtraRunData=true" --xp param:prop:kernel.fpga_evalute.kernel_flags="-std=c++0x" -R estimate -s -k fpga_evaluate  -o xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xo -t sw_emu --platform $platform_dir/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm ./src/fpga_evaluate.cpp   -I$project_dir/include
+/opt/Xilinx/SDx/2018.3.op2405991/bin/xocc -g -O2 -c --xp "param:compiler.preserveHlsOutput=1" --xp "param:compiler.generateExtraRunData=true" --xp param:prop:kernel.fpga_evalute.kernel_flags="-std=c++0x" -R estimate -s -k fpga_evaluate  -o xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xo -t sw_emu --platform $platform_dir/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm ./src/fpga_evaluate.cpp   -I$project_dir/include
 
 #makes xcl bin
 mkdir -p xclbin
 
 #makes xclbin file
-/opt/Xilinx/SDx/2018.3.op2405991/bin/xocc -g -l --xp "param:compiler.preserveHlsOutput=1" --xp "param:compiler.generateExtraRunData=true"  --xp param:prop:kernel.fpga_evalute.kernel_flags="-std=c++0x" -R estimate -s -o xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xclbin -t sw_emu --platform $platform_dir/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xo
+/opt/Xilinx/SDx/2018.3.op2405991/bin/xocc -g -O2 -l --xp "param:compiler.preserveHlsOutput=1" --xp "param:compiler.generateExtraRunData=true"  --xp param:prop:kernel.fpga_evalute.kernel_flags="-std=c++0x" -R estimate -s -o xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xclbin -t sw_emu --platform $platform_dir/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm xclbin/fpga_evaluate.sw_emu.xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xo
 
 #runs emconfigutil
 /opt/Xilinx/SDx/2018.3.op2405991/bin/emconfigutil --platform $platform_dir/xilinx_aws-vu9p-f1-04261818_dynamic_5_0/xilinx_aws-vu9p-f1-04261818_dynamic_5_0.xpfm --nd 1

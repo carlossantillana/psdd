@@ -186,12 +186,12 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    //NUM_QUERIES   vvv
-   double reference_results [PSDD_SIZE] = {0};
+   double reference_results [NUM_QUERIES] = {0};
    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
    float difference = 0;
    int num_queries_clean = NUM_QUERIES;
    // Change back to num _queries
-   for (uint i =0; i < PSDD_SIZE; i++){
+   for (uint i =0; i < NUM_QUERIES; i++){
      float tmpDiff = 0;
      // std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){

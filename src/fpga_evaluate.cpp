@@ -157,8 +157,8 @@ for (uint m = 0; m < num_queries; m++){
    } else if (local_fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
      if (local_variables[local_fpga_node_vector[cur_node_idx].variable_index_]) {
        if (local_instantiation[local_fpga_node_vector[cur_node_idx].variable_index_]) {
-         evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[current_bool_param++];
-         current_bool_param++;
+         evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[current_bool_param];
+         current_bool_param+= 2;
        } else {
          evaluation_cache[local_fpga_node_vector[cur_node_idx].node_index_] = local_bool_param_vector[current_bool_param +1];
          current_bool_param+= 2;
@@ -188,12 +188,12 @@ for (uint m = 0; m < num_queries; m++){
   }
   //For more than one query, less precise
   //Doesn't work now, maybe just hard code it or pass in only first value of serialized_nodes
-  // result[m] = evaluation_cache[local_fpga_node_vector[serialized_nodes[0]].node_index_];
+  result[m] = evaluation_cache[580816];
 }
 //For one query more precise causes II to hit 15
-LoadResult:for(uint i = 0; i < PSDD_SIZE; i++){
-  #pragma HLS pipeline
-    result[i] = evaluation_cache[i];
-  }
+// LoadResult:for(uint i = 0; i < PSDD_SIZE; i++){
+//   #pragma HLS pipeline
+//     result[i] = evaluation_cache[i];
+//   }
 }
 }
