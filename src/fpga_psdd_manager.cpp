@@ -617,6 +617,7 @@ PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<
     currentParam++;
   }
   PsddStruct.variable_index_ = cur_node->variable_index_;
+
   if (int(PsddStruct.node_type_) == TOP_NODE_TYPE){
     bool_param_vector[currentBoolParam] = cur_node->true_parameter_.parameter_;
     currentBoolParam++;
@@ -636,13 +637,15 @@ PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<
 }
 FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector,
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector ,
-  std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> &bool_param_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_vector ) {
+  std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> &bool_param_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_vector,
+  std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &variable_vector ) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
   int currentChild = 0;
   int currentParam = 0;
   int currentBoolParam = 0;
   int currentLiteral = 0;
+  int currentVariable = 0;
 
   psdd_file.open(psdd_filename);
   if (!psdd_file) {
@@ -670,8 +673,9 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
          currentChild, parameter_vector, currentParam, bool_param_vector, currentBoolParam);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
-      literal_vector[currentLiteral] = literal;
-      currentLiteral++;
+      literal_vector[currentLiteral++] = literal;
+      variable_vector[currentVariable++] = literal > 0 ? static_cast<uint>(literal)
+                          : static_cast<uint32_t>(-literal);
     } else if (line[0] == 'T') {
       std::istringstream iss(line.substr(1, std::string::npos));
       uintmax_t node_index;
@@ -687,6 +691,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
          children_vector, currentChild, parameter_vector, currentParam, bool_param_vector, currentBoolParam);
       construct_fpga_cache[node_index] = cur_node;
+      variable_vector[currentVariable++] = cur_node->variable_index_;
       root_node = cur_node;
     } else {
       assert(line[0] == 'D');
