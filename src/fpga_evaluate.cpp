@@ -93,7 +93,7 @@ void fpga_evaluate(
         float *result,       // Output Result
         int num_queries)
 {
-#pragma HLS INTERFACE m_axi port=fpga_node_vector  offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=fpga_node_vector  offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=children_vector  offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port = parameter_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port = bool_param_vector offset = slave bundle = gmem
@@ -177,7 +177,7 @@ for (uint m = 0; m < num_queries; m++){
 
     assert(element_size <= MAX_CHILDREN);
       for (uint i = 0; i < element_size; ++i) {
-#pragma HLS pipeline
+#pragma HLS pipeline II=3
         uint cur_prime_idx = local_fpga_node_vector[local_children_vector[local_fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
         uint cur_sub_idx = local_fpga_node_vector[local_children_vector[local_fpga_node_vector[cur_node_idx].children_offset + local_fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
         float tmp = evaluation_cache[local_fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[local_fpga_node_vector[cur_sub_idx].node_index_] +  float (local_parameter_vector[local_fpga_node_vector[cur_node_idx].parameter_offset + i]);
