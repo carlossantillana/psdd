@@ -18,8 +18,7 @@
 //For map_network network
 const uint PSDD_SIZE = 580817;
 const uint MAX_CHILDREN = 57;
-const uint TOTAL_CHILDREN = 1541021;
-const uint TOTAL_PARAM = 770511;
+const uint TOTAL_CHILDREN = 770511;
 const short TOTAL_BOOL_PARAM = 792;
 const short TOTAL_LITERALS = 6714;
 const short TOTAL_VARIABLES = 7110;
@@ -35,8 +34,7 @@ struct FPGAPsddNodeStruct {
   ap_uint<20> node_index_;
   ap_uint<2> node_type_;
   ap_uint<6> children_size;
-  ap_uint<21> children_offset;
-  ap_uint<20> parameter_offset;
+  ap_uint<20> children_offset;
 };
 struct PsddNodeStruct {
   ap_uint<32> node_index_;

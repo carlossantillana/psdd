@@ -70,8 +70,9 @@ int main(int argc, char** argv)
   //My Code
   std::cout << "starting main\n";
   std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>>  fpga_node_vector (PSDD_SIZE);
-  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> children_vector (TOTAL_CHILDREN);
-  std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_PARAM);
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> prime_vector (TOTAL_CHILDREN);
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> sub_vector (TOTAL_CHILDREN);
+  std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_CHILDREN);
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (50);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_vector (TOTAL_LITERALS);
@@ -96,15 +97,12 @@ int main(int argc, char** argv)
  PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
  sdd_vtree_free(psdd_vtree);
  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
-    children_vector, parameter_vector, bool_param_vector, literal_vector, variable_vector);
- ap_uint<32> correctPsddSize = 0;
-
+    prime_vector, sub_vector, parameter_vector, bool_param_vector, literal_vector, variable_vector);
  uint32_t root_node_idx = result_node->node_index_;
 
  std::vector<SddLiteral> variables = vtree_util::VariablesUnderVtree(psdd_manager->vtree());
  auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
- // auto fpga_mpe_result = fpga_psdd_node_util::GetMPESolution(fpga_serialized_psdd);
- auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, children_vector);
+ auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, prime_vector, sub_vector);
 
  std::bitset<MAX_VAR> var_mask;
  var_mask.set();
@@ -122,8 +120,8 @@ int main(int argc, char** argv)
 
   //Allocate Memory in Host Memory
   size_t fpga_node_vector_size_bytes = sizeof(fpga_node_vector[0]) * PSDD_SIZE;
-  size_t children_vector_size_bytes = sizeof(children_vector[0]) * TOTAL_CHILDREN;
-  size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_PARAM;
+  size_t children_vector_size_bytes = sizeof(prime_vector[0]) * TOTAL_CHILDREN;
+  size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_CHILDREN;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
   size_t flippers_size_bytes = sizeof(flippers[0]) * 50;
   size_t literal_vector_size_bytes = sizeof(literal_vector[0]) * TOTAL_LITERALS;
@@ -151,21 +149,23 @@ int main(int argc, char** argv)
       OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
               fpga_node_vector_size_bytes, fpga_node_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in2  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                children_vector_size_bytes, children_vector.data(), &err));
+                children_vector_size_bytes, prime_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in3  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  parameter_vector_size_bytes, parameter_vector.data(), &err));
+                children_vector_size_bytes, sub_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in4  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  bool_param_vector_size_bytes, bool_param_vector.data(), &err));
+                  parameter_vector_size_bytes, parameter_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  flippers_size_bytes, flippers.data(), &err));
+                  bool_param_vector_size_bytes, bool_param_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in6  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  literal_vector_size_bytes, literal_vector.data(), &err));
+                  flippers_size_bytes, flippers.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in7  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                  literal_vector_size_bytes, literal_vector.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in8  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   variable_vector_size_bytes, variable_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
               result_size_bytes, result.data(), &err));
 
-      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5,buffer_in6},0/* 0 means from host*/));
+      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5,buffer_in6, buffer_in7, buffer_in8},0/* 0 means from host*/));
 
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in2));
@@ -174,8 +174,9 @@ int main(int argc, char** argv)
       OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in5));
       OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in6));
       OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_in7));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(8, NUM_QUERIES));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_in8));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_output));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(9, NUM_QUERIES));
 
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
@@ -191,18 +192,15 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    //NUM_QUERIES   vvv
-   double reference_results [NUM_QUERIES] = {0};
+   double reference_results [PSDD_SIZE] = {0};
    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
    float difference = 0;
-   int num_queries_clean = NUM_QUERIES;
    // Change back to num _queries
-   for (uint i =0; i < NUM_QUERIES; i++){
+   for (uint i =0; i < PSDD_SIZE; i++){
      float tmpDiff = 0;
      // std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
      tmpDiff = std::pow((reference_results[i] - result[i]),2);
-   } else{
-     num_queries_clean--;
    }
      if (tmpDiff > .1){
        std::cout << "ERROR ERROR DIFFERENCE  (" << tmpDiff << ") larger than .1 SOMETHING BAD HAPPENED (result: " << result[i] << ")\n";

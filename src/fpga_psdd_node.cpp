@@ -295,12 +295,14 @@ SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
 }
 
 std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
-                                                ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector) {
-  return SerializePsddNodesEvaluate(std::vector<uint32_t>({root_node}), fpga_node_vector, children_vector);
+                                                ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector,
+                                              std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector) {
+  return SerializePsddNodesEvaluate(std::vector<uint32_t>({root_node}), fpga_node_vector, prime_vector, sub_vector);
 }
 
 std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
-                                                ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector) {
+                                                ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector,
+                                              std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector) {
   std::unordered_set<uintmax_t> node_explored;
   std::vector<uint32_t> result;
   for (int i = 0 ; i < root_nodes.size() ; i++ ) {
@@ -316,7 +318,7 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
     uint32_t cur_psdd_node_idx = result[explore_index];
     if (fpga_node_vector[cur_psdd_node_idx].node_type_ == 2) {
       for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size; i++ ) {
-        uint32_t cur_prime_idx = fpga_node_vector[children_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset]].node_index_;
+        uint32_t cur_prime_idx = fpga_node_vector[prime_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset]].node_index_;
         if (node_explored.find(fpga_node_vector[cur_prime_idx].node_index_) ==
             node_explored.end()) {
           node_explored.insert(fpga_node_vector[cur_prime_idx].node_index_);
@@ -324,7 +326,7 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
         }
       }
       for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size ; i++ ) {
-        uint32_t cur_sub_idx = fpga_node_vector[children_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset + fpga_node_vector[cur_psdd_node_idx].children_size]].node_index_;
+        uint32_t cur_sub_idx = fpga_node_vector[sub_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset]].node_index_;
         if (node_explored.find(fpga_node_vector[cur_sub_idx].node_index_) == node_explored.end()) {
           node_explored.insert(fpga_node_vector[cur_sub_idx].node_index_);
           result.push_back(cur_sub_idx);
@@ -586,60 +588,6 @@ Probability Evaluate(const std::bitset<MAX_VAR> &variables,
   std::vector<FPGAPsddNode *> serialized_nodes = SerializePsddNodes(root_node);
   return Evaluate(variables, instantiation, serialized_nodes);
 }
-
-// float * EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
-//                      const std::vector<FPGAPsddNode *> &serialized_nodes) {
-//    float results[NUM_QUERIES];
-//    for (int m = 0; m < NUM_QUERIES; m++){
-//      float evaluation_cache [PSDD_SIZE];
-//      bool local_instantiation[MAX_VAR] = {0};
-//      local_instantiation[m] = m;
-//      for(int j = PSDD_SIZE -1; j >= 0; j--){
-//        uintmax_t cur_node_idx = serialized_nodes[j];
-//        if (fpga_node_vector[cur_node_idx].node_type_ == LITERAL_NODE_TYPE) {
-//         if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
-//           if (local_instantiation[fpga_node_vector[cur_node_idx].variable_index_] == (fpga_node_vector[cur_node_idx].literal_ > 0) ) {
-//             evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
-//           } else {
-//             evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] =
-//                 -std::numeric_limits<float>::infinity();
-//           }
-//         } else {
-//           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
-//         }
-//       } else if (fpga_node_vector[cur_node_idx].node_type_ == TOP_NODE_TYPE) {
-//         if (variables[fpga_node_vector[cur_node_idx].variable_index_]) {
-//           if (local_instantiation[fpga_node_vector[cur_node_idx].variable_index_]) {
-//             evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset];
-//           } else {
-//             evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = bool_param_vector[fpga_node_vector[cur_node_idx].bool_param_offset +1];
-//           }
-//         } else {
-//           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = 0;
-//         }
-//       }
-//     }
-//
-//      for(int j = PSDD_SIZE -1; j >= 0; j--){
-//        uintmax_t cur_node_idx = serialized_nodes[j];
-//        if (fpga_node_vector[cur_node_idx].node_type_ == DECISION_NODE_TYPE){
-//        uint32_t element_size = fpga_node_vector[cur_node_idx].children_size;
-//        float max_prob = -std::numeric_limits<float>::infinity();
-//
-//        assert(element_size <= MAX_CHILDREN);
-//          for (size_t i = 0; i < element_size; ++i) {
-//            uint32_t cur_prime_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + i]].node_index_;
-//            uint32_t cur_sub_idx = fpga_node_vector[children_vector[fpga_node_vector[cur_node_idx].children_offset + fpga_node_vector[cur_node_idx].children_size + i]].node_index_;
-//            float tmp = evaluation_cache[fpga_node_vector[cur_prime_idx].node_index_] + evaluation_cache[fpga_node_vector[cur_sub_idx].node_index_] +  float (parameter_vector[fpga_node_vector[cur_node_idx].parameter_offset + i]);
-//            max_prob = (max_prob == -std::numeric_limits<float>::infinity() || max_prob < tmp) ? tmp : max_prob;
-//          }
-//           evaluation_cache[fpga_node_vector[cur_node_idx].node_index_] = max_prob;
-//        }
-//      }
-//      results[m] = evaluation_cache[fpga_node_vector[serialized_nodes[0]].node_index_];
-//    }
-//    return results;
-//    }
 
 void WritePsddToFile(FPGAPsddNode *root_node, const char *output_filename) {
   auto serialized_psdds = SerializePsddNodes(root_node);

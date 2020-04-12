@@ -639,10 +639,10 @@ void  EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
         evaluation_cache[cur_node->node_index()] = cur_prob;
       }
     }
-      results[m] = evaluation_cache[serialized_nodes[0]->node_index()].parameter_;
-      // for(int i = 0; i < PSDD_SIZE_2; i++){
-        // results[i] = evaluation_cache[i].parameter_;
-      // }
+      // results[m] = evaluation_cache[serialized_nodes[0]->node_index()].parameter_;
+      for(int i = 0; i < PSDD_SIZE_2; i++){
+        results[i] = evaluation_cache[i].parameter_;
+      }
     }
 
   return;

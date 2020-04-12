@@ -581,41 +581,25 @@ FPGAPsddManager::Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2, uintmax_t flag
   return MultiplyWithCache(arg1, arg2, this, flag_index, &cache);
 }
 
-float maxParameter = -4000;
-float minParameter = 20;
 
-float maxBoolParam = -4000;
-float minBoolParam = 20;
-
-
-PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector,
-  int & currentChild, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector, int & currentParam,
+PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector,
+  int & currentChild, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>>& bool_param_vector, int & currentBoolParam){
   PsddNodeStruct PsddStruct;
   PsddStruct.node_index_ = cur_node->node_index_;
   PsddStruct.node_type_ = cur_node->node_type_;
   PsddStruct.children_size = cur_node->primes_.size();
   PsddStruct.children_offset = currentChild;
-  PsddStruct.parameter_offset = currentParam;
   for (int i = 0; i < cur_node->primes_.size(); i++){
     uint32_t prime = cur_node->primes_[i]->node_index_;
-    children_vector[currentChild] = prime;
-    currentChild++;
-  }
-  for (int i = 0; i < cur_node->subs_.size(); i++){
     uint32_t sub = cur_node->subs_[i]->node_index_;
-    children_vector[currentChild] = sub;
+    PsddParameter param = cur_node->parameters_[i];
+    prime_vector[currentChild] = prime;
+    sub_vector[currentChild] = sub;
+    parameter_vector[currentChild] = param.parameter_;
     currentChild++;
   }
-  for (int i = 0; i < cur_node->parameters_.size(); i++){
-    PsddParameter param = cur_node->parameters_[i];
-    if (param.parameter_ > maxParameter)
-      maxParameter = param.parameter_;
-    if (param.parameter_ < minParameter)
-      minParameter = param.parameter_;
-    parameter_vector[currentParam] = param.parameter_;
-    currentParam++;
-  }
+
   PsddStruct.variable_index_ = cur_node->variable_index_;
 
   if (int(PsddStruct.node_type_) == TOP_NODE_TYPE){
@@ -623,26 +607,16 @@ PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<
     currentBoolParam++;
     bool_param_vector[currentBoolParam] = cur_node->false_parameter_.parameter_;
     currentBoolParam++;
-    if (cur_node->true_parameter_.parameter_ > maxBoolParam)
-      maxBoolParam = cur_node->true_parameter_.parameter_;
-    if (cur_node->true_parameter_.parameter_ < minBoolParam)
-      minBoolParam = cur_node->true_parameter_.parameter_;
-
-    if (cur_node->false_parameter_.parameter_ > maxBoolParam)
-        maxBoolParam = cur_node->false_parameter_.parameter_;
-    if (cur_node->false_parameter_.parameter_ < minBoolParam)
-      minBoolParam = cur_node->false_parameter_.parameter_;
   }
   return PsddStruct;
 }
 FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector,
-  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector ,
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector ,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> &bool_param_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_vector,
   std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &variable_vector ) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
   int currentChild = 0;
-  int currentParam = 0;
   int currentBoolParam = 0;
   int currentLiteral = 0;
   int currentVariable = 0;
@@ -669,8 +643,8 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       int32_t literal;
       iss >> node_index >> vtree_index >> literal;
       FPGAPsddNode *cur_node = GetFPGAPsddLiteralNode(literal, flag_index);
-      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node, children_vector,
-         currentChild, parameter_vector, currentParam, bool_param_vector, currentBoolParam);
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node, prime_vector, sub_vector,
+         currentChild, parameter_vector, bool_param_vector, currentBoolParam);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
       literal_vector[currentLiteral++] = literal;
@@ -689,7 +663,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
           variable_index, flag_index, PsddParameter::CreateFromLog(pos_log_pr),
           PsddParameter::CreateFromLog(neg_log_pr));
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
-         children_vector, currentChild, parameter_vector, currentParam, bool_param_vector, currentBoolParam);
+         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam);
       construct_fpga_cache[node_index] = cur_node;
       variable_vector[currentVariable++] = cur_node->variable_index_;
       root_node = cur_node;
@@ -724,7 +698,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       FPGAPsddNode *cur_node =
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
-        children_vector, currentChild, parameter_vector, currentParam, bool_param_vector, currentBoolParam);
+        prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     }

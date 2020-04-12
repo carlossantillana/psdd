@@ -190,9 +190,9 @@ std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
-                                                ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector);
+                                                ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector);
 std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
-                                                  ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_vector);
+                                                  ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
 void SetActivationFlag(const std::bitset<MAX_VAR> &evidence,
@@ -215,7 +215,7 @@ float * EvaluateToCompare(const std::bitset<MAX_VAR> &variables,
                       ap_uint<21>  serialized_nodes [PSDD_SIZE],
                       PsddNodeStruct fpga_node_vector[PSDD_SIZE],
                       ap_uint<22> children_vector[TOTAL_CHILDREN],
-                      ap_fixed<21,8,AP_RND > parameter_vector[TOTAL_PARAM],
+                      ap_fixed<21,8,AP_RND > parameter_vector[TOTAL_CHILDREN],
                       ap_fixed<14,2,AP_RND > bool_param_vector [TOTAL_BOOL_PARAM]);
 
 bool IsConsistent(FPGAPsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
