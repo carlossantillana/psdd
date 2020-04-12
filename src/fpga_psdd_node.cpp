@@ -307,10 +307,10 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
   std::vector<uint32_t> result;
   for (int i = 0 ; i < root_nodes.size() ; i++ ) {
     uint32_t cur_root_node_idx = root_nodes[i];
-    if (node_explored.find(fpga_node_vector[cur_root_node_idx].node_index_) ==
+    if (node_explored.find(cur_root_node_idx) ==
         node_explored.end()) {
       result.push_back(cur_root_node_idx);
-      node_explored.insert(fpga_node_vector[cur_root_node_idx].node_index_);
+      node_explored.insert(cur_root_node_idx);
     }
   }
   uintmax_t explore_index = 0;
@@ -318,17 +318,17 @@ std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &ro
     uint32_t cur_psdd_node_idx = result[explore_index];
     if (fpga_node_vector[cur_psdd_node_idx].node_type_ == 2) {
       for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size; i++ ) {
-        uint32_t cur_prime_idx = fpga_node_vector[prime_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset]].node_index_;
-        if (node_explored.find(fpga_node_vector[cur_prime_idx].node_index_) ==
+        uint32_t cur_prime_idx = prime_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset];
+        if (node_explored.find(cur_prime_idx) ==
             node_explored.end()) {
-          node_explored.insert(fpga_node_vector[cur_prime_idx].node_index_);
+          node_explored.insert(cur_prime_idx);
           result.push_back(cur_prime_idx);
         }
       }
       for (int i = 0 ; i < fpga_node_vector[cur_psdd_node_idx].children_size ; i++ ) {
-        uint32_t cur_sub_idx = fpga_node_vector[sub_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset]].node_index_;
-        if (node_explored.find(fpga_node_vector[cur_sub_idx].node_index_) == node_explored.end()) {
-          node_explored.insert(fpga_node_vector[cur_sub_idx].node_index_);
+        uint32_t cur_sub_idx = sub_vector[i + fpga_node_vector[cur_psdd_node_idx].children_offset];
+        if (node_explored.find(cur_sub_idx) == node_explored.end()) {
+          node_explored.insert(cur_sub_idx);
           result.push_back(cur_sub_idx);
         }
       }

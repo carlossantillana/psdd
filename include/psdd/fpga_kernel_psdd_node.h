@@ -31,20 +31,16 @@ const short TOTAL_VARIABLES = 7110;
 // const short TOTAL_BOOL_PARAM = 48;
 
 struct FPGAPsddNodeStruct {
-  ap_uint<20> node_index_;
   ap_uint<2> node_type_;
   ap_uint<6> children_size;
   ap_uint<20> children_offset;
 };
 struct PsddNodeStruct {
-  ap_uint<32> node_index_;
   ap_uint<32> node_type_;
   ap_uint<32> children_size;
   ap_uint<32> children_offset;
-  ap_uint<32> parameter_offset;
-  ap_uint<32> variable_index_;
-  ap_uint<32> bool_param_offset;
-  ap_uint<32> literal_;
+  ap_uint<32> packed;
+
 };
 
 #endif // STRUCTURED_BAYESIAN_NETWORK_PSDD_NODE_H

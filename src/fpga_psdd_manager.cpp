@@ -586,7 +586,6 @@ PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<
   int & currentChild, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>>& bool_param_vector, int & currentBoolParam){
   PsddNodeStruct PsddStruct;
-  PsddStruct.node_index_ = cur_node->node_index_;
   PsddStruct.node_type_ = cur_node->node_type_;
   PsddStruct.children_size = cur_node->primes_.size();
   PsddStruct.children_offset = currentChild;
@@ -599,9 +598,6 @@ PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<
     parameter_vector[currentChild] = param.parameter_;
     currentChild++;
   }
-
-  PsddStruct.variable_index_ = cur_node->variable_index_;
-
   if (int(PsddStruct.node_type_) == TOP_NODE_TYPE){
     bool_param_vector[currentBoolParam] = cur_node->true_parameter_.parameter_;
     currentBoolParam++;
