@@ -62,6 +62,16 @@ extern "C" {
      }
    }
 
+   void load20Bit_staggered(const ap_uint<32>* data_dram, ap_uint<20>* data_local, int start,  int burstLength){
+     #pragma HLS inline off
+     int j = 0;
+     load21Bit: for (int i = start; i < start +burstLength; i++){
+     #pragma HLS pipeline
+       data_local[j] = data_dram[i](19,0);
+       j++;
+     }
+   }
+
    void loadFloatsSmall(const ap_fixed<32,2,AP_RND >* data_dram, ap_fixed<14,2,AP_RND >* data_local, int burstLength){
      #pragma HLS inline off
      loadFloatSmall: for (int i = 0; i < burstLength; i++){
@@ -79,18 +89,18 @@ extern "C" {
    }
 
    void load(bool local_variables[MAX_VAR], bool local_instantiation[MAX_VAR],  ap_uint<2> local_node_type_vector[PSDD_SIZE],
-      const ap_uint<32> node_type_vector[PSDD_SIZE], ap_uint<20> local_prime_vector[TOTAL_CHILDREN], const ap_uint<32> prime_vector[TOTAL_CHILDREN], ap_uint<20> local_sub_vector[TOTAL_CHILDREN], const ap_uint<32> sub_vector[TOTAL_CHILDREN],
-      ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM], ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_CHILDREN], const ap_fixed<32,8,AP_RND > parameter_vector[TOTAL_CHILDREN],
+      const ap_uint<32> node_type_vector[PSDD_SIZE], ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
+      ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_CHILDREN], const ap_fixed<32,8,AP_RND > parameter_vector[TOTAL_CHILDREN],
       ap_uint<12> local_flippers [50], const ap_uint<32> flippers [50], ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
-    ap_int<14> local_variable_vector [TOTAL_VARIABLES], const ap_int<32> variable_vector [TOTAL_VARIABLES],  ap_uint<20> local_children_offset_vector [TOTAL_CHILDREN_SIZE],  const ap_uint<32> children_offset_vector [TOTAL_CHILDREN_SIZE]){
+    ap_int<14> local_variable_vector [TOTAL_VARIABLES], const ap_int<32> variable_vector [TOTAL_VARIABLES],  ap_uint<20> local_children_offset_vector [TOTAL_CHILDREN_SIZE],
+    const ap_uint<32> children_offset_vector [TOTAL_CHILDREN_SIZE], ap_uint<6> local_children_size_vector [PSDD_SIZE], const ap_uint<32> children_size_vector [PSDD_SIZE]){
      loadBool(local_variables, MAX_VAR, 1);
      loadBool(local_instantiation, MAX_VAR, 0);
      load2Bit(node_type_vector, local_node_type_vector, PSDD_SIZE);
+     load6Bit(children_size_vector, local_children_size_vector, PSDD_SIZE);
      load12Bit(flippers, local_flippers, 50);
      load13Bit(literal_vector, local_literal_vector, TOTAL_LITERALS);
      load14Bit(variable_vector, local_variable_vector, TOTAL_VARIABLES);
-     load20Bit(prime_vector, local_prime_vector, TOTAL_CHILDREN);
-     load20Bit(sub_vector, local_sub_vector, TOTAL_CHILDREN);
      load20Bit(children_offset_vector, local_children_offset_vector, TOTAL_CHILDREN_SIZE);
      loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
      loadFloats(parameter_vector, local_parameter_vector, TOTAL_CHILDREN);
@@ -140,23 +150,24 @@ assert(num_queries <= 4096);  // this helps HLS estimate the loop trip count
 static bool local_variables [MAX_VAR];
 static bool local_instantiation [MAX_VAR];
 static ap_uint<12> local_flippers [50];
-static ap_uint<20> local_prime_vector[TOTAL_CHILDREN];
-static ap_uint<20> local_sub_vector[TOTAL_CHILDREN];
+static ap_uint<20> local_prime_vector[MAX_CHILDREN];
+static ap_uint<20> local_sub_vector[MAX_CHILDREN];
 static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_CHILDREN];
 static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
 static ap_uint<2> local_node_type_vector[PSDD_SIZE];
 static ap_int<13> local_literal_vector [TOTAL_LITERALS];
 static ap_int<14> local_variable_vector [TOTAL_VARIABLES];
 static ap_uint<20> local_children_offset_vector [TOTAL_CHILDREN_SIZE];
+static ap_uint<6> local_children_size_vector [PSDD_SIZE];
 
 short currentLiteral = 0;
 short current_bool_param = 0;
 short currentVariable = 0;
 
 load(local_variables, local_instantiation, local_node_type_vector,
-node_type_vector, local_prime_vector, prime_vector, local_sub_vector, sub_vector, local_bool_param_vector, bool_param_vector, local_parameter_vector,
+node_type_vector, local_bool_param_vector, bool_param_vector, local_parameter_vector,
 parameter_vector,local_flippers, flippers, local_literal_vector, literal_vector, local_variable_vector, variable_vector,
-local_children_offset_vector, children_offset_vector);
+local_children_offset_vector, children_offset_vector, local_children_size_vector, children_size_vector);
 static float evaluation_cache [PSDD_SIZE];
 
 #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
@@ -207,15 +218,14 @@ uint cur_decn_node = 0;
   Loop2:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
 //  #pragma HLS pipeline
     if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE){
-    short element_size = children_size_vector[cur_decn_node];
+    short element_size = local_children_size_vector[cur_decn_node];
     float max_prob = -std::numeric_limits<float>::infinity();
-
+    load20Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_decn_node], element_size);
+    load20Bit_staggered(prime_vector, local_prime_vector, local_children_offset_vector[cur_decn_node], element_size);
     assert(element_size <= MAX_CHILDREN);
       InnerLoop:for (uint i = 0; i < element_size; ++i) {
 #pragma HLS pipeline II=3
-        uint cur_prime_idx = local_prime_vector[local_children_offset_vector[cur_decn_node]+ i];
-        uint cur_sub_idx = local_sub_vector[local_children_offset_vector[cur_decn_node] + i];
-        float tmp = evaluation_cache[cur_prime_idx] + evaluation_cache[cur_sub_idx] +  float (local_parameter_vector[local_children_offset_vector[cur_decn_node]+ i]);
+        float tmp = evaluation_cache[local_prime_vector[i]] + evaluation_cache[local_sub_vector[i]] +  float (local_parameter_vector[local_children_offset_vector[cur_decn_node]+ i]);
         max_prob = (max_prob == -std::numeric_limits<float>::infinity() || max_prob < tmp) ? tmp : max_prob;
       }
       cur_decn_node++;
