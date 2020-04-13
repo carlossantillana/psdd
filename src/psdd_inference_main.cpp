@@ -77,6 +77,11 @@ int main(int argc, char** argv)
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (50);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_vector (TOTAL_LITERALS);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> variable_vector (TOTAL_VARIABLES);
+  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> children_size_vector (TOTAL_CHILDREN_SIZE);
+  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> children_offset_vector (TOTAL_CHILDREN_SIZE);
+  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (PSDD_SIZE);
+
+
 
  argc -= (argc > 0);
  argv += (argc > 0); // skip program name argv[0] if present
@@ -97,7 +102,8 @@ int main(int argc, char** argv)
  PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
  sdd_vtree_free(psdd_vtree);
  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(psdd_filename, 0, fpga_node_vector,
-    prime_vector, sub_vector, parameter_vector, bool_param_vector, literal_vector, variable_vector);
+    prime_vector, sub_vector, parameter_vector, bool_param_vector, literal_vector, variable_vector,
+     children_size_vector, children_offset_vector, node_type_vector);
  uint32_t root_node_idx = result_node->node_index_;
 
  std::vector<SddLiteral> variables = vtree_util::VariablesUnderVtree(psdd_manager->vtree());
@@ -119,13 +125,16 @@ int main(int argc, char** argv)
  File.close();
 
   //Allocate Memory in Host Memory
-  size_t fpga_node_vector_size_bytes = sizeof(fpga_node_vector[0]) * PSDD_SIZE;
+  size_t node_type_vector_size_bytes = sizeof(node_type_vector[0]) * PSDD_SIZE;
   size_t children_vector_size_bytes = sizeof(prime_vector[0]) * TOTAL_CHILDREN;
   size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_CHILDREN;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
   size_t flippers_size_bytes = sizeof(flippers[0]) * 50;
   size_t literal_vector_size_bytes = sizeof(literal_vector[0]) * TOTAL_LITERALS;
   size_t variable_vector_size_bytes = sizeof(variable_vector[0]) * TOTAL_VARIABLES;
+  size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
+  size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
+
 
   size_t result_size_bytes = sizeof(float) * PSDD_SIZE;
   std::vector<float, aligned_allocator<float>> result (PSDD_SIZE);
@@ -147,7 +156,7 @@ int main(int argc, char** argv)
       OCL_CHECK(err, cl::Kernel krnl_vector_add(program,"fpga_evaluate", &err));
 
       OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-              fpga_node_vector_size_bytes, fpga_node_vector.data(), &err));
+              node_type_vector_size_bytes, node_type_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in2  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                 children_vector_size_bytes, prime_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in3  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
@@ -162,10 +171,14 @@ int main(int argc, char** argv)
                   literal_vector_size_bytes, literal_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in8  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   variable_vector_size_bytes, variable_vector.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in9  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                  children_size_vector_size_bytes, children_size_vector.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in10  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                  children_offset_vector_size_bytes, children_offset_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
               result_size_bytes, result.data(), &err));
 
-      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5,buffer_in6, buffer_in7, buffer_in8},0/* 0 means from host*/));
+      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5,buffer_in6, buffer_in7, buffer_in8, buffer_in9, buffer_in10},0/* 0 means from host*/));
 
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in2));
@@ -175,8 +188,10 @@ int main(int argc, char** argv)
       OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in6));
       OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_in7));
       OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_in8));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(9, NUM_QUERIES));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_in9));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(9, buffer_in10));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_output));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(11, NUM_QUERIES));
 
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
