@@ -148,9 +148,14 @@ int main(int argc, char** argv)
       OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE, &err));
       OCL_CHECK(err, std::string device_name = device.getInfo<CL_DEVICE_NAME>(&err));
 
-      std::string binaryFile = xcl::find_binary_file(device_name,"fpga_evaluate");
+      // std::string binaryFile = xcl::find_binary_file(device_name,"fpga_evaluate");
+      //
+      // cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
+      std::string binary = argv[2];
+      std::cout <<"binary: " << binary << std::endl;
+      auto fileBuf = xcl::read_binary_file(binary);
+      cl::Program::Binaries bins{{fileBuf.data(), fileBuf.size()}};
 
-      cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
       devices.resize(1);
       OCL_CHECK(err, cl::Program program(context, devices, bins, NULL, &err));
       OCL_CHECK(err, cl::Kernel krnl_vector_add(program,"fpga_evaluate", &err));
@@ -207,11 +212,11 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    //NUM_QUERIES   vvv
-   double reference_results [PSDD_SIZE] = {0};
+   double reference_results [NUM_QUERIES] = {0};
    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
    float difference = 0;
    // Change back to num _queries
-   for (uint i =0; i < PSDD_SIZE; i++){
+   for (uint i =0; i < NUM_QUERIES; i++){
      float tmpDiff = 0;
      // std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){

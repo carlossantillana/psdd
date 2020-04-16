@@ -224,21 +224,23 @@ uint cur_decn_node = 0;
 
     assert(element_size <= MAX_CHILDREN);
       InnerLoop:for (uint i = 0; i < element_size; ++i) {
-#pragma HLS pipeline II=3
+#pragma HLS pipeline
         float tmp = evaluation_cache[local_prime_vector[i]] + evaluation_cache[local_sub_vector[i]] +  float (local_parameter_vector[i]);
-        max_prob = (max_prob == -std::numeric_limits<float>::infinity() || max_prob < tmp) ? tmp : max_prob;
+        if ( max_prob < tmp) {
+          max_prob = tmp;
+        }
       }
       cur_decn_node++;
        evaluation_cache[cur_node_idx] = max_prob;
     }
   }
   //For more than one query, less accurate for debugging
-  // result[m] = evaluation_cache[580816];
+  result[m] = evaluation_cache[580816];
 }
 //Loads every intermediate value for a single query.
-LoadResult:for(uint i = 0; i < PSDD_SIZE; i++){
-  #pragma HLS pipeline
-    result[i] = evaluation_cache[i];
-  }
+// LoadResult:for(uint i = 0; i < PSDD_SIZE; i++){
+//   #pragma HLS pipeline
+//     result[i] = evaluation_cache[i];
+//   }
 }
 }
