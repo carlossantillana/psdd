@@ -7,6 +7,7 @@
 #include <fstream>
 #include <xcl2/xcl2.hpp>
 #include <cmath>
+#include <ctime>
 #include <vector>
 #include <string>
 extern "C" {
@@ -134,10 +135,11 @@ int main(int argc, char** argv)
   size_t variable_vector_size_bytes = sizeof(variable_vector[0]) * TOTAL_VARIABLES;
   size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
   size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
+  size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
 
 
-  size_t result_size_bytes = sizeof(float) * PSDD_SIZE;
-  std::vector<float, aligned_allocator<float>> result (PSDD_SIZE);
+  size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
+  std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
   cl_int err;
 
   // OPENCL HOST CODE AREA START
@@ -148,9 +150,6 @@ int main(int argc, char** argv)
       OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE, &err));
       OCL_CHECK(err, std::string device_name = device.getInfo<CL_DEVICE_NAME>(&err));
 
-      // std::string binaryFile = xcl::find_binary_file(device_name,"fpga_evaluate");
-      //
-      // cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
       std::string binary = argv[2];
       std::cout <<"binary: " << binary << std::endl;
       auto fileBuf = xcl::read_binary_file(binary);
@@ -198,10 +197,13 @@ int main(int argc, char** argv)
       OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_output));
       OCL_CHECK(err, err = krnl_vector_add.setArg(11, NUM_QUERIES));
 
+      clock_t time_req  = clock();
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
       q.finish();
+      time_req = clock() - time_req;
+      cout << "Kernel took " << (float)time_req/CLOCKS_PER_SEC << " seconds to do " << NUM_QUERIES << " queries" << endl;
 
   // OPENCL HOST CODE AREA END
   return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
@@ -213,7 +215,10 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    //NUM_QUERIES   vvv
    double reference_results [NUM_QUERIES] = {0};
+   clock_t time_req = clock();
    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
+   time_req = clock()- time_req;
+cout << "CPU took " << (float)time_req/CLOCKS_PER_SEC << " seconds to do " << NUM_QUERIES << " queries" << endl;
    float difference = 0;
    // Change back to num _queries
    for (uint i =0; i < NUM_QUERIES; i++){

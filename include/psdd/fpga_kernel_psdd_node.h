@@ -22,7 +22,7 @@ const uint TOTAL_CHILDREN = 770511;
 const short TOTAL_BOOL_PARAM = 792;
 const short TOTAL_LITERALS = 6714;
 const short TOTAL_VARIABLES = 7110;
-const uint TOTAL_CHILDREN_SIZE = 573707;
+const uint TOTAL_CHILDREN_SIZE = 580817;
 
 //For grids network
 // const uint PSDD_SIZE = 51;
