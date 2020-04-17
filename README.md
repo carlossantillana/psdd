@@ -7,7 +7,7 @@ FPGA implementation of hahaxD's implementation of psdd.
 https://github.com/aws/aws-fpga
 
 by following the setup instructions found here
-https://github.com/aws/aws-fpga/tree/master/SDAccel
+https://github.com/aws/aws-fpga/tree/master/Vitis
 
 **NOTE: you need to source sdaccel_setup.sh every time you start up your instance**
 
@@ -31,6 +31,13 @@ If running on centos this can be done by running the two commands
 
 `source scl_source enable devtoolset-9`
 
+#### Make sure you have cmake installed
+
+https://gist.github.com/1duo/38af1abd68a2c7fe5087532ab968574e
+
+#### Make sure you have gmp installed
+
+https://serverfault.com/questions/855344/how-to-install-enable-gmp-math-functions-for-php-on-centos
 
 ## How to Run
 To run sw emulation
