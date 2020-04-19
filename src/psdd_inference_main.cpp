@@ -141,6 +141,7 @@ int main(int argc, char** argv)
   size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
   std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
   cl_int err;
+  clock_t time_req  = clock();
 
   // OPENCL HOST CODE AREA START
       std::vector<cl::Device> devices = xcl::get_xil_devices();
@@ -197,7 +198,7 @@ int main(int argc, char** argv)
       OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_output));
       OCL_CHECK(err, err = krnl_vector_add.setArg(11, NUM_QUERIES));
 
-      clock_t time_req  = clock();
+
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
