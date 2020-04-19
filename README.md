@@ -11,7 +11,7 @@ https://github.com/aws/aws-fpga/tree/master/Vitis
 
 **NOTE: you need to source sdaccel_setup.sh every time you start up your instance**
 
-**Then clone this repo psdd into path SDAccel/examples/xilinx_2018.3/getting_started of repo mentioned above**
+**Then clone this repo psdd into path aws-fpga/Vitis/examples/xilinx_2019.2/ of repo mentioned above**
 if not you will have to edit the makefiles even more
 
 #### Download datasets from this link
@@ -46,8 +46,12 @@ To run sw emulation
 To run hw emulation
 `./faux_make_hw_emu.sh`
 
-To run hw
+To make hw
 `./faux_make_hw.sh`
+
+To run hw
+
+Follow instructions here https://github.com/aws/aws-fpga/tree/master/Vitis
 
 To run make clean
 `./faux_make_clean.sh`

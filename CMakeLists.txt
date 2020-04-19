@@ -8,7 +8,7 @@ include_directories(include)
 include_directories("/opt/Xilinx/Vitis/2019.2/")
 include_directories("/opt/Xilinx/Vitis/2019.2/include/")
 include_directories("$ENV{AWS_FPGA_REPO_DIR}/Vitis/examples/xilinx_2019.2/common/includes/")
-include_directories("$ENV{XILINX_XRT}/include/")
+include_directories("/opt/xilinx/xrt/include/")
 include_directories("/usr/include/")
 
 if(APPLE)

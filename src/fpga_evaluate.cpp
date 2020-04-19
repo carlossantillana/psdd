@@ -1,6 +1,5 @@
 #include <psdd/fpga_kernel_psdd_node.h>
 #include <assert.h>
-#include <iostream>
 
 extern "C" {
   void loadBool(bool* data_local, int burstLength, char value){
@@ -90,7 +89,6 @@ extern "C" {
      }
    }
 
-
    void load(bool local_variables[MAX_VAR],  ap_uint<2> local_node_type_vector[PSDD_SIZE],
       const ap_uint<32> node_type_vector[PSDD_SIZE], ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
       ap_uint<12> local_flippers [50], const ap_uint<32> flippers [50], ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
@@ -147,6 +145,9 @@ void fpga_evaluate(
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
 assert(num_queries <= 2048);  // this helps HLS estimate the loop trip count
+short currentVariable = 0;
+short currentLiteral = 0;
+short current_bool_param = 0;
 static bool local_variables [MAX_VAR];
 static bool local_instantiation [MAX_VAR];
 static ap_uint<12> local_flippers [50];
@@ -159,27 +160,15 @@ static ap_int<13> local_literal_vector [TOTAL_LITERALS];
 static ap_int<14> local_variable_vector [TOTAL_VARIABLES];
 static ap_uint<20> local_children_offset_vector [TOTAL_CHILDREN_SIZE];
 static ap_uint<6> local_children_size_vector [PSDD_SIZE];
-
 load(local_variables, local_node_type_vector,
 node_type_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers,
  local_literal_vector, literal_vector, local_variable_vector, variable_vector,
 local_children_offset_vector, children_offset_vector, local_children_size_vector, children_size_vector);
 static float evaluation_cache [PSDD_SIZE];
 
-#pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_literal_vector core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_variable_vector core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_flippers core=XPM_MEMORY uram
-#pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
-
 for (uint m = 0; m < num_queries; m++){
-  short currentLiteral = 0;
-  short current_bool_param = 0;
-  short currentVariable = 0;
-  loadBool(local_instantiation, MAX_VAR, 0);
   local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
-#pragma HLS RESOURCE variable=local_evaluation_cache core=XPM_MEMORY uram
+
   Loop1:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
 #pragma HLS pipeline
     if (local_node_type_vector[cur_node_idx] == LITERAL_NODE_TYPE) {
@@ -209,7 +198,10 @@ for (uint m = 0; m < num_queries; m++){
      currentVariable++;
    }
  }
-
+   local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
+   currentVariable = 0;
+   currentLiteral = 0;
+   current_bool_param = 0;
   Loop2:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
     if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE){
     short element_size = local_children_size_vector[cur_node_idx];
