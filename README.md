@@ -1,6 +1,8 @@
 # psdd
 FPGA implementation of hahaxD's implementation of psdd.
 
+Instructions are specifically for aws-f1 instance using Vitis 2019.2
+
 ## Preq
 
 #### First clone aws-fpga repo
@@ -9,7 +11,7 @@ https://github.com/aws/aws-fpga
 by following the setup instructions found here
 https://github.com/aws/aws-fpga/tree/master/Vitis
 
-**NOTE: you need to source sdaccel_setup.sh every time you start up your instance**
+**NOTE: you need to source vitis_setup.sh every time you start up your instance**
 
 **Then clone this repo psdd into path aws-fpga/Vitis/examples/xilinx_2019.2/ of repo mentioned above**
 if not you will have to edit the makefiles even more
@@ -51,7 +53,9 @@ To make hw
 
 To run hw
 
-Follow instructions here https://github.com/aws/aws-fpga/tree/master/Vitis
+`./run_hw.sh`
+
+More instructions to run hw can be found here https://github.com/aws/aws-fpga/tree/master/Vitis
 
 To run make clean
 `./faux_make_clean.sh`
@@ -68,3 +72,6 @@ In addition you need to edit files include/psdd/psdd_node.h, and include/psdd/fp
 ctrl+f for `//For map_network` and make sure the lines below are not commented out for large network support
 
 ctrl+f for `//For grids network` and make sure the lines below are not commented out for small network support-
+
+### How to Change Number of Queries.
+edit NUM_QUERIES variable found in `include/psdd/psdd_node.h`
