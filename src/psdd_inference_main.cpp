@@ -7,7 +7,7 @@
 #include <fstream>
 #include <xcl2/xcl2.hpp>
 #include <cmath>
-#include <ctime>
+#include <time.h>
 #include <vector>
 #include <string>
 extern "C" {
@@ -198,13 +198,19 @@ int main(int argc, char** argv)
       OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_output));
       OCL_CHECK(err, err = krnl_vector_add.setArg(11, NUM_QUERIES));
 
+      time_t start_time = time(NULL);
 
       OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
       q.finish();
-      time_req = clock() - time_req;
-      cout << "Kernel took " << (float)time_req/CLOCKS_PER_SEC << " seconds to do " << NUM_QUERIES << " queries" << endl;
+      time_t end_time = time(NULL);
+      printf("Kernel start time: %s\n", ctime(&start_time));
+      printf("Kernel end time: %s\n", ctime(&end_time));
+      double diff_t;
+      diff_t = difftime(end_time, start_time);
+      printf("Execution time: %d\n", diff_t);
+
 
   // OPENCL HOST CODE AREA END
   return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
@@ -216,10 +222,14 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    //NUM_QUERIES   vvv
    double reference_results [NUM_QUERIES] = {0};
-   clock_t time_req = clock();
+   time_t start_time = time(NULL);
    psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
-   time_req = clock()- time_req;
-cout << "CPU took " << (float)time_req/CLOCKS_PER_SEC << " seconds to do " << NUM_QUERIES << " queries" << endl;
+   time_t end_time = time(NULL);
+   printf("CPU start time: %s\n", ctime(&start_time));
+   printf("CPU end time: %s\n", ctime(&end_time));
+   double diff_t;
+   diff_t = difftime(end_time, start_time);
+   printf("Execution time: %d\n", diff_t);
    float difference = 0;
    // Change back to num _queries
    for (uint i =0; i < NUM_QUERIES; i++){
