@@ -9,11 +9,11 @@ extern "C" {
       data_local[i] = value;
     }
   }
-  void load2Bit(const ap_uint<32>* data_dram, ap_uint<2>* data_local, int burstLength){
+  void loadBool2(const ap_int<32> * data_dram, bool* data_local, int burstLength){
     #pragma HLS inline off
     load2Bit: for (int i = 0; i < burstLength; i++){
     #pragma HLS pipeline
-      data_local[i] = data_dram[i](1,0);
+      data_local[i] = data_dram[i](0,0);
     }
   }
   void load6Bit(const ap_uint<32>* data_dram, ap_uint<6>* data_local, int burstLength){
@@ -90,14 +90,14 @@ extern "C" {
      }
    }
 
-   void load(bool local_variables[MAX_VAR],  ap_uint<2> local_node_type_vector[PSDD_SIZE],
-      const ap_uint<32> node_type_vector[PSDD_SIZE], ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
+   void load(bool local_variables[MAX_VAR],  bool local_is_decision_vector[PSDD_SIZE],
+      const ap_int<32>  is_decision_vector[PSDD_SIZE], ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
       ap_uint<12> local_flippers [50], const ap_uint<32> flippers [50], ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
     ap_int<14> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS], ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
     ap_uint<6> local_children_size_vector [PSDD_SIZE], const ap_uint<32> children_size_vector [PSDD_SIZE],
    ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector) {
      loadBool(local_variables, MAX_VAR, 1);
-     load2Bit(node_type_vector, local_node_type_vector, PSDD_SIZE);
+     loadBool2(is_decision_vector, local_is_decision_vector, PSDD_SIZE);
      load6Bit(children_size_vector, local_children_size_vector, PSDD_SIZE);
      load12Bit(flippers, local_flippers, 50);
      load13Bit(literal_vector, local_literal_vector, TOTAL_LITERALS);
@@ -110,7 +110,7 @@ extern "C" {
    }
 
 void fpga_evaluate(
-        const ap_uint<32> *node_type_vector, // Read-Only Vector 2
+        const ap_int<32> *is_decision_vector, // Read-Only Vector 2
         const ap_uint<32> *prime_vector,
         const ap_uint<32> *sub_vector,
         const ap_fixed<32,8,AP_RND> *parameter_vector,
@@ -125,7 +125,7 @@ void fpga_evaluate(
         float *result,       // Output Result
         int num_queries)
 {
-#pragma HLS INTERFACE m_axi port=node_type_vector  offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=is_decision_vector  offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=prime_vector  offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=sub_vector  offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port = parameter_vector offset = slave bundle = gmem
@@ -138,7 +138,7 @@ void fpga_evaluate(
 #pragma HLS INTERFACE m_axi port = literal_index_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port = variable_index_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port=result offset=slave bundle=gmem
-#pragma HLS INTERFACE s_axilite port=node_type_vector  bundle=control
+#pragma HLS INTERFACE s_axilite port=is_decision_vector  bundle=control
 #pragma HLS INTERFACE s_axilite port=prime_vector bundle=control
 #pragma HLS INTERFACE s_axilite port=sub_vector bundle=control
 #pragma HLS INTERFACE s_axilite port = parameter_vector bundle = control
@@ -162,7 +162,7 @@ void fpga_evaluate(
   static ap_uint<20> local_sub_vector[TOTAL_CHILDREN];
   static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_CHILDREN];
   static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
-  static ap_uint<2> local_node_type_vector[PSDD_SIZE];
+  static bool local_is_decision_vector[PSDD_SIZE];
   static ap_int<13> local_literal_vector [TOTAL_LITERALS];
   static ap_int<14> local_literal_variable_vector [TOTAL_LITERALS];
   static ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES];
@@ -175,15 +175,15 @@ void fpga_evaluate(
   #pragma HLS RESOURCE variable=local_flippers core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_node_type_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_is_decision_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_variable_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_top_variable_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_index_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variable_index_vector core=XPM_MEMORY uram
 
-  load(local_variables, local_node_type_vector,
-  node_type_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers,
+  load(local_variables, local_is_decision_vector,
+  is_decision_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers,
    local_literal_vector, literal_vector, local_literal_variable_vector, literal_variable_vector,  local_top_variable_vector, top_variable_vector,
   local_children_size_vector, children_size_vector, local_literal_index_vector,
   literal_index_vector, local_variable_index_vector, variable_index_vector);
@@ -225,7 +225,7 @@ void fpga_evaluate(
      local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
      int currentChild = 0;
     LoopDecision:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
-      if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE){
+      if (local_is_decision_vector[cur_node_idx]){
       short element_size = local_children_size_vector[cur_node_idx];
       float max_prob = -std::numeric_limits<float>::infinity();
       assert(element_size <= MAX_CHILDREN);
