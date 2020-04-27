@@ -160,7 +160,7 @@ void fpga_evaluate(
   static ap_uint<12> local_flippers [50];
   static ap_uint<20> local_prime_vector[TOTAL_CHILDREN];
   static ap_uint<20> local_sub_vector[TOTAL_CHILDREN];
-  static ap_fixed<21,8,AP_RND > local_parameter_vector[TOTAL_CHILDREN];
+  static ap_fixed<21,8,AP_RND > local_parameter_vector[MAX_CHILDREN];
   static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
   static bool local_is_decision_vector[PSDD_SIZE];
   static ap_int<13> local_literal_vector [TOTAL_LITERALS];
@@ -173,7 +173,6 @@ void fpga_evaluate(
   #pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_flippers core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_is_decision_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_vector core=XPM_MEMORY uram
@@ -191,7 +190,6 @@ void fpga_evaluate(
 
   load20Bit_staggered(sub_vector, local_sub_vector, 0, TOTAL_CHILDREN);
   load20Bit_staggered(prime_vector, local_prime_vector, 0, TOTAL_CHILDREN);
-  loadFloats_staggered(parameter_vector, local_parameter_vector, 0, TOTAL_CHILDREN);
 
   for (uint m = 0; m < num_queries; m++){
     local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
@@ -228,10 +226,12 @@ void fpga_evaluate(
       if (local_is_decision_vector[cur_node_idx]){
       short element_size = local_children_size_vector[cur_node_idx];
       float max_prob = -std::numeric_limits<float>::infinity();
+      //try getting the next 200 sets of children  at a time  from local_children children_size_vector
+      loadFloats_staggered(parameter_vector, local_parameter_vector, currentChild, MAX_CHILDREN);
       assert(element_size <= MAX_CHILDREN);
         InnerLoop:for (uint i = 0; i < element_size; ++i) {
   #pragma HLS pipeline
-          float tmp = evaluation_cache[local_prime_vector[currentChild]] + evaluation_cache[local_sub_vector[currentChild]] +  float (local_parameter_vector[currentChild]);
+          float tmp = evaluation_cache[local_prime_vector[currentChild]] + evaluation_cache[local_sub_vector[currentChild]] +  float (local_parameter_vector[i]);
           if ( max_prob < tmp) {
             max_prob = tmp;
           }

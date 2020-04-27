@@ -9,6 +9,7 @@
 #include <gmpxx.h>
 #include "ap_int.h"
 #include <ap_fixed.h>
+#include <hls_stream.h>
 
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
