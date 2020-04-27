@@ -610,7 +610,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector ,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> &bool_param_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_index_vector,
   std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_variable_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &top_variable_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &variable_index_vector, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &children_size_vector,
- std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_offset_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &node_type_vector ) {
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &node_type_vector ) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
   int currentChild = 0;
@@ -704,7 +704,6 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       FPGAPsddNode *cur_node =
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
           children_size_vector[current_index] = cur_node->primes_.size();
-          children_offset_vector[current_index] = currentChild;
           node_type_vector[current_index++] = 2;
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam);
