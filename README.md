@@ -39,7 +39,7 @@ https://gist.github.com/1duo/38af1abd68a2c7fe5087532ab968574e
 
 #### Make sure you have gmp installed
 
-https://serverfault.com/questions/855344/how-to-install-enable-gmp-math-functions-for-php-on-centos
+yum install gmp-devel
 
 ## How to Run
 To run sw emulation
