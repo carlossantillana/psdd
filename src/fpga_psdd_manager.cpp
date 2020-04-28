@@ -585,7 +585,7 @@ FPGAPsddManager::Multiply(FPGAPsddNode *arg1, FPGAPsddNode *arg2, uintmax_t flag
 PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &prime_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &sub_vector,
   int & currentChild, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>>& bool_param_vector, int & currentBoolParam,
-  int &previousPrime, int& previousSub, float &maxParam, float &minParam){
+  int &previousPrime, int& previousSub){
   PsddNodeStruct PsddStruct;
   PsddStruct.node_type_ = cur_node->node_type_;
   PsddStruct.children_size = cur_node->primes_.size();
@@ -600,10 +600,6 @@ PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_int<3
     previousPrime = prime;
     previousSub = sub;
     parameter_vector[currentChild] = param.parameter_;
-    if (param.parameter_ > maxParam)
-      maxParam = param.parameter_;
-    if (param.parameter_ < minParam)
-      minParam = param.parameter_;
     currentChild++;
   }
   if (int(PsddStruct.node_type_) == TOP_NODE_TYPE){
@@ -628,9 +624,6 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
   int currentTopVariable = 0;
   int previousPrime = 0;
   int previousSub = 0;
-  float maxParam = -22;
-  float minParam = 999999;
-
   psdd_file.open(psdd_filename);
   if (!psdd_file) {
     std::cerr << "File " << psdd_filename << " cannot be open.";
@@ -655,7 +648,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       FPGAPsddNode *cur_node = GetFPGAPsddLiteralNode(literal, flag_index);
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node, prime_vector, sub_vector,
          currentChild, parameter_vector, bool_param_vector, currentBoolParam,
-         previousPrime, previousSub, maxParam, minParam);
+         previousPrime, previousSub);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
       literal_vector[currentLiteral] = literal;
@@ -678,7 +671,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
           PsddParameter::CreateFromLog(neg_log_pr));
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
          prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
-          previousPrime, previousSub, maxParam, minParam);
+          previousPrime, previousSub);
       construct_fpga_cache[node_index] = cur_node;
       top_variable_vector[currentTopVariable] = cur_node->variable_index_;
       variable_index_vector[currentTopVariable++] = current_index;
@@ -720,13 +713,12 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
           node_type_vector[current_index++] = 1;
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
-        previousPrime, previousSub, maxParam, minParam);
+        previousPrime, previousSub);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     }
   }
   psdd_file.close();
-  std::cout  << " maxParam: " << maxParam << " minParam: " << minParam << std::endl;
   return root_node;
 }
 
