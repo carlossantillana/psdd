@@ -1,5 +1,6 @@
 #include <psdd/fpga_kernel_psdd_node.h>
 #include <assert.h>
+#include<iostream>
 
 extern "C" {
   void loadBool(bool* data_local, int burstLength, char value){
@@ -62,13 +63,30 @@ extern "C" {
      }
    }
 
-   void load20Bit_staggered(const ap_uint<32>* data_dram, ap_uint<20>* data_local, int start,  int burstLength){
+   void load15Bit_staggered(const ap_int<32>* data_dram, ap_int<15>* data_local, int start,  int burstLength){
+     #pragma HLS inline off
+     int j = 0;
+     load14BitStaggered: for (int i = start; i < start +burstLength; i++){
+     #pragma HLS pipeline
+       data_local[j++] = data_dram[i](14,0);
+     }
+   }
+
+   void load16Bit_staggered(const ap_int<32>* data_dram, ap_int<16>* data_local, int start,  int burstLength){
+     #pragma HLS inline off
+     int j = 0;
+     load15BitStaggered: for (int i = start; i < start +burstLength; i++){
+     #pragma HLS pipeline
+       data_local[j++] = data_dram[i](15,0);
+     }
+   }
+
+   void load20Bit_staggered(const ap_int<32>* data_dram, ap_int<20>* data_local, int start,  int burstLength){
      #pragma HLS inline off
      int j = 0;
      load20BitStaggered: for (int i = start; i < start +burstLength; i++){
      #pragma HLS pipeline
-       data_local[j] = data_dram[i](19,0);
-       j++;
+       data_local[j++] = data_dram[i](19,0);
      }
    }
 
@@ -111,8 +129,8 @@ extern "C" {
 
 void fpga_evaluate(
         const ap_int<32> *is_decision_vector, // Read-Only Vector 2
-        const ap_uint<32> *prime_vector,
-        const ap_uint<32> *sub_vector,
+        const ap_int<32> *prime_vector,
+        const ap_int<32> *sub_vector,
         const ap_fixed<32,8,AP_RND> *parameter_vector,
         const ap_fixed<32,2,AP_RND> *bool_param_vector,
         const ap_uint<32> *flippers,
@@ -158,8 +176,8 @@ void fpga_evaluate(
   static bool local_variables [MAX_VAR];
   static bool local_instantiation [MAX_VAR];
   static ap_uint<12> local_flippers [50];
-  static ap_uint<20> local_prime_vector[TOTAL_CHILDREN];
-  static ap_uint<20> local_sub_vector[TOTAL_CHILDREN];
+  static ap_int<16> local_prime_vector[TOTAL_CHILDREN];
+  static ap_int<15> local_sub_vector[TOTAL_CHILDREN];
   static ap_fixed<21,8,AP_RND > local_parameter_vector[MAX_CHILDREN];
   static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
   static bool local_is_decision_vector[PSDD_SIZE];
@@ -169,6 +187,7 @@ void fpga_evaluate(
   static ap_uint<6> local_children_size_vector [PSDD_SIZE];
   static ap_uint<20> local_literal_index_vector[TOTAL_LITERALS];
   static ap_uint<20> local_variable_index_vector[TOTAL_VARIABLE_INDEXES];
+  static float evaluation_cache [PSDD_SIZE];
 
   #pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
@@ -180,16 +199,14 @@ void fpga_evaluate(
   #pragma HLS RESOURCE variable=local_top_variable_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_index_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variable_index_vector core=XPM_MEMORY uram
-
   load(local_variables, local_is_decision_vector,
   is_decision_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers,
    local_literal_vector, literal_vector, local_literal_variable_vector, literal_variable_vector,  local_top_variable_vector, top_variable_vector,
   local_children_size_vector, children_size_vector, local_literal_index_vector,
   literal_index_vector, local_variable_index_vector, variable_index_vector);
-  static float evaluation_cache [PSDD_SIZE];
 
-  load20Bit_staggered(sub_vector, local_sub_vector, 0, TOTAL_CHILDREN);
-  load20Bit_staggered(prime_vector, local_prime_vector, 0, TOTAL_CHILDREN);
+  load15Bit_staggered(sub_vector, local_sub_vector, 0, TOTAL_CHILDREN);
+  load16Bit_staggered(prime_vector, local_prime_vector, 0, TOTAL_CHILDREN);
 
   for (uint m = 0; m < num_queries; m++){
     local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
@@ -220,18 +237,22 @@ void fpga_evaluate(
         evaluation_cache[local_variable_index_vector[cur_node_idx]] = 0;
       }
     }
+
      local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];
      int currentChild = 0;
+     int currentPrime = 0;
+     int currentSub = 0;
     LoopDecision:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
       if (local_is_decision_vector[cur_node_idx]){
       short element_size = local_children_size_vector[cur_node_idx];
       float max_prob = -std::numeric_limits<float>::infinity();
-      //try getting the next 200 sets of children  at a time  from local_children children_size_vector
       loadFloats_staggered(parameter_vector, local_parameter_vector, currentChild, MAX_CHILDREN);
       assert(element_size <= MAX_CHILDREN);
         InnerLoop:for (uint i = 0; i < element_size; ++i) {
   #pragma HLS pipeline
-          float tmp = evaluation_cache[local_prime_vector[currentChild]] + evaluation_cache[local_sub_vector[currentChild]] +  float (local_parameter_vector[i]);
+          currentPrime += local_prime_vector[currentChild];
+          currentSub += local_sub_vector[currentChild];
+          float tmp = evaluation_cache[currentPrime] + evaluation_cache[currentSub] +  float (local_parameter_vector[i]);
           if ( max_prob < tmp) {
             max_prob = tmp;
           }
