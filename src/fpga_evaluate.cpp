@@ -193,12 +193,14 @@ void fpga_evaluate(
   #pragma HLS RESOURCE variable=local_top_variable_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_index_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variable_index_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
+
+
   load(local_variables, local_is_decision_vector,
   is_decision_vector, local_bool_param_vector, bool_param_vector,local_flippers, flippers,
    local_literal_vector, literal_vector, local_literal_variable_vector, literal_variable_vector,  local_top_variable_vector, top_variable_vector,
   local_children_size_vector, children_size_vector, local_literal_index_vector,
   literal_index_vector, local_variable_index_vector, variable_index_vector, local_sub_vector, sub_vector, local_prime_vector, prime_vector, local_parameter_vector, parameter_vector);
-
 
   for (uint m = 0; m < num_queries; m++){
     local_instantiation[local_flippers[m%50]] = !local_instantiation[local_flippers[m%50]];

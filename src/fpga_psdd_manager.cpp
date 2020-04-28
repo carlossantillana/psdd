@@ -594,7 +594,6 @@ PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_int<3
     int prime = cur_node->primes_[i]->node_index_;
     int sub = cur_node->subs_[i]->node_index_;
     PsddParameter param = cur_node->parameters_[i];
-
     prime_vector[currentChild] = prime - previousPrime ;
     sub_vector[currentChild] = sub - previousSub ;
     previousPrime = prime;
