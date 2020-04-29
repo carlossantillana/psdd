@@ -12,11 +12,11 @@ mkdir -p ./_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1
 
 
 #xocc compiles makes xo file
-v++ -t sw_emu --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_1/xilinx_aws-vu9p-f1_shell-v04261818_201920_1.xpfm --save-temps  -g --temp_dir ./_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1 -c -k fpga_evaluate -I'src' -o'_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xo' 'src/fpga_evaluate.cpp'   -I$project_dir/include
+v++ -t sw_emu --kernel_frequency "0:110"  --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_1/xilinx_aws-vu9p-f1_shell-v04261818_201920_1.xpfm --save-temps  -g --temp_dir ./_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1 -c -k fpga_evaluate -I'src' -o'_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xo' 'src/fpga_evaluate.cpp'   -I$project_dir/include
 
 #makes xcl bin
 mkdir -p ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1
-v++ -t sw_emu --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_1/xilinx_aws-vu9p-f1_shell-v04261818_201920_1.xpfm -R estimate --save-temps  -g --temp_dir ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1 -l  -o'build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin' _x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xo
+v++ -t sw_emu --kernel_frequency "0:110"  --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_1/xilinx_aws-vu9p-f1_shell-v04261818_201920_1.xpfm -R estimate --save-temps  -g --temp_dir ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1 -l  -o'build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin' _x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xo
 
 #runs emconfigutil
 emconfigutil --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_1/xilinx_aws-vu9p-f1_shell-v04261818_201920_1.xpfm  --od ./_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1

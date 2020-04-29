@@ -81,7 +81,7 @@ int main(int argc, char** argv)
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_variable_vector (TOTAL_LITERALS);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> top_variable_vector (TOTAL_VARIABLE_INDEXES);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> variable_index_vector (TOTAL_VARIABLE_INDEXES);
-  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> children_size_vector (TOTAL_CHILDREN_SIZE);
+  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> children_size_vector (TOTAL_DECISION_SIZE);
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (PSDD_SIZE);
 
  argc -= (argc > 0);
@@ -135,8 +135,8 @@ int main(int argc, char** argv)
   size_t literal_variable_vector_size_bytes = sizeof(literal_variable_vector[0]) * TOTAL_LITERALS;
   size_t top_variable_vector_size_bytes = sizeof(top_variable_vector[0]) * TOTAL_VARIABLE_INDEXES;
   size_t variable_index_vector_size_bytes = sizeof(variable_index_vector[0]) * TOTAL_VARIABLE_INDEXES;
-  size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
-  size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
+  size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_DECISION_SIZE;
+  size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * PSDD_SIZE;
 
 
   size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
@@ -242,7 +242,7 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    // Change back to num _queries
    for (uint i =0; i < NUM_QUERIES; i++){
      float tmpDiff = 0;
-     // std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
+     std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
      tmpDiff = std::pow((reference_results[i] - result[i]),2);
    }

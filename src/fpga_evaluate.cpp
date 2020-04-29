@@ -1,6 +1,6 @@
 #include <psdd/fpga_kernel_psdd_node.h>
 #include <assert.h>
-
+#include<iostream>
 extern "C" {
   void loadBool(bool* data_local, int burstLength, char value){
     #pragma HLS inline off
@@ -102,12 +102,12 @@ extern "C" {
       const ap_int<32>  is_decision_vector[PSDD_SIZE], ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
       ap_uint<12> local_flippers [50], const ap_uint<32> flippers [50], ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
     ap_int<14> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS], ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
-    ap_uint<6> local_children_size_vector [PSDD_SIZE], const ap_uint<32> children_size_vector [PSDD_SIZE],
+    ap_uint<6> local_children_size_vector [TOTAL_DECISION_SIZE], const ap_uint<32> children_size_vector [TOTAL_DECISION_SIZE],
     ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector, ap_int<15> local_sub_vector[TOTAL_CHILDREN],
     const ap_int<32> sub_vector[TOTAL_CHILDREN], ap_int<16> local_prime_vector[TOTAL_CHILDREN], const ap_int<32> prime_vector[TOTAL_CHILDREN], ap_fixed<16,8,AP_RND >local_parameter_vector[TOTAL_CHILDREN], const ap_fixed<32,8,AP_RND>parameter_vector[TOTAL_CHILDREN]) {
      loadBool(local_variables, MAX_VAR, 1);
      loadBool2(is_decision_vector, local_is_decision_vector, PSDD_SIZE);
-     load6Bit(children_size_vector, local_children_size_vector, PSDD_SIZE);
+     load6Bit(children_size_vector, local_children_size_vector, TOTAL_DECISION_SIZE);
      load12Bit(flippers, local_flippers, 50);
      load13Bit(literal_vector, local_literal_vector, TOTAL_LITERALS);
      load14Bit(literal_variable_vector, local_literal_variable_vector, TOTAL_LITERALS);
@@ -166,7 +166,6 @@ void fpga_evaluate(
 #pragma HLS INTERFACE s_axilite port=num_queries bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
-  assert(num_queries <= 2048);  // this helps HLS estimate the loop trip count
   static bool local_variables [MAX_VAR];
   static bool local_instantiation [MAX_VAR];
   static ap_uint<12> local_flippers [50];
@@ -178,7 +177,7 @@ void fpga_evaluate(
   static ap_int<13> local_literal_vector [TOTAL_LITERALS];
   static ap_int<14> local_literal_variable_vector [TOTAL_LITERALS];
   static ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES];
-  static ap_uint<6> local_children_size_vector [PSDD_SIZE];
+  static ap_uint<6> local_children_size_vector [TOTAL_DECISION_SIZE];
   static ap_uint<20> local_literal_index_vector[TOTAL_LITERALS];
   static ap_uint<20> local_variable_index_vector[TOTAL_VARIABLE_INDEXES];
   static float evaluation_cache [PSDD_SIZE];
@@ -236,22 +235,53 @@ void fpga_evaluate(
      int currentChild = 0;
      int currentPrime = 0;
      int currentSub = 0;
+     int currentDecisionNode = 0;
+     int leapNode = 0;
+     short numElems [BATCH_SIZE];
+     float max_probs [BATCH_SIZE];
+
     LoopDecision:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
-      if (local_is_decision_vector[cur_node_idx]){
-      short element_size = local_children_size_vector[cur_node_idx];
-      float max_prob = -std::numeric_limits<float>::infinity();
-      assert(element_size <= MAX_CHILDREN);
-        InnerLoop:for (uint i = 0; i < element_size; ++i) {
-  #pragma HLS pipeline
+      int tmp = leapNode % BATCH_SIZE == 0 ;
+      // std::cout << "leapNode: " << leapNode << " leapNode % BATCH_SIZE == 0: " << tmp << " cur_index_node: " << int(cur_node_idx) << std::endl;
+      if (local_is_decision_vector[cur_node_idx] && leapNode % BATCH_SIZE == 0) {
+       int innerLoopLength = 0;
+        loadBatch:for (int j = 0; j < BATCH_SIZE && currentDecisionNode + j < TOTAL_DECISION_SIZE; j++){
+          #pragma HLS pipeline
+          innerLoopLength += local_children_size_vector[currentDecisionNode + j];
+          max_probs [j] = -std::numeric_limits<float>::infinity();
+          numElems[j] = local_children_size_vector[currentDecisionNode + j];
+        }
+        int j = 0;
+        int curInnerNode = 0;
+        float max_prob = -std::numeric_limits<float>::infinity();
+        InnerLoop:for (uint i = 0; i < innerLoopLength; ++i) {
+          #pragma HLS pipeline
           currentPrime += local_prime_vector[currentChild];
           currentSub += local_sub_vector[currentChild];
           float tmp = evaluation_cache[currentPrime] + evaluation_cache[currentSub] +  float (local_parameter_vector[currentChild]);
           if ( max_prob < tmp) {
             max_prob = tmp;
           }
-          currentChild++;
-        }
-         evaluation_cache[cur_node_idx] = max_prob;
+            if (j == numElems[curInnerNode] -1 ){
+              j= 0;
+              max_probs[curInnerNode] = max_prob;
+              curInnerNode++;
+              max_prob = -std::numeric_limits<float>::infinity();
+              currentDecisionNode++;
+            } else{
+                j++;
+            }
+            currentChild++;
+          }
+
+        // std::cout << "updating in first: " <<   max_probs[0] << std::endl;
+
+        evaluation_cache[cur_node_idx] = max_probs[0];
+        leapNode++;
+      } else if (local_is_decision_vector[cur_node_idx] && leapNode % BATCH_SIZE != 0){
+        // std::cout << "updating in else: " <<   max_probs[leapNode % BATCH_SIZE] << " w/ index: "<< cur_node_idx <<  " w/ leap%bach " << leapNode % BATCH_SIZE << std::endl;
+          evaluation_cache[cur_node_idx] = max_probs[leapNode % BATCH_SIZE];
+          leapNode++;
       }
     }
     result[m] = evaluation_cache[PSDD_SIZE -1];

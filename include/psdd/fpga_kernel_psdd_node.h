@@ -24,7 +24,9 @@ const short TOTAL_BOOL_PARAM = 792;
 const short TOTAL_LITERALS = 6714;
 const short TOTAL_VARIABLES = 7110;
 const short TOTAL_VARIABLE_INDEXES = 396;
-const uint TOTAL_CHILDREN_SIZE = 580817;
+const uint TOTAL_DECISION_SIZE = 573707;
+const int BATCH_SIZE = 7;
+
 
 //For grids network
 // const uint PSDD_SIZE = 51;

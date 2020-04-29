@@ -623,6 +623,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
   int currentTopVariable = 0;
   int previousPrime = 0;
   int previousSub = 0;
+  int currentDecisionNode = 0;
   psdd_file.open(psdd_filename);
   if (!psdd_file) {
     std::cerr << "File " << psdd_filename << " cannot be open.";
@@ -708,7 +709,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       }
       FPGAPsddNode *cur_node =
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
-          children_size_vector[current_index] = cur_node->primes_.size();
+          children_size_vector[currentDecisionNode++] = cur_node->primes_.size();
           node_type_vector[current_index++] = 1;
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
