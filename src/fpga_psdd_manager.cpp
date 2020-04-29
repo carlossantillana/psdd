@@ -624,6 +624,8 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
   int previousPrime = 0;
   int previousSub = 0;
   int currentDecisionNode = 0;
+  int previousDec =0;
+  int maxJump = 0;
   psdd_file.open(psdd_filename);
   if (!psdd_file) {
     std::cerr << "File " << psdd_filename << " cannot be open.";
@@ -709,6 +711,13 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       }
       FPGAPsddNode *cur_node =
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
+          if (currentDecisionNode == 0){
+            previousDec = current_index;
+          }
+          if (current_index - previousDec > maxJump){
+            maxJump = current_index - previousDec;
+            previousDec = current_index;
+          }
           children_size_vector[currentDecisionNode++] = cur_node->primes_.size();
           node_type_vector[current_index++] = 1;
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
@@ -719,6 +728,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
     }
   }
   psdd_file.close();
+  std::cout << "largest jump: " << maxJump << std::endl;
   return root_node;
 }
 

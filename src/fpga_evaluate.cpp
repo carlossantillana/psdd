@@ -236,20 +236,20 @@ void fpga_evaluate(
      int currentPrime = 0;
      int currentSub = 0;
      int currentDecisionNode = 0;
-     int leapNode = 0;
      short numElems [BATCH_SIZE];
-     float max_probs [BATCH_SIZE];
 
     LoopDecision:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
-      int tmp = leapNode % BATCH_SIZE == 0 ;
-      // std::cout << "leapNode: " << leapNode << " leapNode % BATCH_SIZE == 0: " << tmp << " cur_index_node: " << int(cur_node_idx) << std::endl;
-      if (local_is_decision_vector[cur_node_idx] && leapNode % BATCH_SIZE == 0) {
+      if (local_is_decision_vector[cur_node_idx]) {
        int innerLoopLength = 0;
-        loadBatch:for (int j = 0; j < BATCH_SIZE && currentDecisionNode + j < TOTAL_DECISION_SIZE; j++){
+       int tmpCurNodeIdx = cur_node_idx;
+       bool stillConsecutiveDecisions= true;
+       int tempo = 0;
+        loadBatch:for (int j = 0; j < BATCH_SIZE && currentDecisionNode + j < TOTAL_DECISION_SIZE && stillConsecutiveDecisions && tmpCurNodeIdx < PSDD_SIZE; j++){
           #pragma HLS pipeline
+          stillConsecutiveDecisions = local_is_decision_vector[++tmpCurNodeIdx];
           innerLoopLength += local_children_size_vector[currentDecisionNode + j];
-          max_probs [j] = -std::numeric_limits<float>::infinity();
           numElems[j] = local_children_size_vector[currentDecisionNode + j];
+          tempo++;
         }
         int j = 0;
         int curInnerNode = 0;
@@ -264,8 +264,8 @@ void fpga_evaluate(
           }
             if (j == numElems[curInnerNode] -1 ){
               j= 0;
-              max_probs[curInnerNode] = max_prob;
               curInnerNode++;
+              evaluation_cache[cur_node_idx++] = max_prob;
               max_prob = -std::numeric_limits<float>::infinity();
               currentDecisionNode++;
             } else{
@@ -273,15 +273,8 @@ void fpga_evaluate(
             }
             currentChild++;
           }
+          cur_node_idx--;
 
-        // std::cout << "updating in first: " <<   max_probs[0] << std::endl;
-
-        evaluation_cache[cur_node_idx] = max_probs[0];
-        leapNode++;
-      } else if (local_is_decision_vector[cur_node_idx] && leapNode % BATCH_SIZE != 0){
-        // std::cout << "updating in else: " <<   max_probs[leapNode % BATCH_SIZE] << " w/ index: "<< cur_node_idx <<  " w/ leap%bach " << leapNode % BATCH_SIZE << std::endl;
-          evaluation_cache[cur_node_idx] = max_probs[leapNode % BATCH_SIZE];
-          leapNode++;
       }
     }
     result[m] = evaluation_cache[PSDD_SIZE -1];

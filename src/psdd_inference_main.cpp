@@ -242,7 +242,6 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    // Change back to num _queries
    for (uint i =0; i < NUM_QUERIES; i++){
      float tmpDiff = 0;
-     std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
      tmpDiff = std::pow((reference_results[i] - result[i]),2);
    }

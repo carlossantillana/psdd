@@ -25,7 +25,7 @@ const short TOTAL_LITERALS = 6714;
 const short TOTAL_VARIABLES = 7110;
 const short TOTAL_VARIABLE_INDEXES = 396;
 const uint TOTAL_DECISION_SIZE = 573707;
-const int BATCH_SIZE = 7;
+const int BATCH_SIZE = 1000;
 
 
 //For grids network
