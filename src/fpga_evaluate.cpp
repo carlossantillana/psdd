@@ -243,13 +243,11 @@ void fpga_evaluate(
        int innerLoopLength = 0;
        int tmpCurNodeIdx = cur_node_idx;
        bool stillConsecutiveDecisions= true;
-       int tempo = 0;
         loadBatch:for (int j = 0; j < BATCH_SIZE && currentDecisionNode + j < TOTAL_DECISION_SIZE && stillConsecutiveDecisions && tmpCurNodeIdx < PSDD_SIZE; j++){
           #pragma HLS pipeline
           stillConsecutiveDecisions = local_is_decision_vector[++tmpCurNodeIdx];
           innerLoopLength += local_children_size_vector[currentDecisionNode + j];
           numElems[j] = local_children_size_vector[currentDecisionNode + j];
-          tempo++;
         }
         int j = 0;
         int curInnerNode = 0;
@@ -263,11 +261,11 @@ void fpga_evaluate(
             max_prob = tmp;
           }
             if (j == numElems[curInnerNode] -1 ){
+              evaluation_cache[cur_node_idx++] = max_prob;
               j= 0;
               curInnerNode++;
-              evaluation_cache[cur_node_idx++] = max_prob;
-              max_prob = -std::numeric_limits<float>::infinity();
               currentDecisionNode++;
+              max_prob = -std::numeric_limits<float>::infinity();
             } else{
                 j++;
             }
