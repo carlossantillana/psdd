@@ -1,5 +1,6 @@
 #initialize to your local path
-project_dir="$AWS_FPGA_REPO_DIR/Vitis/examples/xilinx_2019.2/psdd"
+#project_dir="$AWS_FPGA_REPO_DIR/Vitis/examples/xilinx_2019.2/psdd"
+project_dir=$pwd
 platform_dir="$AWS_FPGA_REPO_DIR/Vitis/aws_platform"
 
 # creates .o of project

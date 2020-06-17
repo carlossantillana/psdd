@@ -24,6 +24,9 @@ const short TOTAL_LITERALS = 6714;
 const short TOTAL_VARIABLES = 7110;
 const short TOTAL_VARIABLE_INDEXES = 396;
 const uint TOTAL_CHILDREN_SIZE = 580817;
+//const uint MERGED_LOOP_LEN = 777621;
+//const uint MERGED_LOOP_LEN = 777634;
+const uint MERGED_LOOP_LEN = 777661;
 
 //For grids network
 // const uint PSDD_SIZE = 51;

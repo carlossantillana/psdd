@@ -13,6 +13,9 @@
 #include <stack>
 #include <unordered_set>
 
+#define DELAY 23
+#define II 1 
+
 namespace {
 using std::unordered_set;
 
@@ -606,19 +609,35 @@ PsddNodeStruct ConvertPsddToStruct(FPGAPsddNode * cur_node, std::vector<ap_uint<
   }
   return PsddStruct;
 }
-FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector,
-  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector ,
+FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintmax_t flag_index,
+ std::vector<ap_uint<64>,aligned_allocator<ap_uint<64>>> &dram_data,
+ std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector,
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, 
+  //std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &new_prime_vector, 
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector, 
+  //std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &new_sub_vector, 
+  //std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &new_parameter_vector ,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> &bool_param_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_index_vector,
   std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_variable_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &top_variable_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &variable_index_vector, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &children_size_vector,
- std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_offset_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &node_type_vector ) {
+ std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &children_offset_vector
+ //,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &new_node_type_vector 
+ ) {
   std::ifstream psdd_file;
   std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
   int currentChild = 0;
   int currentBoolParam = 0;
   int currentLiteral = 0;
   int current_index = 0;
+  int new_index = 0;
   int currentTopVariable = 0;
 
+std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>>  node_type_vector(PSDD_SIZE);
+std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector(TOTAL_CHILDREN); 
+
+std::vector<int,aligned_allocator<int>>  node_update_cycle(PSDD_SIZE); // this array records the last cycle a node prob was updated
+for(int i = 0 ; i < PSDD_SIZE ; i++ ){
+  node_update_cycle[i] = -100;
+}
 
   psdd_file.open(psdd_filename);
   if (!psdd_file) {
@@ -629,6 +648,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
   std::string line;
   FPGAPsddNode *root_node = nullptr;
   while (std::getline(psdd_file, line)) {
+	//printf("current_index:%d\n", current_index);
     if (line[0] == 'c') {
       continue;
     }
@@ -650,8 +670,11 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       literal_variable_vector[currentLiteral] = literal > 0 ? static_cast<uint>(literal)
                           : static_cast<uint32_t>(-literal);
       literal_index_vector[currentLiteral++] = current_index;
+	ap_uint<64> dram_fifo_data = 0;
+	dram_fifo_data(62,61) = 1;
+	dram_data[new_index] = dram_fifo_data;
+	new_index++;
       node_type_vector[current_index++] = 1;
-
     } else if (line[0] == 'T') {
       std::istringstream iss(line.substr(1, std::string::npos));
       uintmax_t node_index;
@@ -669,6 +692,10 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       construct_fpga_cache[node_index] = cur_node;
       top_variable_vector[currentTopVariable] = cur_node->variable_index_;
       variable_index_vector[currentTopVariable++] = current_index;
+	ap_uint<64> dram_fifo_data = 0;
+	dram_fifo_data(62,61) = 1; //Don't do anything, and increase node_index
+	dram_data[new_index] = dram_fifo_data;
+	new_index++;
       node_type_vector[current_index++] = 3;
       root_node = cur_node;
     } else {
@@ -688,6 +715,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
       } else{
         children.at(element_size)++;
       }
+      //printf("current_index:%d element_size:%d\n", current_index, element_size);
       for (size_t j = 0; j < element_size; j++) {
         uintmax_t prime_index;
         uintmax_t sub_index;
@@ -699,19 +727,52 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
         FPGAPsddNode *sub_node = construct_fpga_cache[sub_index];
         primes.push_back(prime_node);
         subs.push_back(sub_node);
-        params.push_back(PsddParameter::CreateFromLog(weight_in_log));
+	PsddParameter new_params = PsddParameter::CreateFromLog(weight_in_log);
+        params.push_back(new_params);
+	while( new_index - node_update_cycle[prime_index] - DELAY/II < 0 || new_index - node_update_cycle[sub_index] - DELAY/II < 0 ){ //Insert bubbles
+		printf("current_index:%d new_index:%d prime_index:%d sub_index:%d node_update_cycle[prime_index]:%d node_update_cycle[sub_index]:%d \n", current_index, new_index, prime_index, sub_index, node_update_cycle[prime_index], node_update_cycle[sub_index] );
+		ap_uint<64> dram_fifo_data = 0;
+        	dram_fifo_data(62,61) = 0; //don't do anything (and don't increase node index either)
+		dram_data[new_index] = dram_fifo_data;
+		new_index++;
+	}
+
+	ap_uint<64> dram_fifo_data;
+        dram_fifo_data(19,0) = prime_index;
+        dram_fifo_data(39,20) = sub_index;
+	ap_fixed<21,8,AP_RND > parameter_temp = new_params.parameter_;
+        dram_fifo_data(60,40) = *((ap_uint<21>*)(&(parameter_temp)));
+        if( j == element_size - 1 ){
+	        dram_fifo_data(62,61) = 3; //do computation, and this is the final edge of a node (increase node index)
+		node_update_cycle[current_index] = new_index;	//record the last cycle a node prob is updated
+        }
+	else{
+        	dram_fifo_data(62,61) = 2; // do computation, and this is NOT the final edge of a node (don't increase node index)
+	}
+	dram_data[new_index] = dram_fifo_data;
+	//printf("new_index:%d\n", new_index);
+	new_index++;
       }
       FPGAPsddNode *cur_node =
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
           children_size_vector[current_index] = cur_node->primes_.size();
           children_offset_vector[current_index] = currentChild;
           node_type_vector[current_index++] = 2;
+	if( element_size < 1 ){
+		printf("error. element_size:%d for node %d\n", element_size, current_index);
+		exit(1);
+	}
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStruct(cur_node,
         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     }
   }
+	printf("measured MERGED_LOOP_LEN:%d const MERGED_LOOP_LEN : %d\n", new_index, MERGED_LOOP_LEN);
+	if( new_index != MERGED_LOOP_LEN ){
+		printf("Above two numbers should match. Exiting...\n");
+		exit(1);
+	}
   psdd_file.close();
   return root_node;
 }
