@@ -25,11 +25,13 @@ extern "C" {
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
 //const int NUM_QUERIES = 1;
-const int NUM_QUERIES = 55;
+const int NUM_QUERIES = 1;
 //For map_network network
-const int PSDD_SIZE_2 = 580817;
+// const int PSDD_SIZE_2 = 580817;
 //For grids network
 // const uint PSDD_SIZE_2 = 51;
+//For mastermind network
+const int PSDD_SIZE_2 = 42558;
 
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;

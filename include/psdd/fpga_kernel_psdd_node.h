@@ -16,17 +16,17 @@
 #define  MAX_VAR 65536
 
 //For map_network network
-const uint PSDD_SIZE = 580817;
-const uint MAX_CHILDREN = 57;
-const uint TOTAL_CHILDREN = 770511;
-const short TOTAL_BOOL_PARAM = 792;
-const short TOTAL_LITERALS = 6714;
-const short TOTAL_VARIABLES = 7110;
-const short TOTAL_VARIABLE_INDEXES = 396;
-const uint TOTAL_CHILDREN_SIZE = 580817;
-//const uint MERGED_LOOP_LEN = 777621;
-//const uint MERGED_LOOP_LEN = 777634;
-const uint MERGED_LOOP_LEN = 777661;
+// const uint PSDD_SIZE = 580817;
+// const uint MAX_CHILDREN = 57;
+// const uint TOTAL_CHILDREN = 770511;
+// const short TOTAL_BOOL_PARAM = 792;
+// const short TOTAL_LITERALS = 6714;
+// const short TOTAL_VARIABLES = 7110;
+// const short TOTAL_VARIABLE_INDEXES = 396;
+// const uint TOTAL_CHILDREN_SIZE = 580817;
+// //const uint MERGED_LOOP_LEN = 777621;
+// //const uint MERGED_LOOP_LEN = 777634;
+// const uint MERGED_LOOP_LEN = 777661;
 
 //For grids network
 // const uint PSDD_SIZE = 51;
@@ -34,6 +34,17 @@ const uint MERGED_LOOP_LEN = 777661;
 // const uint TOTAL_CHILDREN = 156;
 // const uint TOTAL_PARAM = 78;
 // const short TOTAL_BOOL_PARAM = 48;
+
+//For Mastermind Network
+const uint PSDD_SIZE = 42558;
+const uint MAX_CHILDREN = 2;
+const uint TOTAL_CHILDREN = 45272;
+const short TOTAL_BOOL_PARAM = 1;
+const short TOTAL_LITERALS = 2328;
+const short TOTAL_VARIABLES = 1;
+const short TOTAL_VARIABLE_INDEXES = 1;
+const uint TOTAL_CHILDREN_SIZE = 42558;
+const uint MERGED_LOOP_LEN = 47688;
 
 struct PsddNodeStruct {
   ap_uint<32> node_type_;

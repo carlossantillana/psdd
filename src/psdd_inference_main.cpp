@@ -73,11 +73,7 @@ int main(int argc, char** argv)
   std::vector<ap_uint<64>,aligned_allocator<ap_uint<64>>> dram_data (MERGED_LOOP_LEN);
   std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>>  fpga_node_vector (PSDD_SIZE);
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> prime_vector (TOTAL_CHILDREN);
-  //std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> new_prime_vector (MERGED_LOOP_LEN);
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> sub_vector (TOTAL_CHILDREN);
-  //std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> new_sub_vector (MERGED_LOOP_LEN);
-  //std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_CHILDREN);
-  //std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (MERGED_LOOP_LEN);
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (50);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_vector (TOTAL_LITERALS);
@@ -87,8 +83,6 @@ int main(int argc, char** argv)
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> variable_index_vector (TOTAL_VARIABLE_INDEXES);
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> children_size_vector (TOTAL_CHILDREN_SIZE);
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> children_offset_vector (TOTAL_CHILDREN_SIZE);
-  //std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (PSDD_SIZE);
-  //std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (MERGED_LOOP_LEN);
 
  argc -= (argc > 0);
  argv += (argc > 0); // skip program name argv[0] if present
@@ -109,16 +103,13 @@ int main(int argc, char** argv)
  PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
  sdd_vtree_free(psdd_vtree);
  FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFile(
-	psdd_filename, 0, 
+	psdd_filename, 0,
 	dram_data,
 	fpga_node_vector,
-	prime_vector, 
-	//new_prime_vector, 
-	sub_vector, 
-	//new_sub_vector, parameter_vector, 
+	prime_vector,
+	sub_vector,
 	bool_param_vector, literal_vector, literal_index_vector,literal_variable_vector, top_variable_vector, variable_index_vector,
 	children_size_vector, children_offset_vector
-	//,node_type_vector
   );
  uint32_t root_node_idx = result_node->node_index_;
 
@@ -141,13 +132,7 @@ int main(int argc, char** argv)
  File.close();
 
   //Allocate Memory in Host Memory
-  //size_t node_type_vector_size_bytes = sizeof(node_type_vector[0]) * PSDD_SIZE;
   size_t dram_data_size_bytes = sizeof(dram_data[0]) * MERGED_LOOP_LEN;
-  //size_t node_type_vector_size_bytes = sizeof(node_type_vector[0]) * MERGED_LOOP_LEN;
-  //size_t children_vector_size_bytes = sizeof(prime_vector[0]) * TOTAL_CHILDREN;
-  //size_t children_vector_size_bytes = sizeof(new_prime_vector[0]) * MERGED_LOOP_LEN;
-  //size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * TOTAL_CHILDREN;
-  //size_t parameter_vector_size_bytes = sizeof(parameter_vector[0]) * MERGED_LOOP_LEN;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
   size_t flippers_size_bytes = sizeof(flippers[0]) * 50;
   size_t literal_vector_size_bytes = sizeof(literal_vector[0]) * TOTAL_LITERALS;
@@ -188,14 +173,6 @@ int num_queries = NUM_QUERIES;
 
       OCL_CHECK(err, cl::Buffer buffer_in0   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
               dram_data_size_bytes, dram_data.data(), &err));
-      //OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-      //        node_type_vector_size_bytes, node_type_vector.data(), &err));
-      //OCL_CHECK(err, cl::Buffer buffer_in2  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-      //          children_vector_size_bytes, new_prime_vector.data(), &err));
-      //OCL_CHECK(err, cl::Buffer buffer_in3  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-      //          children_vector_size_bytes, new_sub_vector.data(), &err));
-      //OCL_CHECK(err, cl::Buffer buffer_in4  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-      //            parameter_vector_size_bytes, parameter_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   bool_param_vector_size_bytes, bool_param_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in6  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
@@ -217,15 +194,11 @@ int num_queries = NUM_QUERIES;
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
               result_size_bytes, result.data(), &err));
 
-      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in0, //buffer_in1, buffer_in2, buffer_in3, buffer_in4, 
+      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in0, //buffer_in1, buffer_in2, buffer_in3, buffer_in4,
         buffer_in5,
         buffer_in6, buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13},0/* 0 means from host*/));
 
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in0));
-      //OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
-      //OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in2));
-      //OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in3));
-      //OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in4));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in5));
       OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in6));
       OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in7));
@@ -283,7 +256,7 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    // Change back to num _queries
    for (uint i =0; i < NUM_QUERIES; i++){
      float tmpDiff = 0;
-     // std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
+     std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
      tmpDiff = std::pow((reference_results[i] - result[i]),2);
    }

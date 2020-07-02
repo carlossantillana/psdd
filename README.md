@@ -17,11 +17,13 @@ https://github.com/aws/aws-fpga/tree/master/Vitis
 if not you will have to edit the makefiles even more
 
 #### Download datasets from this link
-https://drive.google.com/open?id=1dyMke7JY5UURVj4wGWxfSsAp3jExwYvw
+https://drive.google.com/drive/folders/1ZaiVmhDfK5D0vXsOQIWdENW1qp8pNLqd?usp=sharing
 
 grids.psdd, and grids.vtree is the small dataset
 
 weighted_map_network.psdd and weighted_map_network.vtree is the large dataset.
+
+mastermind.psdd and mastermind.vtree is a benchmark dataset.
 
 Place them one level below root of this repo.
 
@@ -71,7 +73,9 @@ In addition you need to edit files include/psdd/psdd_node.h, and include/psdd/fp
 
 ctrl+f for `//For map_network` and make sure the lines below are not commented out for large network support
 
-ctrl+f for `//For grids network` and make sure the lines below are not commented out for small network support-
+ctrl+f for `//For grids network` and make sure the lines below are not commented out for small network support
+
+ctrl+f for `//For mastermind` and make sure the lines below are not commented out for mastermind network support
 
 ### How to Change Number of Queries.
 edit NUM_QUERIES variable found in `include/psdd/psdd_node.h`
