@@ -69,7 +69,7 @@ ulimit -s  unlimited
 ### How to Change Datasets
 To change between small and large datasets. There will be two lines  starting with 'XCL_EMULATION_MODE=' in both `./faux_make_sw_emu.sh` and `faux_make_hw_emu`. Comment out the one your don't want to run and comment in the one you do want.
 
-In addition you need to edit files include/psdd/psdd_node.h, and include/psdd/fpga_kernel_psdd_node.h
+In addition you need to edit the file include/psdd/fpga_kernel_psdd_node.h
 
 ctrl+f for `//For map_network` and make sure the lines below are not commented out for large network support
 

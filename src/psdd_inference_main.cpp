@@ -20,7 +20,7 @@ using std::string;
 using std::vector;
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const char *psdd_filename, PsddManager *reference_psdd_manager,
-   std::bitset<MAX_VAR> var_mask, vector<std::bitset<MAX_VAR>> instantiations, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers );
+   std::bitset<MAX_VAR> var_mask, vector<std::bitset<MAX_VAR>, aligned_allocator<std::bitset<MAX_VAR>>> instantiations);
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> prime_vector (TOTAL_CHILDREN);
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> sub_vector (TOTAL_CHILDREN);
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
-  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (2328);//tmp
+  std::vector<std::bitset<MAX_VAR>, aligned_allocator<std::bitset<MAX_VAR>>> instantiations (NUM_DISTICT_QUERIES);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_vector (TOTAL_LITERALS);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_index_vector (TOTAL_LITERALS);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_variable_vector (TOTAL_LITERALS);
@@ -118,24 +118,28 @@ int main(int argc, char** argv)
  auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, prime_vector, sub_vector);
 
  std::bitset<MAX_VAR> var_mask;
- vector<std::bitset<MAX_VAR>> instantiations;
-
  var_mask.set();
 
+ //Loads queries for different networks
  std::ifstream File;
- // File.open("allPossibleSolutions.txt");
- // for(int a = 0; a < NUM_DISTICT_QUERIES; a++){
- //   int tmp;
- //   File >> tmp;
- //   flippers[a] = tmp;
- // }
- //
+ if (strcmp(psdd_filename, "../weighted_map_network.psdd") == 0){
+   File.open("mpeMapNetwork.txt");
+   for(int a = 0; a < NUM_DISTICT_QUERIES; a++){
+     int current;
+     File >> current;
+     std::bitset<MAX_VAR> tmp;
+     tmp[current] = 1;
+     instantiations.at(a) = tmp;
+   }
+ }
 
- File.open("mpeMasterMind.txt");
-for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
-  string current = "";
-  File >> current;
-  instantiations.push_back(std::bitset<MAX_VAR>(current));
+ if (strcmp(psdd_filename, "../mastermind.psdd") == 0){
+   File.open("mpeMasterMind.txt");
+    for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
+      string current = "";
+      File >> current;
+      instantiations.at(a) = std::bitset<MAX_VAR>(current);
+    }
 }
  File.close();
 
@@ -143,7 +147,6 @@ for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
   size_t dram_data_size_bytes = sizeof(dram_data[0]) * MERGED_LOOP_LEN;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
   size_t instantiation_vector_size_bytes = sizeof(instantiations[0]) * NUM_DISTICT_QUERIES;
-  size_t flippers_size_bytes = sizeof(flippers[0]) * NUM_DISTICT_QUERIES;
   size_t literal_vector_size_bytes = sizeof(literal_vector[0]) * TOTAL_LITERALS;
   size_t literal_vector_index_size_bytes = sizeof(literal_index_vector[0]) * TOTAL_LITERALS;
   size_t literal_variable_vector_size_bytes = sizeof(literal_variable_vector[0]) * TOTAL_LITERALS;
@@ -186,8 +189,6 @@ for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
               instantiation_vector_size_bytes, instantiations.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   bool_param_vector_size_bytes, bool_param_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in6  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  flippers_size_bytes, flippers.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in7  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   literal_vector_size_bytes, literal_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in8  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
@@ -206,22 +207,20 @@ for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
               result_size_bytes, result.data(), &err));
 
       OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in0, buffer_in1,// buffer_in2, buffer_in3, buffer_in4,
-        buffer_in5,
-        buffer_in6, buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13},0/* 0 means from host*/));
+        buffer_in5, buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13},0/* 0 means from host*/));
 
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in0));
       OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in1));
       OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in5));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in6));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in7));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in8));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_in9));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_in10));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_in11));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(9, buffer_in12));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_in13));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(11, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(12, num_queries));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in7));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in8));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in9));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_in10));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_in11));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_in12));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(9, buffer_in13));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_output));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(11, num_queries));
 
       time_t start_time = time(NULL);
 	auto start = std::chrono::steady_clock::now();
@@ -241,18 +240,18 @@ for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
 	 printf("FPGA Kernel time is %f s\n", time_taken);
 
   // OPENCL HOST CODE AREA END
-  return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiations, flippers);
+  return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiations);
 }
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const char *psdd_filename, PsddManager *reference_psdd_manager,
-    std::bitset<MAX_VAR> var_mask, vector<std::bitset<MAX_VAR>> instantiations, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers ){
+    std::bitset<MAX_VAR> var_mask, vector<std::bitset<MAX_VAR>, aligned_allocator<std::bitset<MAX_VAR>>> instantiations){
    PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    //NUM_QUERIES   vvv
    double reference_results [NUM_QUERIES] = {0};
    time_t start_time = time(NULL);
 	auto start = std::chrono::steady_clock::now();
-   psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiations, reference_serialized_psdd, reference_results, flippers);
+   psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiations, reference_serialized_psdd, reference_results);
 
 	auto end = std::chrono::steady_clock::now();
    time_t end_time = time(NULL);
@@ -269,8 +268,8 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    // Change back to num _queries
    for (uint i =0; i < NUM_QUERIES; i++){
      float tmpDiff = 0;
-     if (reference_results[i] != -std::numeric_limits<float>::infinity())
-        std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
+     // if (reference_results[i] != -std::numeric_limits<float>::infinity())
+     //    std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
      tmpDiff = std::pow((reference_results[i] - result[i]),2);
    }

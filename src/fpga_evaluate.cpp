@@ -34,13 +34,6 @@
       data_local[i] = data_dram[i](5,0);
     }
   }
-  void load12Bit(const ap_uint<32>* data_dram, ap_uint<12>* data_local, int burstLength){
-    #pragma HLS inline
-    load12Bit: for (int i = 0; i < burstLength; i++){
-    #pragma HLS pipeline
-      data_local[i] = data_dram[i](11,0);
-    }
-  }
   void load13Bit(const ap_int<32>* data_dram, ap_int<13>* data_local, int burstLength){
     #pragma HLS inline
     load13Bit: for (int i = 0; i < burstLength; i++){
@@ -110,13 +103,12 @@
 
    void load(bool local_variables[MAX_VAR],
   	ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM], std::bitset<MAX_VAR> local_instantiations [NUM_DISTICT_QUERIES], const std::bitset<MAX_VAR> instantiations [NUM_DISTICT_QUERIES],
-    ap_uint<12> local_flippers [NUM_DISTICT_QUERIES], const ap_uint<32> flippers [NUM_DISTICT_QUERIES], ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
+    ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
     ap_int<14> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS], ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
     ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector) {
 #pragma HLS inline
      loadBool(local_variables, MAX_VAR, 1);
      loadBitset(instantiations, local_instantiations);
-     load12Bit(flippers, local_flippers, NUM_DISTICT_QUERIES);
      load13Bit(literal_vector, local_literal_vector, TOTAL_LITERALS);
      load14Bit(literal_variable_vector, local_literal_variable_vector, TOTAL_LITERALS);
      load14Bit(top_variable_vector, local_top_variable_vector, TOTAL_VARIABLE_INDEXES);
@@ -129,7 +121,6 @@ void comp(
 	hls::stream< ap_uint<64> > & dram_fifo,
         const ap_fixed<32,2,AP_RND> *bool_param_vector,
         const std::bitset<MAX_VAR> *instantiations,
-        const ap_uint<32> *flippers,
         const ap_int<32> *literal_vector,
         const ap_int<32> *literal_variable_vector,
         const ap_int<32> *top_variable_vector,
@@ -145,7 +136,6 @@ void comp(
 	static bool local_variables [MAX_VAR];
 	static std::bitset<MAX_VAR> local_instantiation;
   static std::bitset<MAX_VAR> local_instantiations [NUM_DISTICT_QUERIES];
-	static ap_uint<12> local_flippers [NUM_DISTICT_QUERIES];
 	static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
 	static ap_int<13> local_literal_vector [TOTAL_LITERALS];
 	static ap_int<14> local_literal_variable_vector [TOTAL_LITERALS];
@@ -159,7 +149,6 @@ void comp(
 			local_variables,
 			local_bool_param_vector, bool_param_vector,
       local_instantiations, instantiations,
-			local_flippers, flippers,
 			local_literal_vector, literal_vector,
 			local_literal_variable_vector, literal_variable_vector,  local_top_variable_vector, top_variable_vector,
 			local_literal_index_vector, literal_index_vector,
@@ -199,8 +188,6 @@ void comp(
 				evaluation_cache2[local_variable_index_vector[var_idx]] = 0;
 			}
 		}
-		// local_instantiation[local_flippers[m%NUM_DISTICT_QUERIES]] = !local_instantiation[local_flippers[m%NUM_DISTICT_QUERIES]];
-
 		uint cur_node_idx = 0;
 		float max_prob = -std::numeric_limits<float>::infinity();
 		for (uint n = 0; n < MERGED_LOOP_LEN; n++) {
@@ -260,7 +247,6 @@ void fpga_evaluate(
 	const ap_uint<64> *dram_port,
         const std::bitset<MAX_VAR> *instantiations,
         const ap_fixed<32,2,AP_RND> *bool_param_vector,
-        const ap_uint<32> *flippers,
         const ap_int<32> *literal_vector,
         const ap_int<32> *literal_variable_vector,
         const ap_int<32> *top_variable_vector,
@@ -274,7 +260,6 @@ void fpga_evaluate(
 #pragma HLS INTERFACE m_axi port = dram_port  offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port = instantiations  offset=slave bundle=gmem1
 #pragma HLS INTERFACE m_axi port = bool_param_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = flippers offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port = literal_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port = literal_variable_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port = top_variable_vector offset = slave bundle = gmem
@@ -286,7 +271,6 @@ void fpga_evaluate(
 #pragma HLS INTERFACE s_axilite port= dram_port  bundle=control
 #pragma HLS INTERFACE s_axilite port= instantiations  bundle=control
 #pragma HLS INTERFACE s_axilite port = bool_param_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = flippers bundle = control
 #pragma HLS INTERFACE s_axilite port = literal_vector bundle = control
 #pragma HLS INTERFACE s_axilite port = literal_variable_vector bundle = control
 #pragma HLS INTERFACE s_axilite port = top_variable_vector bundle = control
@@ -306,7 +290,7 @@ void fpga_evaluate(
 	//#pragma HLS RESOURCE variable=dram_fifo core=FIFO_BRAM
 
 	dram_read( dram_port, dram_fifo, num_queries );
-	comp( dram_fifo, bool_param_vector, instantiations, flippers, literal_vector, literal_variable_vector, top_variable_vector, children_size_vector, children_offset_vector, literal_index_vector, variable_index_vector, result, num_queries);
+	comp( dram_fifo, bool_param_vector, instantiations, literal_vector, literal_variable_vector, top_variable_vector, children_size_vector, children_offset_vector, literal_index_vector, variable_index_vector, result, num_queries);
 }
 
 

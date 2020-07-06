@@ -24,14 +24,7 @@ extern "C" {
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
-//const int NUM_QUERIES = 1;
-const int NUM_QUERIES = 1;
-//For map_network network
-// const int PSDD_SIZE_2 = 580817;
-//For grids network
-// const uint PSDD_SIZE_2 = 51;
-//For mastermind network
-const int PSDD_SIZE_2 = 42558;
+const int NUM_QUERIES = 50;
 
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
@@ -230,10 +223,9 @@ std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<M
                     const std::bitset<MAX_VAR> &instantiation,
                         const std::vector<PsddNode *> &serialized_nodes);
 void EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
-                        const std::vector<std::bitset<MAX_VAR>> &instantiations,
+                        const std::vector<std::bitset<MAX_VAR>, aligned_allocator<std::bitset<MAX_VAR>>>  & instantiations,
                        const std::vector<PsddNode *> &serialized_nodes,
-                     double results [NUM_QUERIES],
-                     std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers);
+                     double results [NUM_QUERIES]);
 bool IsConsistent(PsddNode *node, const std::bitset<MAX_VAR> &variable_mask,
                   const std::bitset<MAX_VAR> &partial_instantiation);
 bool IsConsistent(const std::vector<PsddNode *> &nodes,
