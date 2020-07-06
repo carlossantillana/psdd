@@ -726,7 +726,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
 	      PsddParameter new_params = PsddParameter::CreateFromLog(weight_in_log);
         params.push_back(new_params);
       	while( new_index - node_update_cycle[prime_index] - DELAY/II < 0 || new_index - node_update_cycle[sub_index] - DELAY/II < 0 ){ //Insert bubbles
-      		printf("current_index:%d new_index:%d prime_index:%d sub_index:%d node_update_cycle[prime_index]:%d node_update_cycle[sub_index]:%d \n", current_index, new_index, prime_index, sub_index, node_update_cycle[prime_index], node_update_cycle[sub_index] );
+      		// printf("current_index:%d new_index:%d prime_index:%d sub_index:%d node_update_cycle[prime_index]:%d node_update_cycle[sub_index]:%d \n", current_index, new_index, prime_index, sub_index, node_update_cycle[prime_index], node_update_cycle[sub_index] );
       		ap_uint<64> dram_fifo_data = 0;
         	dram_fifo_data(62,61) = 0; //don't do anything (and don't increase node index either)
       		dram_data[new_index] = dram_fifo_data;

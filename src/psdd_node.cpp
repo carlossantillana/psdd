@@ -593,9 +593,8 @@ void  EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
                    std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers) {
   for (int m = 0; m <  NUM_QUERIES; m++){
     std::unordered_map<uintmax_t, Probability> evaluation_cache;
-    instantiation.reset();
-    instantiation.set(flippers[m%50]);
-
+    // instantiation.reset();
+    // instantiation.set(flippers[m]);
     for (auto node_it = serialized_nodes.rbegin();
          node_it != serialized_nodes.rend(); ++node_it) {
       PsddNode *cur_node = *node_it;

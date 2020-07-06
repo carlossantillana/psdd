@@ -75,7 +75,7 @@ int main(int argc, char** argv)
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> prime_vector (TOTAL_CHILDREN);
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> sub_vector (TOTAL_CHILDREN);
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
-  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (50);
+  std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> flippers (2328);//tmp
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_vector (TOTAL_LITERALS);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_index_vector (TOTAL_LITERALS);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_variable_vector (TOTAL_LITERALS);
@@ -122,12 +122,23 @@ int main(int argc, char** argv)
  //Read mpe_query
   std::bitset<MAX_VAR> instantiation;
  std::ifstream File;
- File.open("allPossibleSolutions.txt");
- for(int a = 0; a < 50; a++){
-   int tmp;
-   File >> tmp;
-   flippers[a] = tmp;
+ // File.open("allPossibleSolutions.txt");
+ // for(int a = 0; a < 50; a++){
+ //   int tmp;
+ //   File >> tmp;
+ //   flippers[a] = tmp;
+ // }
+ //
+ // File.close();
+ File.open("mpeMasterMind.txt");
+ int current = 0;
+ int idx = MAX_VAR;
+ std::cout << "mastermind begin\n";
+ while(File.good()){
+   File >> current;
+   instantiation[idx--] = current;
  }
+
 
  File.close();
 
@@ -256,7 +267,8 @@ bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const 
    // Change back to num _queries
    for (uint i =0; i < NUM_QUERIES; i++){
      float tmpDiff = 0;
-     std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
+     if (reference_results[i] != -std::numeric_limits<float>::infinity())
+        std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
      tmpDiff = std::pow((reference_results[i] - result[i]),2);
    }
