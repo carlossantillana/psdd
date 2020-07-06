@@ -9,8 +9,7 @@
 #include <vector>
 #include <bitset>
 #include <unordered_map>
-
-#define  MAX_VAR 65536
+#include <psdd/fpga_kernel_psdd_node.h>
 
 //#define MAX_VAR 16384
 

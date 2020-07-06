@@ -20,7 +20,7 @@ using std::string;
 using std::vector;
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const char *psdd_filename, PsddManager *reference_psdd_manager,
-   std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers );
+   std::bitset<MAX_VAR> var_mask, vector<std::bitset<MAX_VAR>> instantiations, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers );
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt,
                          const char *msg2) {
@@ -118,34 +118,32 @@ int main(int argc, char** argv)
  auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, prime_vector, sub_vector);
 
  std::bitset<MAX_VAR> var_mask;
+ vector<std::bitset<MAX_VAR>> instantiations;
+
  var_mask.set();
- //Read mpe_query
-  std::bitset<MAX_VAR> instantiation;
+
  std::ifstream File;
  // File.open("allPossibleSolutions.txt");
- // for(int a = 0; a < 50; a++){
+ // for(int a = 0; a < NUM_DISTICT_QUERIES; a++){
  //   int tmp;
  //   File >> tmp;
  //   flippers[a] = tmp;
  // }
  //
- // File.close();
+
  File.open("mpeMasterMind.txt");
- int current = 0;
- int idx = MAX_VAR;
- std::cout << "mastermind begin\n";
- while(File.good()){
-   File >> current;
-   instantiation[idx--] = current;
- }
-
-
+for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
+  string current = "";
+  File >> current;
+  instantiations.push_back(std::bitset<MAX_VAR>(current));
+}
  File.close();
 
   //Allocate Memory in Host Memory
   size_t dram_data_size_bytes = sizeof(dram_data[0]) * MERGED_LOOP_LEN;
   size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
-  size_t flippers_size_bytes = sizeof(flippers[0]) * 50;
+  size_t instantiation_vector_size_bytes = sizeof(instantiations[0]) * NUM_DISTICT_QUERIES;
+  size_t flippers_size_bytes = sizeof(flippers[0]) * NUM_DISTICT_QUERIES;
   size_t literal_vector_size_bytes = sizeof(literal_vector[0]) * TOTAL_LITERALS;
   size_t literal_vector_index_size_bytes = sizeof(literal_index_vector[0]) * TOTAL_LITERALS;
   size_t literal_variable_vector_size_bytes = sizeof(literal_variable_vector[0]) * TOTAL_LITERALS;
@@ -155,7 +153,7 @@ int main(int argc, char** argv)
   size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
   size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
 
-int num_queries = NUM_QUERIES;
+  int num_queries = NUM_QUERIES;
 
   size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
   std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
@@ -184,6 +182,8 @@ int num_queries = NUM_QUERIES;
 
       OCL_CHECK(err, cl::Buffer buffer_in0   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
               dram_data_size_bytes, dram_data.data(), &err));
+      OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+              instantiation_vector_size_bytes, instantiations.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                   bool_param_vector_size_bytes, bool_param_vector.data(), &err));
       OCL_CHECK(err, cl::Buffer buffer_in6  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
@@ -205,22 +205,23 @@ int num_queries = NUM_QUERIES;
       OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
               result_size_bytes, result.data(), &err));
 
-      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in0, //buffer_in1, buffer_in2, buffer_in3, buffer_in4,
+      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in0, buffer_in1,// buffer_in2, buffer_in3, buffer_in4,
         buffer_in5,
         buffer_in6, buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13},0/* 0 means from host*/));
 
       OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in0));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in5));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in6));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in7));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in8));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in9));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_in10));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_in11));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_in12));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(9, buffer_in13));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(11, num_queries));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in1));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in5));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in6));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in7));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in8));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_in9));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_in10));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_in11));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(9, buffer_in12));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_in13));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(11, buffer_output));
+      OCL_CHECK(err, err = krnl_vector_add.setArg(12, num_queries));
 
       time_t start_time = time(NULL);
 	auto start = std::chrono::steady_clock::now();
@@ -240,18 +241,19 @@ int num_queries = NUM_QUERIES;
 	 printf("FPGA Kernel time is %f s\n", time_taken);
 
   // OPENCL HOST CODE AREA END
-  return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiation, flippers);
+  return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiations, flippers);
 }
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const char *psdd_filename, PsddManager *reference_psdd_manager,
-    std::bitset<MAX_VAR> var_mask, std::bitset<MAX_VAR> instantiation, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers ){
+    std::bitset<MAX_VAR> var_mask, vector<std::bitset<MAX_VAR>> instantiations, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers ){
    PsddNode *reference_result_node = reference_psdd_manager->ReadPsddFile(psdd_filename, 0);
    auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
    //NUM_QUERIES   vvv
    double reference_results [NUM_QUERIES] = {0};
    time_t start_time = time(NULL);
 	auto start = std::chrono::steady_clock::now();
-   psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiation, reference_serialized_psdd, reference_results, flippers);
+   psdd_node_util::EvaluateToCompareFPGA(var_mask, instantiations, reference_serialized_psdd, reference_results, flippers);
+
 	auto end = std::chrono::steady_clock::now();
    time_t end_time = time(NULL);
    //printf("CPU start time: %s\n", ctime(&start_time));

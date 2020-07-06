@@ -16,7 +16,7 @@
 #include <random>
 #include <stack>
 #include <unordered_set>
-
+#include <psdd/fpga_kernel_psdd_node.h>
 
 namespace {
 Vtree *
@@ -587,14 +587,13 @@ std::unordered_map<uintmax_t, Probability> EvaluateToCompare(const std::bitset<M
 }
 
 void  EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
-                        std::bitset<MAX_VAR> &instantiation,
+                        const std::vector<std::bitset<MAX_VAR>> &instantiations,
                        const std::vector<PsddNode *> &serialized_nodes,
                      double results [NUM_QUERIES],
                    std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &flippers) {
   for (int m = 0; m <  NUM_QUERIES; m++){
     std::unordered_map<uintmax_t, Probability> evaluation_cache;
-    // instantiation.reset();
-    // instantiation.set(flippers[m]);
+    std::bitset<MAX_VAR> instantiation = instantiations[m%NUM_DISTICT_QUERIES];
     for (auto node_it = serialized_nodes.rbegin();
          node_it != serialized_nodes.rend(); ++node_it) {
       PsddNode *cur_node = *node_it;
@@ -639,9 +638,6 @@ void  EvaluateToCompareFPGA(const std::bitset<MAX_VAR> &variables,
       }
     }
       results[m] = evaluation_cache[serialized_nodes[0]->node_index()].parameter_;
-      // for(int i = 0; i < PSDD_SIZE_2; i++){
-      //   results[i] = evaluation_cache[i].parameter_;
-      // }
     }
 
   return;
