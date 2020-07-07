@@ -174,7 +174,8 @@ void comp(
 		}
 
 		top:for(uint var_idx = 0; var_idx < TOTAL_VARIABLE_INDEXES; var_idx++){
-#pragma HLS pipeline
+      //Not sure why this pragma breaks mastermind bench
+// #pragma HLS pipeline
 			if (local_variables[local_top_variable_vector[var_idx]]) {
 				if (local_instantiations[m%NUM_DISTICT_QUERIES][local_top_variable_vector[var_idx]]) {
 					evaluation_cache[local_variable_index_vector[var_idx]] = local_bool_param_vector[var_idx];
@@ -238,8 +239,6 @@ void dram_read(
 		}
 	}
 }
-
-
 
 extern "C" {
 
