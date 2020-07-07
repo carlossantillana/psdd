@@ -1,9 +1,9 @@
-//#include <psdd/fpga_kernel_psdd_node.h>
 #include "../include/psdd/fpga_kernel_psdd_node.h"
 #include <assert.h>
 #include <stdio.h>
 #include <hls_stream.h>
 #include <bitset>
+#include <iostream>
 
   void loadBool(bool* data_local, int burstLength, char value){
     #pragma HLS inline
@@ -12,11 +12,13 @@
       data_local[i] = value;
     }
   }
-  void loadBitset(const std::bitset<MAX_VAR>* data_dram, std::bitset<MAX_VAR>* data_local){
+  void loadBitset(const std::bitset<MAX_VAR>* data_dram, bool data_local [NUM_DISTICT_QUERIES][MAX_VAR]){
     #pragma HLS inline
-    load12Bit: for (int i = 0; i < NUM_DISTICT_QUERIES; i++){
-    #pragma HLS pipeline
-      data_local[i] = data_dram[i];
+    loadBitset: for (int i = 0; i < NUM_DISTICT_QUERIES; i++){
+      for(int j = 0; j < MAX_VAR; ++j){
+        #pragma HLS pipeline
+        data_local[i][j] = data_dram[i][j];
+      }
     }
   }
 
@@ -102,7 +104,7 @@
    }
 
    void load(bool local_variables[MAX_VAR],
-  	ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM], std::bitset<MAX_VAR> local_instantiations [NUM_DISTICT_QUERIES], const std::bitset<MAX_VAR> instantiations [NUM_DISTICT_QUERIES],
+  	ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM], bool local_instantiations [NUM_DISTICT_QUERIES][MAX_VAR], const std::bitset<MAX_VAR> instantiations [NUM_DISTICT_QUERIES],
     ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
     ap_int<14> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS], ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
     ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector) {
@@ -134,8 +136,7 @@ void comp(
 
 	assert(num_queries <= 2048);  // this helps HLS estimate the loop trip count
 	static bool local_variables [MAX_VAR];
-	static std::bitset<MAX_VAR> local_instantiation;
-  static std::bitset<MAX_VAR> local_instantiations [NUM_DISTICT_QUERIES];
+  static bool local_instantiations [NUM_DISTICT_QUERIES][MAX_VAR];
 	static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
 	static ap_int<13> local_literal_vector [TOTAL_LITERALS];
 	static ap_int<14> local_literal_variable_vector [TOTAL_LITERALS];
@@ -155,12 +156,11 @@ void comp(
 			local_variable_index_vector, variable_index_vector
 	    );
 
-	for (uint m = 0; m < num_queries; m++){
-		 local_instantiation = local_instantiations[m%NUM_DISTICT_QUERIES];
-		for(uint lit_idx = 0; lit_idx < TOTAL_LITERALS; lit_idx++){
+	numQueries:for (uint m = 0; m < num_queries; m++){
+		literals:for(uint lit_idx = 0; lit_idx < TOTAL_LITERALS; lit_idx++){
 #pragma HLS pipeline
 			if (local_variables[local_literal_variable_vector[lit_idx]]) {
-				if (local_instantiation[local_literal_variable_vector[lit_idx]] == (local_literal_vector[lit_idx] > 0) ) {
+				if (local_instantiations[m%NUM_DISTICT_QUERIES][local_literal_variable_vector[lit_idx]] == (local_literal_vector[lit_idx] > 0) ) {
 					evaluation_cache[local_literal_index_vector[lit_idx]] = 0;
 					evaluation_cache2[local_literal_index_vector[lit_idx]] = 0;
 				} else {
@@ -173,10 +173,10 @@ void comp(
 			}
 		}
 
-		for(uint var_idx = 0; var_idx < TOTAL_VARIABLE_INDEXES; var_idx++){
+		top:for(uint var_idx = 0; var_idx < TOTAL_VARIABLE_INDEXES; var_idx++){
 #pragma HLS pipeline
 			if (local_variables[local_top_variable_vector[var_idx]]) {
-				if (local_instantiation[local_top_variable_vector[var_idx]]) {
+				if (local_instantiations[m%NUM_DISTICT_QUERIES][local_top_variable_vector[var_idx]]) {
 					evaluation_cache[local_variable_index_vector[var_idx]] = local_bool_param_vector[var_idx];
 					evaluation_cache2[local_variable_index_vector[var_idx]] = local_bool_param_vector[var_idx];
 				} else {
@@ -190,7 +190,7 @@ void comp(
 		}
 		uint cur_node_idx = 0;
 		float max_prob = -std::numeric_limits<float>::infinity();
-		for (uint n = 0; n < MERGED_LOOP_LEN; n++) {
+		decision:for (uint n = 0; n < MERGED_LOOP_LEN; n++) {
 #pragma HLS pipeline
 #pragma HLS dependence variable=evaluation_cache inter false
 #pragma HLS dependence variable=evaluation_cache2 inter false

@@ -1,5 +1,3 @@
-#initialize to your local path
-#project_dir="$AWS_FPGA_REPO_DIR/Vitis/examples/xilinx_2019.2/psdd"
 project_dir=$pwd
 platform_dir="$AWS_FPGA_REPO_DIR/Vitis/aws_platform"
 
@@ -27,10 +25,10 @@ emconfigutil --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_
 cp -rf ./_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/emconfig.json .
 
 #map_network
-# XCL_EMULATION_MODE=sw_emu ./psdd_inference ../weighted_map_network.psdd  ../weighted_map_network.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
+XCL_EMULATION_MODE=sw_emu ./psdd_inference ../weighted_map_network.psdd  ../weighted_map_network.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
 
 #mastermind
-XCL_EMULATION_MODE=sw_emu ./psdd_inference ../mastermind.psdd  ../mastermind.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
+# XCL_EMULATION_MODE=sw_emu ./psdd_inference ../mastermind.psdd  ../mastermind.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
 
 #small network
 # XCL_EMULATION_MODE=sw_emu ./psdd_inference ../grids.psdd  ../grids.vtree
