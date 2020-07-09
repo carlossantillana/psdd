@@ -1,6 +1,15 @@
 #initialize to your local path
 project_dir="$AWS_FPGA_REPO_DIR/Vitis/examples/xilinx_2019.2/psdd"
 platform_dir="$AWS_FPGA_REPO_DIR/Vitis/aws_platform"
+query="mpe_query"
+if [ "$1" == "mar" ];
+then
+  query="mar_query"
+fi
+if [ "$1" == "mpe" ];
+then
+  query="mpe_query"
+fi
 
 # creates .o of project
 cmake .
@@ -26,10 +35,10 @@ emconfigutil --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_
 cp -rf ./_x.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/emconfig.json .
 
 #map_network
-# XCL_EMULATION_MODE=hw_emu ./psdd_inference ../weighted_map_network.psdd  ../weighted_map_network.vtree ./build_dir.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
+# XCL_EMULATION_MODE=hw_emu ./psdd_inference ../weighted_map_network.psdd  ../weighted_map_network.vtree ./build_dir.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin $query
 
 #mastermind
-XCL_EMULATION_MODE=hw_emu ./psdd_inference ../mastermind.psdd  ../mastermind.vtree ./build_dir.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
+XCL_EMULATION_MODE=hw_emu ./psdd_inference ../mastermind.psdd  ../mastermind.vtree ./build_dir.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin $query
 
 #small network
-# XCL_EMULATION_MODE=hw_emu ./psdd_inference ../grids.psdd  ../grids.vtree
+# XCL_EMULATION_MODE=hw_emu ./psdd_inference ../grids.psdd  ../grids.vtree $query

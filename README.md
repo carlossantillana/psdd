@@ -43,7 +43,7 @@ https://gist.github.com/1duo/38af1abd68a2c7fe5087532ab968574e
 
 yum install gmp-devel
 
-## How to Run
+## How to Run (Defaults to MPE)
 To run sw emulation
 `./faux_make_sw_emu.sh`
 
@@ -78,4 +78,17 @@ ctrl+f for `//For grids network` and make sure the lines below are not commented
 ctrl+f for `//For mastermind` and make sure the lines below are not commented out for mastermind network support
 
 ### How to Change Number of Queries.
-edit NUM_QUERIES variable found in `include/psdd/psdd_node.h`
+edit: NUM_QUERIES variable found in `include/psdd/psdd_node.h`
+
+### Supported Queries
+
+* Most Probable Explanation (MPE):
+  * `./faux_make_sw_emu.sh mpe`
+  * `./faux_make_hw_emu.sh mpe`
+  * `./faux_make_hw.sh `
+  * `./run_hw.sh mpe`
+* Marginals (MAR):
+  * `./faux_make_sw_emu.sh mar`
+  * `./faux_make_hw_emu.sh mar`
+  * `./faux_make_hw.sh `
+  * `./run_hw.sh mar`

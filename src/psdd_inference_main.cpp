@@ -50,15 +50,13 @@ struct Arg : public option::Arg {
     return option::ARG_ILLEGAL;
   }
 };
-enum optionIndex { UNKNOWN, HELP, MPE_QUERY, MAR_QUERY, CNF_EVID };
+enum optionIndex { UNKNOWN, HELP, CNF_EVID };
 
 const option::Descriptor usage[] = {
     {UNKNOWN, 0, "", "", option::Arg::None,
      "USAGE: example [options]\n\n \tOptions:"},
     {HELP, 0, "h", "help", option::Arg::None,
      "--help  \tPrint usage and exit."},
-    {MPE_QUERY, 0, "", "mpe_query", option::Arg::None, ""},
-    {MAR_QUERY, 0, "", "mar_query", option::Arg::None, ""},
     {CNF_EVID, 0, "", "cnf_evid", Arg::Required,
      "--cnf_evid  evid file, represented using CNF."},
     {UNKNOWN, 0, "", "", option::Arg::None,
@@ -98,6 +96,7 @@ int main(int argc, char** argv)
  }
  const char *psdd_filename = parse.nonOption(0);
  const char *vtree_filename = parse.nonOption(1);
+ const char *query = parse.nonOption(3);
  Vtree *psdd_vtree = sdd_vtree_read(vtree_filename);
  FPGAPsddManager *psdd_manager = FPGAPsddManager::GetFPGAPsddManagerFromVtree(psdd_vtree);
  PsddManager *reference_psdd_manager = PsddManager::GetPsddManagerFromVtree(psdd_vtree);
@@ -114,133 +113,140 @@ int main(int argc, char** argv)
  uint32_t root_node_idx = result_node->node_index_;
 
  std::vector<SddLiteral> variables = vtree_util::VariablesUnderVtree(psdd_manager->vtree());
+ 
+ if (strcmp(query, "mpe_query") == 0) {
+   std::cout << "inside MPE\n";
  auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
  auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, prime_vector, sub_vector);
 
- std::bitset<MAX_VAR> var_mask;
- var_mask.set();
+   std::bitset<MAX_VAR> var_mask;
+   var_mask.set();
 
- //Loads queries for different networks
- std::ifstream File;
- if (strcmp(psdd_filename, "../weighted_map_network.psdd") == 0){
-   File.open("mpeMapNetwork.txt");
-   for(int a = 0; a < NUM_DISTICT_QUERIES; a++){
-     int current;
-     File >> current;
-     std::bitset<MAX_VAR> tmp;
-     tmp[current] = 1;
-     instantiations.at(a) = tmp;
+   //Loads queries for different networks
+   std::ifstream File;
+   if (strcmp(psdd_filename, "../weighted_map_network.psdd") == 0){
+     File.open("mpeMapNetwork.txt");
+     for(int a = 0; a < NUM_DISTICT_QUERIES; a++){
+       int current;
+       File >> current;
+       std::bitset<MAX_VAR> tmp;
+       tmp[current] = 1;
+       instantiations.at(a) = tmp;
+     }
    }
- }
 
- if (strcmp(psdd_filename, "../mastermind.psdd") == 0){
-   File.open("mpeMasterMind.txt");
-    for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
-      string current = "";
-      File >> current;
-      instantiations.at(a) = std::bitset<MAX_VAR>(current);
-    }
-}
- File.close();
+   if (strcmp(psdd_filename, "../mastermind.psdd") == 0){
+     File.open("mpeMasterMind.txt");
+      for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
+        string current = "";
+        File >> current;
+        instantiations.at(a) = std::bitset<MAX_VAR>(current);
+      }
+  }
+   File.close();
 
-  //Allocate Memory in Host Memory
-  size_t dram_data_size_bytes = sizeof(dram_data[0]) * MERGED_LOOP_LEN;
-  size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
-  size_t instantiation_vector_size_bytes = sizeof(instantiations[0]) * NUM_DISTICT_QUERIES;
-  size_t literal_vector_size_bytes = sizeof(literal_vector[0]) * TOTAL_LITERALS;
-  size_t literal_vector_index_size_bytes = sizeof(literal_index_vector[0]) * TOTAL_LITERALS;
-  size_t literal_variable_vector_size_bytes = sizeof(literal_variable_vector[0]) * TOTAL_LITERALS;
-  size_t top_variable_vector_size_bytes = sizeof(top_variable_vector[0]) * TOTAL_VARIABLE_INDEXES;
-  size_t variable_index_vector_size_bytes = sizeof(variable_index_vector[0]) * TOTAL_VARIABLE_INDEXES;
-  size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
-  size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
-  size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
+    //Allocate Memory in Host Memory
+    size_t dram_data_size_bytes = sizeof(dram_data[0]) * MERGED_LOOP_LEN;
+    size_t bool_param_vector_size_bytes = sizeof(bool_param_vector[0]) * TOTAL_BOOL_PARAM;
+    size_t instantiation_vector_size_bytes = sizeof(instantiations[0]) * NUM_DISTICT_QUERIES;
+    size_t literal_vector_size_bytes = sizeof(literal_vector[0]) * TOTAL_LITERALS;
+    size_t literal_vector_index_size_bytes = sizeof(literal_index_vector[0]) * TOTAL_LITERALS;
+    size_t literal_variable_vector_size_bytes = sizeof(literal_variable_vector[0]) * TOTAL_LITERALS;
+    size_t top_variable_vector_size_bytes = sizeof(top_variable_vector[0]) * TOTAL_VARIABLE_INDEXES;
+    size_t variable_index_vector_size_bytes = sizeof(variable_index_vector[0]) * TOTAL_VARIABLE_INDEXES;
+    size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
+    size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
+    size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
 
-  int num_queries = NUM_QUERIES;
+    int num_queries = NUM_QUERIES;
 
-  size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
-  std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
-  cl_int err;
+    size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
+    std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
+    cl_int err;
 
-  printf("NUM_QUERIES:%d\n", (int)NUM_QUERIES);
+    printf("NUM_QUERIES:%d\n", (int)NUM_QUERIES);
 
-  clock_t time_req  = clock();
+    clock_t time_req  = clock();
 
-  // OPENCL HOST CODE AREA START
-      std::vector<cl::Device> devices = xcl::get_xil_devices();
-      cl::Device device = devices[0];
+    // OPENCL HOST CODE AREA START
+        std::vector<cl::Device> devices = xcl::get_xil_devices();
+        cl::Device device = devices[0];
 
-      OCL_CHECK(err, cl::Context context(device, NULL, NULL, NULL, &err));
-      OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE, &err));
-      OCL_CHECK(err, std::string device_name = device.getInfo<CL_DEVICE_NAME>(&err));
+        OCL_CHECK(err, cl::Context context(device, NULL, NULL, NULL, &err));
+        OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE, &err));
+        OCL_CHECK(err, std::string device_name = device.getInfo<CL_DEVICE_NAME>(&err));
 
-      std::string binary = argv[2];
-      std::cout <<"binary: " << binary << std::endl;
-      auto fileBuf = xcl::read_binary_file(binary);
-      cl::Program::Binaries bins{{fileBuf.data(), fileBuf.size()}};
+        std::string binary = argv[2];
+        std::cout <<"binary: " << binary << std::endl;
+        auto fileBuf = xcl::read_binary_file(binary);
+        cl::Program::Binaries bins{{fileBuf.data(), fileBuf.size()}};
 
-      devices.resize(1);
-      OCL_CHECK(err, cl::Program program(context, devices, bins, NULL, &err));
-      OCL_CHECK(err, cl::Kernel krnl_vector_add(program,"fpga_evaluate", &err));
+        devices.resize(1);
+        OCL_CHECK(err, cl::Program program(context, devices, bins, NULL, &err));
+        OCL_CHECK(err, cl::Kernel krnl_vector_add(program,"fpga_evaluate", &err));
+        OCL_CHECK(err, cl::Buffer buffer_in0   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                dram_data_size_bytes, dram_data.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                instantiation_vector_size_bytes, instantiations.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    bool_param_vector_size_bytes, bool_param_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in7  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    literal_vector_size_bytes, literal_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in8  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    literal_variable_vector_size_bytes, literal_variable_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in9  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    top_variable_vector_size_bytes, top_variable_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in10  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    children_size_vector_size_bytes, children_size_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in11  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    children_offset_vector_size_bytes, children_offset_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in12  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    literal_vector_index_size_bytes, literal_index_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in13  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    variable_index_vector_size_bytes, variable_index_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
+                result_size_bytes, result.data(), &err));
 
-      OCL_CHECK(err, cl::Buffer buffer_in0   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-              dram_data_size_bytes, dram_data.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-              instantiation_vector_size_bytes, instantiations.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in5  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  bool_param_vector_size_bytes, bool_param_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in7  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  literal_vector_size_bytes, literal_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in8  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  literal_variable_vector_size_bytes, literal_variable_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in9  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  top_variable_vector_size_bytes, top_variable_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in10  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  children_size_vector_size_bytes, children_size_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in11  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  children_offset_vector_size_bytes, children_offset_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in12  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  literal_vector_index_size_bytes, literal_index_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_in13  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                  variable_index_vector_size_bytes, variable_index_vector.data(), &err));
-      OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
-              result_size_bytes, result.data(), &err));
+        OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in0, buffer_in1,// buffer_in2, buffer_in3, buffer_in4,
+          buffer_in5, buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13},0/* 0 means from host*/));
 
-      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in0, buffer_in1,// buffer_in2, buffer_in3, buffer_in4,
-        buffer_in5, buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13},0/* 0 means from host*/));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in0));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in1));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in5));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in7));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in8));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in9));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_in10));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_in11));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_in12));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(9, buffer_in13));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_output));
+        OCL_CHECK(err, err = krnl_vector_add.setArg(11, num_queries));
 
-      OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in0));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_in1));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(2, buffer_in5));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(3, buffer_in7));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(4, buffer_in8));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(5, buffer_in9));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(6, buffer_in10));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(7, buffer_in11));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(8, buffer_in12));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(9, buffer_in13));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(10, buffer_output));
-      OCL_CHECK(err, err = krnl_vector_add.setArg(11, num_queries));
+        time_t start_time = time(NULL);
+  	auto start = std::chrono::steady_clock::now();
 
-      time_t start_time = time(NULL);
-	auto start = std::chrono::steady_clock::now();
+        OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
 
-      OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
+        OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
+        q.finish();
+  	auto end = std::chrono::steady_clock::now();
+  	double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+  	time_taken *= 1e-9;
 
-      OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
-      q.finish();
-	auto end = std::chrono::steady_clock::now();
-	double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-	time_taken *= 1e-9;
+        time_t end_time = time(NULL);
+        double diff_t;
+        diff_t = difftime(end_time, start_time);
+        printf("Execution time: %d\n", diff_t);
+  	 printf("FPGA Kernel time is %f s\n", time_taken);
 
-      time_t end_time = time(NULL);
-      double diff_t;
-      diff_t = difftime(end_time, start_time);
-      printf("Execution time: %d\n", diff_t);
-	 printf("FPGA Kernel time is %f s\n", time_taken);
-
-  // OPENCL HOST CODE AREA END
-  return  verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiations);
+    // OPENCL HOST CODE AREA END
+    verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiations);
+  }
+  if (strcmp(query, "mar_query") == 0) {
+     std::cout << "inside MAR\n";
+   }
+  return 1;
 }
 
 bool verifyResults(std::vector<float, aligned_allocator<float>> &result , const char *psdd_filename, PsddManager *reference_psdd_manager,
