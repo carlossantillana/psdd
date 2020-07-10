@@ -113,11 +113,11 @@ int main(int argc, char** argv)
  uint32_t root_node_idx = result_node->node_index_;
 
  std::vector<SddLiteral> variables = vtree_util::VariablesUnderVtree(psdd_manager->vtree());
- 
- if (strcmp(query, "mpe_query") == 0) {
-   std::cout << "inside MPE\n";
  auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
  auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, prime_vector, sub_vector);
+
+ if (strcmp(query, "mpe_query") == 0) {
+   std::cout << "inside MPE\n";
 
    std::bitset<MAX_VAR> var_mask;
    var_mask.set();
@@ -177,7 +177,6 @@ int main(int argc, char** argv)
         OCL_CHECK(err, std::string device_name = device.getInfo<CL_DEVICE_NAME>(&err));
 
         std::string binary = argv[2];
-        std::cout <<"binary: " << binary << std::endl;
         auto fileBuf = xcl::read_binary_file(binary);
         cl::Program::Binaries bins{{fileBuf.data(), fileBuf.size()}};
 
@@ -244,7 +243,52 @@ int main(int argc, char** argv)
     verifyResults(result, psdd_filename, reference_psdd_manager, var_mask, instantiations);
   }
   if (strcmp(query, "mar_query") == 0) {
-     std::cout << "inside MAR\n";
+      //Allocate Memory in Host Memory
+      size_t serialized_nodes_size_bytes = sizeof(fpga_serialized_psdd[0]) * PSDD_SIZE;
+      size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
+      std::vector<float, aligned_allocator<float>> result (NUM_QUERIES);
+      cl_int err;
+      clock_t time_req  = clock();
+
+      // OPENCL HOST CODE AREA START
+          std::vector<cl::Device> devices = xcl::get_xil_devices();
+          cl::Device device = devices[0];
+
+          OCL_CHECK(err, cl::Context context(device, NULL, NULL, NULL, &err));
+          OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE, &err));
+          OCL_CHECK(err, std::string device_name = device.getInfo<CL_DEVICE_NAME>(&err));
+
+          std::string binary = argv[2];
+          std::cout <<"binary: " << binary << std::endl;
+          auto fileBuf = xcl::read_binary_file(binary);
+          cl::Program::Binaries bins{{fileBuf.data(), fileBuf.size()}};
+
+          devices.resize(1);
+          OCL_CHECK(err, cl::Program program(context, devices, bins, NULL, &err));
+          OCL_CHECK(err, cl::Kernel krnl_vector_add(program,"fpga_mar", &err));
+
+          OCL_CHECK(err, cl::Buffer buffer_in1   (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                  serialized_nodes_size_bytes, fpga_serialized_psdd.data(), &err));
+          // OCL_CHECK(err, cl::Buffer buffer_output(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
+          //         result_size_bytes, result.data(), &err));
+
+          OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1},0/* 0 means from host*/));
+
+          OCL_CHECK(err, err = krnl_vector_add.setArg(0, buffer_in1));
+          // OCL_CHECK(err, err = krnl_vector_add.setArg(1, buffer_output));
+
+          time_t start_time = time(NULL);
+
+          OCL_CHECK(err, err = q.enqueueTask(krnl_vector_add));
+
+          // OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output},CL_MIGRATE_MEM_OBJECT_HOST));
+          q.finish();
+          time_t end_time = time(NULL);
+          printf("Kernel start time: %s\n", ctime(&start_time));
+          printf("Kernel end time: %s\n", ctime(&end_time));
+          double diff_t;
+          diff_t = difftime(end_time, start_time);
+          printf("Execution time: %d\n", diff_t);
    }
   return 1;
 }
