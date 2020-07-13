@@ -53,7 +53,6 @@ struct PsddNodeStruct {
   ap_uint<32> children_size;
   ap_uint<32> children_offset;
   ap_uint<32> packed;
-
 };
 
 #endif // STRUCTURED_BAYESIAN_NETWORK_PSDD_NODE_H
