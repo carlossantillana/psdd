@@ -773,6 +773,145 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
   return root_node;
 }
 
+PsddNodeStruct ConvertPsddToStructOld(FPGAPsddNode * cur_node, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector,
+  int & currentChild, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector,
+  std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>>& bool_param_vector, int & currentBoolParam,
+  int &previousPrime, int& previousSub){
+  PsddNodeStruct PsddStruct;
+  PsddStruct.node_type_ = cur_node->node_type_;
+  PsddStruct.children_size = cur_node->primes_.size();
+  PsddStruct.children_offset = currentChild;
+  for (int i = 0; i < cur_node->primes_.size(); i++){
+    int prime = cur_node->primes_[i]->node_index_;
+    int sub = cur_node->subs_[i]->node_index_;
+    PsddParameter param = cur_node->parameters_[i];
+    prime_vector[currentChild] = prime - previousPrime ;
+    sub_vector[currentChild] = sub - previousSub ;
+    previousPrime = prime;
+    previousSub = sub;
+    parameter_vector[currentChild] = param.parameter_;
+    currentChild++;
+  }
+  if (int(PsddStruct.node_type_) == TOP_NODE_TYPE){
+    bool_param_vector[currentBoolParam] = cur_node->true_parameter_.parameter_;
+    currentBoolParam++;
+    bool_param_vector[currentBoolParam] = cur_node->false_parameter_.parameter_;
+    currentBoolParam++;
+  }
+  return PsddStruct;
+}
+FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, uintmax_t flag_index, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector,
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector ,
+  std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> &bool_param_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_index_vector,
+  std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_variable_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &top_variable_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &variable_index_vector, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &children_size_vector,
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &node_type_vector ) {
+  std::ifstream psdd_file;
+  std::unordered_map<uintmax_t, FPGAPsddNode *> construct_fpga_cache;
+  int currentChild = 0;
+  int currentBoolParam = 0;
+  int currentLiteral = 0;
+  int current_index = 0;
+  int currentTopVariable = 0;
+  int previousPrime = 0;
+  int previousSub = 0;
+  psdd_file.open(psdd_filename);
+  if (!psdd_file) {
+    std::cerr << "File " << psdd_filename << " cannot be open.";
+    exit(1); // terminate with error
+  }
+  std::unordered_map<int, int> children;
+  std::string line;
+  FPGAPsddNode *root_node = nullptr;
+  while (std::getline(psdd_file, line)) {
+    if (line[0] == 'c') {
+      continue;
+    }
+    if (line[0] == 'p') {
+      continue;
+    }
+    if (line[0] == 'L') {
+      std::istringstream iss(line.substr(1, std::string::npos));
+      uintmax_t node_index;
+      uint32_t vtree_index;
+      int32_t literal;
+      iss >> node_index >> vtree_index >> literal;
+      FPGAPsddNode *cur_node = GetFPGAPsddLiteralNode(literal, flag_index);
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStructOld(cur_node, prime_vector, sub_vector,
+         currentChild, parameter_vector, bool_param_vector, currentBoolParam,
+         previousPrime, previousSub);
+      construct_fpga_cache[node_index] = cur_node;
+      root_node = cur_node;
+      literal_vector[currentLiteral] = literal;
+      literal_variable_vector[currentLiteral] = literal > 0 ? static_cast<uint>(literal)
+                          : static_cast<uint32_t>(-literal);
+      literal_index_vector[currentLiteral++] = current_index;
+      node_type_vector[current_index++] = 0;
+
+    } else if (line[0] == 'T') {
+      std::istringstream iss(line.substr(1, std::string::npos));
+      uintmax_t node_index;
+      uint32_t vtree_index;
+      uint32_t variable_index;
+      double neg_log_pr;
+      double pos_log_pr;
+      iss >> node_index >> vtree_index >> variable_index >> neg_log_pr >>
+          pos_log_pr;
+      FPGAPsddNode *cur_node = GetFPGAPsddTopNode(
+          variable_index, flag_index, PsddParameter::CreateFromLog(pos_log_pr),
+          PsddParameter::CreateFromLog(neg_log_pr));
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStructOld(cur_node,
+         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
+          previousPrime, previousSub);
+      construct_fpga_cache[node_index] = cur_node;
+      top_variable_vector[currentTopVariable] = cur_node->variable_index_;
+      variable_index_vector[currentTopVariable++] = current_index;
+      node_type_vector[current_index++] = 0;
+      root_node = cur_node;
+    } else {
+      assert(line[0] == 'D');
+      std::istringstream iss(line.substr(1, std::string::npos));
+      uintmax_t node_index;
+      int vtree_index;
+      uintmax_t element_size;
+
+
+      iss >> node_index >> vtree_index >> element_size;
+      std::vector<FPGAPsddNode *> primes;
+      std::vector<FPGAPsddNode *> subs;
+      std::vector<PsddParameter> params;
+      if (children.find(element_size) == children.end()){
+        children.emplace(element_size, 1);
+      } else{
+        children.at(element_size)++;
+      }
+      for (size_t j = 0; j < element_size; j++) {
+        uintmax_t prime_index;
+        uintmax_t sub_index;
+        double weight_in_log;
+        iss >> prime_index >> sub_index >> weight_in_log;
+        assert(construct_fpga_cache.find(prime_index) != construct_fpga_cache.end());
+        assert(construct_fpga_cache.find(sub_index) != construct_fpga_cache.end());
+        FPGAPsddNode *prime_node = construct_fpga_cache[prime_index];
+        FPGAPsddNode *sub_node = construct_fpga_cache[sub_index];
+        primes.push_back(prime_node);
+        subs.push_back(sub_node);
+        params.push_back(PsddParameter::CreateFromLog(weight_in_log));
+      }
+      FPGAPsddNode *cur_node =
+          GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
+          children_size_vector[current_index] = cur_node->primes_.size();
+          node_type_vector[current_index++] = 1;
+      fpga_node_vector[cur_node->node_index_] = ConvertPsddToStructOld(cur_node,
+        prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
+        previousPrime, previousSub);
+      construct_fpga_cache[node_index] = cur_node;
+      root_node = cur_node;
+    }
+  }
+  psdd_file.close();
+  return root_node;
+}
+
 std::vector<FPGAPsddNode *> FPGAPsddManager::SampleParametersForMultipleFPGAPsdds(
     RandomDoubleGenerator *generator,
     const std::vector<FPGAPsddNode *> &root_psdd_nodes, uintmax_t flag_index) {

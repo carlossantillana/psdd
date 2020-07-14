@@ -1,4 +1,4 @@
-#include <psdd/fpga_kernel_psdd_node.h>
+#include "../include/psdd/fpga_kernel_psdd_node.h"
 #include <assert.h>
 
 extern "C" {
@@ -62,7 +62,7 @@ extern "C" {
      }
    }
 
-   void load15Bit_staggered(const ap_int<32>* data_dram, ap_int<15>* data_local, int start,  int burstLength){
+   void load15Bit_staggered(const ap_uint<32>* data_dram, ap_uint<15>* data_local, int start,  int burstLength){
      #pragma HLS inline off
      int j = 0;
      load15BitStaggered: for (int i = start; i < start +burstLength; i++){
@@ -71,7 +71,7 @@ extern "C" {
      }
    }
 
-   void load16Bit_staggered(const ap_int<32>* data_dram, ap_int<16>* data_local, int start,  int burstLength){
+   void load16Bit_staggered(const ap_uint<32>* data_dram, ap_uint<16>* data_local, int start,  int burstLength){
      #pragma HLS inline off
      int j = 0;
      load16BitStaggered: for (int i = start; i < start +burstLength; i++){
@@ -103,8 +103,8 @@ extern "C" {
        ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
     ap_int<14> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS], ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
     ap_uint<6> local_children_size_vector [PSDD_SIZE], const ap_uint<32> children_size_vector [PSDD_SIZE],
-    ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector, ap_int<15> local_sub_vector[TOTAL_CHILDREN],
-    const ap_int<32> sub_vector[TOTAL_CHILDREN], ap_int<16> local_prime_vector[TOTAL_CHILDREN], const ap_int<32> prime_vector[TOTAL_CHILDREN], ap_fixed<16,8,AP_RND >local_parameter_vector[TOTAL_CHILDREN], const ap_fixed<32,8,AP_RND>parameter_vector[TOTAL_CHILDREN]) {
+    ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector, ap_uint<15> local_sub_vector[TOTAL_CHILDREN],
+    const ap_uint<32> sub_vector[TOTAL_CHILDREN], ap_uint<16> local_prime_vector[TOTAL_CHILDREN], const ap_uint<32> prime_vector[TOTAL_CHILDREN], ap_fixed<16,8,AP_RND >local_parameter_vector[TOTAL_CHILDREN], const ap_fixed<32,8,AP_RND>parameter_vector[TOTAL_CHILDREN]) {
      loadBool(local_variables, MAX_VAR, 1);
      loadBool2(is_decision_vector, local_is_decision_vector, PSDD_SIZE);
      load6Bit(children_size_vector, local_children_size_vector, PSDD_SIZE);
@@ -122,8 +122,8 @@ extern "C" {
 
 void fpga_mar(
         const ap_int<32> *is_decision_vector, // Read-Only Vector 2
-        const ap_int<32> *prime_vector,
-        const ap_int<32> *sub_vector,
+        const ap_uint<32> *prime_vector,
+        const ap_uint<32> *sub_vector,
         const ap_fixed<32,8,AP_RND> *parameter_vector,
         const ap_fixed<32,2,AP_RND> *bool_param_vector,
         const ap_int<32> *literal_vector,
@@ -147,11 +147,11 @@ void fpga_mar(
 #pragma HLS INTERFACE m_axi port = children_size_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port = literal_index_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port = variable_index_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port=resultTrue offset=slave bundle=gmem
-#pragma HLS INTERFACE m_axi port=resultFalse offset=slave bundle=gmem
-#pragma HLS INTERFACE s_axilite port=is_decision_vector  bundle=control
-#pragma HLS INTERFACE s_axilite port=prime_vector bundle=control
-#pragma HLS INTERFACE s_axilite port=sub_vector bundle=control
+#pragma HLS INTERFACE m_axi port = resultTrue offset=slave bundle=gmem1
+#pragma HLS INTERFACE m_axi port = resultFalse offset=slave bundle=gmem2
+#pragma HLS INTERFACE s_axilite port = is_decision_vector  bundle=control
+#pragma HLS INTERFACE s_axilite port = prime_vector bundle=control
+#pragma HLS INTERFACE s_axilite port = sub_vector bundle=control
 #pragma HLS INTERFACE s_axilite port = parameter_vector bundle = control
 #pragma HLS INTERFACE s_axilite port = bool_param_vector bundle = control
 #pragma HLS INTERFACE s_axilite port = literal_vector bundle = control
@@ -160,17 +160,16 @@ void fpga_mar(
 #pragma HLS INTERFACE s_axilite port = children_size_vector bundle = control
 #pragma HLS INTERFACE s_axilite port = literal_index_vector bundle = control
 #pragma HLS INTERFACE s_axilite port = variable_index_vector bundle = control
-#pragma HLS INTERFACE s_axilite port=result bundle=control
-#pragma HLS INTERFACE s_axilite port=num_queries bundle=control
-#pragma HLS INTERFACE s_axilite port=returnTrue bundle=control
-#pragma HLS INTERFACE s_axilite port=returnFalse bundle=control
-
+#pragma HLS INTERFACE s_axilite port = resultTrue bundle=control
+#pragma HLS INTERFACE s_axilite port = resultFalse bundle=control
+#pragma HLS INTERFACE s_axilite port = num_queries bundle=control
+#pragma HLS INTERFACE s_axilite port = return bundle=control
 
   assert(num_queries <= 2048);  // this helps HLS estimate the loop trip count
   static bool local_variables [MAX_VAR];
   static bool local_instantiation [MAX_VAR];
-  static ap_int<16> local_prime_vector[TOTAL_CHILDREN];
-  static ap_int<15> local_sub_vector[TOTAL_CHILDREN];
+  static ap_uint<16> local_prime_vector[TOTAL_CHILDREN];
+  static ap_uint<15> local_sub_vector[TOTAL_CHILDREN];
   static ap_fixed<16,8,AP_RND > local_parameter_vector[TOTAL_CHILDREN];
   static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
   static bool local_is_decision_vector[PSDD_SIZE];
@@ -186,7 +185,8 @@ void fpga_mar(
   float marginalsFalse [PSDD_SIZE];
   float derivatives [PSDD_SIZE];
   int index = 0;
-  for (int i = 0; i < PSDD_SIZE; i++){
+  InitLoop:for (int i = 0; i < PSDD_SIZE; i++){
+    #pragma HLS pipeline
     user_data[i] = index++;
     derivatives[i] = -std::numeric_limits<float>::infinity();
     marginalsTrue[i] = -std::numeric_limits<float>::infinity();
@@ -222,7 +222,7 @@ void fpga_mar(
    }
 
    LoopTop:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_VARIABLE_INDEXES; cur_node_idx++){
-  #pragma HLS pipeline
+  // #pragma HLS pipeline
       marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_top_variable_vector[cur_node_idx]]]
         * float (local_bool_param_vector[cur_node_idx +1]);
       marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_top_variable_vector[cur_node_idx]]]
@@ -247,14 +247,14 @@ void fpga_mar(
         }
       }
     }
-    for (int i = 0; i < PSDD_SIZE; i++){
+    }
+    FinalLoop:for (int i = 0; i < PSDD_SIZE; i++){
       user_data[i] = 0;
       float partition = marginalsFalse[i] + marginalsTrue[i];
-      marginalsFalse[i] = marginalsFalse[i] / partition;
-      marginalsTrue[i] = marginalsTrue[i] / partition;
-      resultTrue[i] = marginalsTrue[i];
-      resultFalse[i] = marginalsFalse[i];
-    }
+      // marginalsFalse[i] = marginalsFalse[i] / partition;
+      // marginalsTrue[i] = marginalsTrue[i] / partition;
+      resultTrue[i] = marginalsTrue[i] / partition;
+      resultFalse[i] =  marginalsFalse[i] / partition;
     }
   }
 }

@@ -24,7 +24,7 @@ extern "C" {
 #define LITERAL_NODE_TYPE 1
 #define DECISION_NODE_TYPE 2
 #define TOP_NODE_TYPE 3
-const int NUM_QUERIES = 55;
+const int NUM_QUERIES = 1;
 
 using BatchedPsddValue = std::vector<bool>;
 class PsddTopNode;
