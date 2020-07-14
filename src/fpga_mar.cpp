@@ -195,7 +195,6 @@ void fpga_mar(
   derivatives[0] = 0;
   #pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_bool_param_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_is_decision_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_variable_vector core=XPM_MEMORY uram
@@ -221,40 +220,42 @@ void fpga_mar(
       }
    }
 
-   LoopTop:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_VARIABLE_INDEXES; cur_node_idx++){
+  //  LoopTop:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_VARIABLE_INDEXES; cur_node_idx++){
+  // // #pragma HLS pipeline
+  //     marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_top_variable_vector[cur_node_idx]]]
+  //       * float (local_bool_param_vector[cur_node_idx +1]);
+  //     marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_top_variable_vector[cur_node_idx]]]
+  //       * float(local_bool_param_vector[cur_node_idx]);
+  //   }
+  //
+  //    int currentChild = 0;
+  //    int currentPrime = 0;
+  //    int currentSub = 0;
+  //   LoopDecision:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
+  //     if (local_is_decision_vector[cur_node_idx]){
+  //     short element_size = local_children_size_vector[cur_node_idx];
+  //     float max_prob = -std::numeric_limits<float>::infinity();
+  //     float cur_derivative = derivatives[user_data[cur_node_idx]];
+  //     assert(element_size <= MAX_CHILDREN);
+  //       InnerLoop:for (uint i = 0; i < element_size; ++i) {
   // #pragma HLS pipeline
-      marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_top_variable_vector[cur_node_idx]]]
-        * float (local_bool_param_vector[cur_node_idx +1]);
-      marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_top_variable_vector[cur_node_idx]]]
-        * float(local_bool_param_vector[cur_node_idx]);
+  //         currentPrime += local_prime_vector[currentChild];
+  //         currentSub += local_sub_vector[currentChild];
+  //         derivatives[user_data[currentPrime]] +=  cur_derivative * float (local_parameter_vector[currentChild]);
+  //         derivatives[user_data[currentSub]] += cur_derivative * float (local_parameter_vector[currentChild]);
+  //       }
+  //     }
+    }
     }
 
-     int currentChild = 0;
-     int currentPrime = 0;
-     int currentSub = 0;
-    LoopDecision:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
-      if (local_is_decision_vector[cur_node_idx]){
-      short element_size = local_children_size_vector[cur_node_idx];
-      float max_prob = -std::numeric_limits<float>::infinity();
-      float cur_derivative = derivatives[user_data[cur_node_idx]];
-      assert(element_size <= MAX_CHILDREN);
-        InnerLoop:for (uint i = 0; i < element_size; ++i) {
-  #pragma HLS pipeline
-          currentPrime += local_prime_vector[currentChild];
-          currentSub += local_sub_vector[currentChild];
-          derivatives[user_data[currentPrime]] +=  cur_derivative * float (local_parameter_vector[currentChild]);
-          derivatives[user_data[currentSub]] += cur_derivative * float (local_parameter_vector[currentChild]);
-        }
-      }
-    }
-    }
-    FinalLoop:for (int i = 0; i < PSDD_SIZE; i++){
-      user_data[i] = 0;
-      float partition = marginalsFalse[i] + marginalsTrue[i];
-      // marginalsFalse[i] = marginalsFalse[i] / partition;
-      // marginalsTrue[i] = marginalsTrue[i] / partition;
-      resultTrue[i] = marginalsTrue[i] / partition;
-      resultFalse[i] =  marginalsFalse[i] / partition;
-    }
+
+    // FinalLoop:for (int i = 0; i < PSDD_SIZE; i++){
+    //   user_data[i] = 0;
+    //   float partition = marginalsFalse[i] + marginalsTrue[i];
+    //   // marginalsFalse[i] = marginalsFalse[i] / partition;
+    //   // marginalsTrue[i] = marginalsTrue[i] / partition;
+    //   resultTrue[i] = marginalsTrue[i] / partition;
+    //   resultFalse[i] =  marginalsFalse[i] / partition;
+    // }
   }
 }
