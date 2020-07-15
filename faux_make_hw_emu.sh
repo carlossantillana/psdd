@@ -26,10 +26,10 @@ emconfigutil --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_
 cp -rf ./_x.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/emconfig.json .
 
 #map_network
-# XCL_EMULATION_MODE=hw_emu ./psdd_inference ../weighted_map_network.psdd  ../weighted_map_network.vtree ./build_dir.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
+# XCL_EMULATION_MODE=hw_emu ./psdd_inference ../networks/weighted_map_network.psdd  ../networks/weighted_map_network.vtree ./build_dir.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
 
 #mastermind
-XCL_EMULATION_MODE=hw_emu ./psdd_inference ../mastermind.psdd  ../mastermind.vtree ./build_dir.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
+XCL_EMULATION_MODE=hw_emu ./psdd_inference ../networks/mastermind.psdd  ../networks/mastermind.vtree ./build_dir.hw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/fpga_evaluate.xclbin
 
 #small network
 # XCL_EMULATION_MODE=hw_emu ./psdd_inference ../grids.psdd  ../grids.vtree
