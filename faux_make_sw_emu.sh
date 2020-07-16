@@ -37,8 +37,8 @@ emconfigutil --platform $platform_dir/xilinx_aws-vu9p-f1_shell-v04261818_201920_
 #Large network
 cp -rf ./_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/emconfig.json .
 
-# XCL_EMULATION_MODE=sw_emu ./psdd_inference  ../weighted_map_network.psdd  ../weighted_map_network.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/$kernel.xclbin $query
+# XCL_EMULATION_MODE=sw_emu ./psdd_inference  ../networks/weighted_map_network.psdd  ../networks/weighted_map_network.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/$kernel.xclbin $query
 #mastermind
-XCL_EMULATION_MODE=sw_emu ./psdd_inference ../mastermind.psdd  ../mastermind.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/$kernel.xclbin $query
+XCL_EMULATION_MODE=sw_emu ./psdd_inference ../networks/mastermind.psdd  ../networks/mastermind.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_1/$kernel.xclbin $query
 #small network
 # XCL_EMULATION_MODE=sw_emu ./psdd_inference  ../grids.psdd  ../grids.vtree $query

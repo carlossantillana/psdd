@@ -126,7 +126,7 @@ int main(int argc, char** argv)
 
    //Loads queries for different networks
    std::ifstream File;
-   if (strcmp(psdd_filename, "../weighted_map_network.psdd") == 0){
+   if (strcmp(psdd_filename, "../networks/weighted_map_network.psdd") == 0){
      File.open("mpeMapNetwork.txt");
      for(int a = 0; a < NUM_DISTICT_QUERIES; a++){
        int current;
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
      }
    }
 
-   if (strcmp(psdd_filename, "../mastermind.psdd") == 0){
+   if (strcmp(psdd_filename, "../networks/mastermind.psdd") == 0){
      File.open("mpeMasterMind.txt");
       for (int a = 0; a < NUM_DISTICT_QUERIES; a++){
         string current = "";
@@ -252,7 +252,7 @@ int main(int argc, char** argv)
     std::vector<float, aligned_allocator<float>> resultFalse (NUM_QUERIES);
 
     FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFileOld(psdd_filename, 0, fpga_node_vector, prime_vector, sub_vector, parameter_vector, bool_param_vector,
-       literal_vector, literal_index_vector,literal_variable_vector, top_variable_vector, variable_index_vector, children_size_vector, node_type_vector);
+       literal_vector, literal_index_vector,literal_variable_vector, top_variable_vector, variable_index_vector, children_size_vector, children_offset_vector, node_type_vector);
    std::vector<SddLiteral> variables = vtree_util::VariablesUnderVtree(psdd_manager->vtree());
    auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
    uint32_t root_node_idx = result_node->node_index_;
@@ -273,6 +273,7 @@ int main(int argc, char** argv)
     size_t top_variable_vector_size_bytes = sizeof(top_variable_vector[0]) * TOTAL_VARIABLE_INDEXES;
     size_t variable_index_vector_size_bytes = sizeof(variable_index_vector[0]) * TOTAL_VARIABLE_INDEXES;
     size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
+    size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
     size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
     cl_int err;
@@ -314,8 +315,10 @@ int main(int argc, char** argv)
         OCL_CHECK(err, cl::Buffer buffer_in10  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                     children_size_vector_size_bytes, children_size_vector.data(), &err));
         OCL_CHECK(err, cl::Buffer buffer_in11  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                    literal_vector_index_size_bytes, literal_index_vector.data(), &err));
+                    children_offset_vector_size_bytes, children_offset_vector.data(), &err));
         OCL_CHECK(err, cl::Buffer buffer_in12  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                    literal_vector_index_size_bytes, literal_index_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in13  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                     variable_index_vector_size_bytes, variable_index_vector.data(), &err));
         OCL_CHECK(err, cl::Buffer buffer_output1(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
                 result_size_bytes, resultTrue.data(), &err));
@@ -323,7 +326,7 @@ int main(int argc, char** argv)
                 result_size_bytes, resultFalse.data(), &err));
 
         OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5,
-          buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12},0/* 0 means from host*/));
+          buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13},0/* 0 means from host*/));
 
         OCL_CHECK(err, err = krnl_mar.setArg(0, buffer_in1));
         OCL_CHECK(err, err = krnl_mar.setArg(1, buffer_in2));
@@ -336,11 +339,13 @@ int main(int argc, char** argv)
         OCL_CHECK(err, err = krnl_mar.setArg(8, buffer_in10));
         OCL_CHECK(err, err = krnl_mar.setArg(9, buffer_in11));
         OCL_CHECK(err, err = krnl_mar.setArg(10, buffer_in12));
-        OCL_CHECK(err, err = krnl_mar.setArg(11, buffer_output1));
-        OCL_CHECK(err, err = krnl_mar.setArg(12, buffer_output2));
-        OCL_CHECK(err, err = krnl_mar.setArg(13, NUM_QUERIES));
+        OCL_CHECK(err, err = krnl_mar.setArg(11, buffer_in13));
+        OCL_CHECK(err, err = krnl_mar.setArg(12, buffer_output1));
+        OCL_CHECK(err, err = krnl_mar.setArg(13, buffer_output2));
+        OCL_CHECK(err, err = krnl_mar.setArg(14, NUM_QUERIES));
 
         time_t start_time = time(NULL);
+        verifyResultsMAR(resultTrue, resultFalse, psdd_filename, reference_psdd_manager);
 
         OCL_CHECK(err, err = q.enqueueTask(krnl_mar));
 
@@ -352,7 +357,6 @@ int main(int argc, char** argv)
         double diff_t;
         diff_t = difftime(end_time, start_time);
         printf("Execution time: %d\n", diff_t);
-        verifyResultsMAR(resultTrue, resultFalse, psdd_filename, reference_psdd_manager);
    }
   return 0;
 }

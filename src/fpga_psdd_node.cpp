@@ -657,7 +657,12 @@ GetMarginals(const std::vector<FPGAPsddNode *> &serialized_nodes) {
     cur_node->SetUserData((uintmax_t)index);
     index++;
   }
+  std::cout << "index size: " << index << std::endl;
   derivatives[0] = Probability::CreateFromDecimal(1);
+  std::cout << "derivatives[0]: " << derivatives[0].parameter_ << std::endl;
+  std::cout << "derivatives[1]: " << derivatives[1].parameter_ << std::endl;
+  std::cout << "serialized_nodes.size(): " << serialized_nodes.size() << std::endl;
+
   for (FPGAPsddNode *cur_node : serialized_nodes) {
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
       auto cur_lit = cur_node->psdd_literal_node();
