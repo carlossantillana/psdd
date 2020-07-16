@@ -248,8 +248,8 @@ int main(int argc, char** argv)
       //Allocate Memory in Host Memory
     std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (PSDD_SIZE);
     std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_CHILDREN);
-    std::vector<float, aligned_allocator<float>> resultTrue (NUM_QUERIES);
-    std::vector<float, aligned_allocator<float>> resultFalse (NUM_QUERIES);
+    std::vector<float, aligned_allocator<float>> resultTrue (PSDD_SIZE);
+    std::vector<float, aligned_allocator<float>> resultFalse (PSDD_SIZE);
 
     FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFileOld(psdd_filename, 0, fpga_node_vector, prime_vector, sub_vector, parameter_vector, bool_param_vector,
        literal_vector, literal_index_vector,literal_variable_vector, top_variable_vector, variable_index_vector, children_size_vector, children_offset_vector, node_type_vector);
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
     size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
-    size_t result_size_bytes = sizeof(float) * NUM_QUERIES;
+    size_t result_size_bytes = sizeof(float) * PSDD_SIZE;
     cl_int err;
     clock_t time_req  = clock();
 

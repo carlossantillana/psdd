@@ -170,9 +170,9 @@ void fpga_mar(
   assert(num_queries <= 2048);  // this helps HLS estimate the loop trip count
   static bool local_variables [MAX_VAR];
   static bool local_instantiation [MAX_VAR];
-  static ap_uint<16> local_prime_vector[TOTAL_CHILDREN];
-  static ap_uint<15> local_sub_vector[TOTAL_CHILDREN];
-  static ap_fixed<16,8,AP_RND > local_parameter_vector[TOTAL_CHILDREN];
+  static ap_uint<16> local_prime_vector[MAX_CHILDREN];
+  static ap_uint<15> local_sub_vector[MAX_CHILDREN];
+  static ap_fixed<16,8,AP_RND > local_parameter_vector[MAX_CHILDREN];
   static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
   static bool local_is_decision_vector[PSDD_SIZE];
   static ap_int<13> local_literal_vector [TOTAL_LITERALS];
@@ -234,7 +234,7 @@ void fpga_mar(
     uint cur_decn_node = 0;
     LoopDecision:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
       if (local_is_decision_vector[cur_node_idx]) {
-        std::cout << "at decision node: " << cur_node_idx << std::endl;
+        // std::cout << "at decision node: " << cur_node_idx << std::endl;
         short element_size = local_children_size_vector[cur_decn_node];
        load15Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_decn_node], element_size);
        load16Bit_staggered(prime_vector, local_prime_vector, local_children_offset_vector[cur_decn_node], element_size);
@@ -243,7 +243,6 @@ void fpga_mar(
         assert(element_size <= MAX_CHILDREN);
           InnerLoop:for (uint i = 0; i < element_size; ++i) {
     // #pragma HLS pipeline
-            // std::cout << "currentPrime: " << local_prime_vector[i] << " currentSub: " << local_sub_vector[i] << " current_decn_node: " << cur_decn_node << std::endl;
             derivatives[user_data[local_prime_vector[i]]] +=  cur_derivative * float (local_parameter_vector[i]);
             derivatives[user_data[local_sub_vector[i]]] += cur_derivative * float (local_parameter_vector[i]);
           }
@@ -253,13 +252,13 @@ void fpga_mar(
   }
 
 
-    // FinalLoop:for (int i = 0; i < PSDD_SIZE; i++){
-    //   user_data[i] = 0;
-    //   float partition = marginalsFalse[i] + marginalsTrue[i];
-    //   // marginalsFalse[i] = marginalsFalse[i] / partition;
-    //   // marginalsTrue[i] = marginalsTrue[i] / partition;
-    //   resultTrue[i] = marginalsTrue[i] / partition;
-    //   resultFalse[i] =  marginalsFalse[i] / partition;
-    // }
+    FinalLoop:for (int i = 0; i < PSDD_SIZE; i++){
+      user_data[i] = 0;
+      float partition = marginalsFalse[i] + marginalsTrue[i];
+      // marginalsFalse[i] = marginalsFalse[i] / partition;
+      // marginalsTrue[i] = marginalsTrue[i] / partition;
+      resultTrue[i] = marginalsTrue[i] / partition;
+      resultFalse[i] =  marginalsFalse[i] / partition;
+    }
   }
 }
