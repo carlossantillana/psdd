@@ -184,17 +184,20 @@ void fpga_mar(
   static ap_uint<20> local_variable_index_vector[TOTAL_VARIABLE_INDEXES];
   //Might not be needed?? User data can be replaced with local_literal_vector etc...
   static int user_data [PSDD_SIZE];
-  float marginalsTrue [PSDD_SIZE];
-  float marginalsFalse [PSDD_SIZE];
+  float marginalsTrue [1220];
+  float marginalsFalse [1220];
   float derivatives [PSDD_SIZE];
   int index = 0;
   InitLoop:for (int i = 0; i < PSDD_SIZE; i++){
     #pragma HLS pipeline
     user_data[i] = index++;
     derivatives[i] = -std::numeric_limits<float>::infinity();
+  }
+  for (int i = 0; i < 1220; i++){
     marginalsTrue[i] = -std::numeric_limits<float>::infinity();
     marginalsFalse[i] = -std::numeric_limits<float>::infinity();
   }
+
   derivatives[0] = 0;
   #pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
@@ -214,22 +217,6 @@ void fpga_mar(
   literal_index_vector, local_variable_index_vector, variable_index_vector, local_sub_vector, sub_vector, local_prime_vector, prime_vector, local_parameter_vector, parameter_vector);
 
   for (uint m = 0; m < num_queries; m++){
-    LoopLiteral:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_LITERALS; cur_node_idx++) {
-    // #pragma HLS pipeline
-      if (local_literal_vector[cur_node_idx] > 0) {
-        marginalsTrue[local_literal_variable_vector[cur_node_idx]] += derivatives[user_data[local_literal_vector[cur_node_idx]]];
-      } else {
-        marginalsFalse[local_literal_variable_vector[cur_node_idx]] += derivatives[user_data[local_literal_vector[cur_node_idx]]];
-      }
-   }
-
-   LoopTop:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_VARIABLE_INDEXES; cur_node_idx++) {
-  // #pragma HLS pipeline
-      marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_top_variable_vector[cur_node_idx]]]
-        * float (local_bool_param_vector[cur_node_idx +1]);
-      marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_top_variable_vector[cur_node_idx]]]
-        * float(local_bool_param_vector[cur_node_idx]);
-    }
 
     uint cur_decn_node = 0;
     LoopDecision:for(uint cur_node_idx = 0; cur_node_idx < PSDD_SIZE; cur_node_idx++){
@@ -243,22 +230,101 @@ void fpga_mar(
         assert(element_size <= MAX_CHILDREN);
           InnerLoop:for (uint i = 0; i < element_size; ++i) {
     // #pragma HLS pipeline
-            derivatives[user_data[local_prime_vector[i]]] +=  cur_derivative * float (local_parameter_vector[i]);
-            derivatives[user_data[local_sub_vector[i]]] += cur_derivative * float (local_parameter_vector[i]);
+            float tmp = 0;
+            if (cur_derivative == -std::numeric_limits<double>::infinity()){
+              tmp = float (local_parameter_vector[i]);
+            } else if (float (local_parameter_vector[i]) == -std::numeric_limits<double>::infinity()){
+              continue;
+            } else {
+              if (cur_derivative > float (local_parameter_vector[i])) {
+                tmp = cur_derivative + std::log1p(std::exp(float (local_parameter_vector[i]) - cur_derivative));
+              } else {
+                tmp = float (local_parameter_vector[i]) + std::log1p(std::exp(cur_derivative - float (local_parameter_vector[i])));
+              }
+            }
+            if (derivatives[user_data[local_prime_vector[i]]] == -std::numeric_limits<double>::infinity()){
+              derivatives[user_data[local_prime_vector[i]]] = tmp;
+            } else if (tmp == -std::numeric_limits<double>::infinity()){
+              continue;
+            } else {
+              if (derivatives[user_data[local_prime_vector[i]]] > tmp) {
+                derivatives[user_data[local_prime_vector[i]]] = derivatives[user_data[local_prime_vector[i]]] + std::log1p(std::exp(tmp - derivatives[user_data[local_prime_vector[i]]]));
+              } else {
+                derivatives[user_data[local_prime_vector[i]]] = tmp + std::log1p(std::exp(derivatives[user_data[local_prime_vector[i]]] - tmp));
+              }
+            }
+
+            if (derivatives[user_data[local_sub_vector[i]]] == -std::numeric_limits<double>::infinity()){
+              derivatives[user_data[local_sub_vector[i]]] = tmp;
+            } else if (tmp == -std::numeric_limits<double>::infinity()){
+              continue;
+            } else {
+              if (derivatives[user_data[local_sub_vector[i]]] > tmp) {
+                derivatives[user_data[local_sub_vector[i]]] = derivatives[user_data[local_sub_vector[i]]] + std::log1p(std::exp(tmp - derivatives[user_data[local_sub_vector[i]]]));
+              } else {
+                derivatives[user_data[local_sub_vector[i]]] = tmp + std::log1p(std::exp(derivatives[user_data[local_sub_vector[i]]] - tmp));
+              }
+            }
           }
           cur_decn_node++;
       }
     }
-  }
+  //   LoopTop:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_VARIABLE_INDEXES; cur_node_idx++) {
+  //  // #pragma HLS pipeline
+  //      marginalsFalse[local_top_variable_vector[cur_node_idx]] = marginalsFalse[local_top_variable_vector[cur_node_idx]] + derivatives[user_data[local_variable_index_vector[cur_node_idx]]]
+  //        * float (local_bool_param_vector[cur_node_idx +1]);
+  //      marginalsTrue[local_top_variable_vector[cur_node_idx]] = marginalsTrue[local_top_variable_vector[cur_node_idx]] + derivatives[user_data[local_variable_index_vector[cur_node_idx]]]
+  //        * float(local_bool_param_vector[cur_node_idx]);
+  //    }
+  // }
 
-
-    FinalLoop:for (int i = 0; i < PSDD_SIZE; i++){
-      user_data[i] = 0;
+  LoopLiteral:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_LITERALS; cur_node_idx++) {
+  // #pragma HLS pipeline
+    if (local_literal_vector[cur_node_idx] > 0) {
+      if (marginalsTrue[local_literal_variable_vector[cur_node_idx]] == -std::numeric_limits<double>::infinity()){
+        marginalsTrue[local_literal_variable_vector[cur_node_idx]] = derivatives[user_data[local_literal_index_vector[cur_node_idx]]];
+      } else if (derivatives[user_data[local_literal_index_vector[cur_node_idx]]] == -std::numeric_limits<double>::infinity()){
+        continue;
+      } else {
+        if (marginalsTrue[local_literal_variable_vector[cur_node_idx]] > derivatives[user_data[local_literal_index_vector[cur_node_idx]]]) {
+          marginalsTrue[local_literal_variable_vector[cur_node_idx]] = marginalsTrue[local_literal_variable_vector[cur_node_idx]] + std::log1p(std::exp(derivatives[user_data[local_literal_index_vector[cur_node_idx]]] - marginalsTrue[local_literal_variable_vector[cur_node_idx]]));
+        } else {
+          marginalsTrue[local_literal_variable_vector[cur_node_idx]] = derivatives[user_data[local_literal_index_vector[cur_node_idx]]] + std::log1p(std::exp(marginalsTrue[local_literal_variable_vector[cur_node_idx]] - derivatives[user_data[local_literal_index_vector[cur_node_idx]]]));
+        }
+      }
+    } else {
+      if (marginalsFalse[local_literal_variable_vector[cur_node_idx]] == -std::numeric_limits<double>::infinity()){
+        marginalsFalse[local_literal_variable_vector[cur_node_idx]] = derivatives[user_data[local_literal_index_vector[cur_node_idx]]];
+      } else if (derivatives[user_data[local_literal_index_vector[cur_node_idx]]] == -std::numeric_limits<double>::infinity()){
+        continue;
+      } else {
+        if (marginalsFalse[local_literal_variable_vector[cur_node_idx]] > derivatives[user_data[local_literal_index_vector[cur_node_idx]]]) {
+          marginalsFalse[local_literal_variable_vector[cur_node_idx]] = marginalsFalse[local_literal_variable_vector[cur_node_idx]] + std::log1p(std::exp(derivatives[user_data[local_literal_index_vector[cur_node_idx]]] - marginalsFalse[local_literal_variable_vector[cur_node_idx]]));
+        } else {
+          marginalsFalse[local_literal_variable_vector[cur_node_idx]] = derivatives[user_data[local_literal_index_vector[cur_node_idx]]] + std::log1p(std::exp(marginalsFalse[local_literal_variable_vector[cur_node_idx]] - derivatives[user_data[local_literal_index_vector[cur_node_idx]]]));
+        }
+      }
+    }
+ }
+  // std::cout << "fpga\n";
+    FinalLoop:for (int i = 0; i < 1220; i++){
+      // user_data[i] = 0;
       float partition = marginalsFalse[i] + marginalsTrue[i];
-      // marginalsFalse[i] = marginalsFalse[i] / partition;
-      // marginalsTrue[i] = marginalsTrue[i] / partition;
-      resultTrue[i] = marginalsTrue[i] / partition;
-      resultFalse[i] =  marginalsFalse[i] / partition;
+      if (marginalsFalse[i] == -std::numeric_limits<double>::infinity()){
+        partition = marginalsTrue[i];
+      } else if (marginalsTrue[i] == -std::numeric_limits<double>::infinity()){
+        continue;
+      } else {
+        if (marginalsFalse[i] > marginalsTrue[i]) {
+          partition = marginalsFalse[i] + std::log1p(std::exp(marginalsTrue[i] - marginalsFalse[i]));
+        } else {
+          partition = marginalsTrue[i] + std::log1p(std::exp(marginalsFalse[i] - marginalsTrue[i]));
+        }
+      }
+      resultTrue[i] = marginalsTrue[i] - partition;
+      resultFalse[i] =  marginalsFalse[i] - partition;
+      std::cout << "i: " << i << " true: " << marginalsTrue[i] << " false: " << marginalsFalse[i] << " partition[i] " << partition <<  std::endl;
     }
   }
+}
 }

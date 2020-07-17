@@ -907,6 +907,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
       root_node = cur_node;
     }
   }
+  std::cout << "total Lit: " << currentLiteral <<  " total top: " << currentTopVariable << std::endl;
   psdd_file.close();
   return root_node;
 }

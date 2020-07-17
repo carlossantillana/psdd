@@ -248,8 +248,8 @@ int main(int argc, char** argv)
       //Allocate Memory in Host Memory
     std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (PSDD_SIZE);
     std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_CHILDREN);
-    std::vector<float, aligned_allocator<float>> resultTrue (PSDD_SIZE);
-    std::vector<float, aligned_allocator<float>> resultFalse (PSDD_SIZE);
+    std::vector<float, aligned_allocator<float>> resultTrue (1220);
+    std::vector<float, aligned_allocator<float>> resultFalse (1220);
 
     FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFileOld(psdd_filename, 0, fpga_node_vector, prime_vector, sub_vector, parameter_vector, bool_param_vector,
        literal_vector, literal_index_vector,literal_variable_vector, top_variable_vector, variable_index_vector, children_size_vector, children_offset_vector, node_type_vector);
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
     size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
-    size_t result_size_bytes = sizeof(float) * PSDD_SIZE;
+    size_t result_size_bytes = sizeof(float) * 1220;
     cl_int err;
     clock_t time_req  = clock();
 
@@ -345,8 +345,6 @@ int main(int argc, char** argv)
         OCL_CHECK(err, err = krnl_mar.setArg(14, NUM_QUERIES));
 
         time_t start_time = time(NULL);
-        verifyResultsMAR(resultTrue, resultFalse, psdd_filename, reference_psdd_manager);
-
         OCL_CHECK(err, err = q.enqueueTask(krnl_mar));
 
         OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_output1, buffer_output2},CL_MIGRATE_MEM_OBJECT_HOST));
@@ -357,6 +355,8 @@ int main(int argc, char** argv)
         double diff_t;
         diff_t = difftime(end_time, start_time);
         printf("Execution time: %d\n", diff_t);
+        verifyResultsMAR(resultTrue, resultFalse, psdd_filename, reference_psdd_manager);
+
    }
   return 0;
 }
@@ -413,12 +413,15 @@ bool verifyResultsMAR(std::vector<float, aligned_allocator<float>> &resultTrue ,
     auto mar_result = psdd_node_util::GetMarginals(reference_serialized_psdd);
     std::cout << "verify MAR\n";
     int index = 0;
-    for (auto result_pair : mar_result) {
-      std::cout << result_pair.first << ":"
-                << result_pair.second.first.parameter() << "|"
-                << result_pair.second.second.parameter() << ",";
-    index++;
-    }
-    std::cout << "\n index: " << index << endl;
+    // for (auto result_pair : mar_result) {
+    //   std::cout << result_pair.first << ":"
+    //             << result_pair.second.first.parameter() << "|"
+    //             << result_pair.second.second.parameter() << ",";
+    // index++;
+    // }
+    // for (int i = 0; i < 1220; i++){
+    //   cout << "i: " << i << " reference false" << mar_result[i].first.parameter() << " fpga false: " << resultFalse[i] << " difference: " << mar_result[i].first.parameter() - resultFalse[i];
+    //   cout << " reference true" << mar_result[i].second.parameter() << " fpga true: " << resultTrue[i] << " True Difference: " << mar_result[i].second.parameter() - resultTrue[i] << endl;
+    // }
     return valid;
 }
