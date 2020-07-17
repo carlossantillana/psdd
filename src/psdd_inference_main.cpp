@@ -419,9 +419,9 @@ bool verifyResultsMAR(std::vector<float, aligned_allocator<float>> &resultTrue ,
     //             << result_pair.second.second.parameter() << ",";
     // index++;
     // }
-    // for (int i = 0; i < 1220; i++){
-    //   cout << "i: " << i << " reference false" << mar_result[i].first.parameter() << " fpga false: " << resultFalse[i] << " difference: " << mar_result[i].first.parameter() - resultFalse[i];
-    //   cout << " reference true" << mar_result[i].second.parameter() << " fpga true: " << resultTrue[i] << " True Difference: " << mar_result[i].second.parameter() - resultTrue[i] << endl;
-    // }
+    for (int i = 0; i < 1220; i++){
+      cout << "i: " << i << " reference false" << mar_result[i].first.parameter() << " fpga false: " << resultFalse[i] << " difference: " << mar_result[i].first.parameter() - resultFalse[i];
+      cout << " reference true" << mar_result[i].second.parameter() << " fpga true: " << resultTrue[i] << " True Difference: " << mar_result[i].second.parameter() - resultTrue[i] << endl;
+    }
     return valid;
 }

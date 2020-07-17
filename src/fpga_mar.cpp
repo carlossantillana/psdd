@@ -230,7 +230,7 @@ void fpga_mar(
         assert(element_size <= MAX_CHILDREN);
           InnerLoop:for (uint i = 0; i < element_size; ++i) {
     // #pragma HLS pipeline
-            float tmp = 0;
+            float tmp = float (local_parameter_vector[i]);
             if (cur_derivative == -std::numeric_limits<double>::infinity()){
               tmp = float (local_parameter_vector[i]);
             } else if (float (local_parameter_vector[i]) == -std::numeric_limits<double>::infinity()){
@@ -269,14 +269,13 @@ void fpga_mar(
           cur_decn_node++;
       }
     }
-  //   LoopTop:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_VARIABLE_INDEXES; cur_node_idx++) {
-  //  // #pragma HLS pipeline
-  //      marginalsFalse[local_top_variable_vector[cur_node_idx]] = marginalsFalse[local_top_variable_vector[cur_node_idx]] + derivatives[user_data[local_variable_index_vector[cur_node_idx]]]
-  //        * float (local_bool_param_vector[cur_node_idx +1]);
-  //      marginalsTrue[local_top_variable_vector[cur_node_idx]] = marginalsTrue[local_top_variable_vector[cur_node_idx]] + derivatives[user_data[local_variable_index_vector[cur_node_idx]]]
-  //        * float(local_bool_param_vector[cur_node_idx]);
-  //    }
-  // }
+   //  LoopTop:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_VARIABLE_INDEXES; cur_node_idx++) {
+   // // #pragma HLS pipeline
+   //     marginalsFalse[local_top_variable_vector[cur_node_idx]] = marginalsFalse[local_top_variable_vector[cur_node_idx]] + derivatives[user_data[local_variable_index_vector[cur_node_idx]]]
+   //       * float (local_bool_param_vector[cur_node_idx +1]);
+   //     marginalsTrue[local_top_variable_vector[cur_node_idx]] = marginalsTrue[local_top_variable_vector[cur_node_idx]] + derivatives[user_data[local_variable_index_vector[cur_node_idx]]]
+   //       * float(local_bool_param_vector[cur_node_idx]);
+   //   }
 
   LoopLiteral:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_LITERALS; cur_node_idx++) {
   // #pragma HLS pipeline
@@ -309,7 +308,7 @@ void fpga_mar(
   // std::cout << "fpga\n";
     FinalLoop:for (int i = 0; i < 1220; i++){
       // user_data[i] = 0;
-      float partition = marginalsFalse[i] + marginalsTrue[i];
+      float partition = marginalsFalse[i];
       if (marginalsFalse[i] == -std::numeric_limits<double>::infinity()){
         partition = marginalsTrue[i];
       } else if (marginalsTrue[i] == -std::numeric_limits<double>::infinity()){
@@ -323,7 +322,7 @@ void fpga_mar(
       }
       resultTrue[i] = marginalsTrue[i] - partition;
       resultFalse[i] =  marginalsFalse[i] - partition;
-      std::cout << "i: " << i << " true: " << marginalsTrue[i] << " false: " << marginalsFalse[i] << " partition[i] " << partition <<  std::endl;
+      // std::cout << "i: " << i << " true: " << marginalsTrue[i] << " false: " << marginalsFalse[i] << " partition[i] " << partition <<  std::endl;
     }
   }
 }
