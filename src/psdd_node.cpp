@@ -757,8 +757,9 @@ GetMarginals(const std::vector<PsddNode *> &serialized_nodes) {
     index++;
   }
   derivatives[0] = Probability::CreateFromDecimal(1);
-  std::cout << "derivatives[0]: " << derivatives[0].parameter_ << std::endl;
+  std::cout << "order of nodes\n";
   for (PsddNode *cur_node : serialized_nodes) {
+    // std::cout << cur_node->node_index_ << ", ";
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
       auto cur_lit = cur_node->psdd_literal_node();
       auto marginal_it = marginals.find(cur_lit->variable_index());
@@ -797,12 +798,15 @@ GetMarginals(const std::vector<PsddNode *> &serialized_nodes) {
       const auto &params = cur_decn_node->parameters();
       Probability cur_derivative = derivatives[cur_decn_node->user_data()];
       auto element_size = primes.size();
+      // std::cout << " c: {" ;
       for (size_t i = 0; i < element_size; ++i) {
+        // std::cout << primes[i]->node_index_ <<", ";
         derivatives[primes[i]->user_data()] =
             derivatives[primes[i]->user_data()] + cur_derivative * params[i];
         derivatives[subs[i]->user_data()] =
             derivatives[subs[i]->user_data()] + cur_derivative * params[i];
       }
+      // std::cout << "} ";
     }
   }
   for (PsddNode *cur_node : serialized_nodes) {

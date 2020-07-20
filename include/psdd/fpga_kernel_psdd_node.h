@@ -46,6 +46,7 @@ const short TOTAL_VARIABLE_INDEXES = 1;
 const uint TOTAL_CHILDREN_SIZE = 42558;
 const uint MERGED_LOOP_LEN = 47688;
 const uint NUM_DISTICT_QUERIES = 1;
+const uint TOTAL_DECISION = 40230;
 #define MAX_VAR 2048
 
 struct PsddNodeStruct {
