@@ -843,7 +843,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
       literal_variable_vector[currentLiteral] = literal > 0 ? static_cast<uint>(literal)
                           : static_cast<uint32_t>(-literal);
       literal_index_vector[currentLiteral++] = current_index;
-      node_type_vector[current_index++] = 0;
+      node_type_vector[current_index++] = LITERAL_NODE_TYPE;
 
     } else if (line[0] == 'T') {
       std::istringstream iss(line.substr(1, std::string::npos));
@@ -863,7 +863,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
       construct_fpga_cache[node_index] = cur_node;
       top_variable_vector[currentTopVariable] = cur_node->variable_index_;
       variable_index_vector[currentTopVariable++] = current_index;
-      node_type_vector[current_index++] = 0;
+      node_type_vector[current_index++] = TOP_NODE_TYPE;
       root_node = cur_node;
     } else {
       assert(line[0] == 'D');
@@ -899,7 +899,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
           GetConformedFPGAPsddDecisionNode(primes, subs, params, flag_index);
           children_size_vector[current_index] = cur_node->primes_.size();
           children_offset_vector[current_index] = currentChild;
-          node_type_vector[current_index++] = 1;
+          node_type_vector[current_index++] = DECISION_NODE_TYPE;
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStructOld(cur_node,
         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
         previousPrime, previousSub);

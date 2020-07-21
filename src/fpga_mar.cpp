@@ -17,6 +17,14 @@ extern "C" {
       data_local[i] = data_dram[i](0,0);
     }
   }
+
+  void load3Bit(const ap_int<32> * data_dram, ap_int<3>* data_local, int burstLength){
+    #pragma HLS inline off
+    load2Bit: for (int i = 0; i < burstLength; i++){
+    #pragma HLS pipeline
+      data_local[i] = data_dram[i](2,0);
+    }
+  }
   void load6Bit(const ap_uint<32>* data_dram, ap_uint<6>* data_local, int burstLength){
     #pragma HLS inline off
     load6Bit: for (int i = 0; i < burstLength; i++){
@@ -99,15 +107,15 @@ extern "C" {
      }
    }
 
-   void load(bool local_variables[MAX_VAR],  bool local_is_decision_vector[PSDD_SIZE],
-      const ap_int<32>  is_decision_vector[PSDD_SIZE], ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
+   void load(bool local_variables[MAX_VAR],  ap_int<3> local_node_type_vector[PSDD_SIZE],
+      const ap_int<32>  node_type_vector[PSDD_SIZE], ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
        ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
     ap_int<14> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS], ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
     ap_uint<6> local_children_size_vector [PSDD_SIZE], const ap_uint<32> children_size_vector [PSDD_SIZE], ap_uint<20>* local_children_offset_vector, const ap_uint<32>* children_offset_vector,
     ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector, ap_uint<15> local_sub_vector[TOTAL_CHILDREN],
     const ap_uint<32> sub_vector[TOTAL_CHILDREN], ap_uint<16> local_prime_vector[TOTAL_CHILDREN], const ap_uint<32> prime_vector[TOTAL_CHILDREN], ap_fixed<16,8,AP_RND >local_parameter_vector[TOTAL_CHILDREN], const ap_fixed<32,8,AP_RND>parameter_vector[TOTAL_CHILDREN]) {
      loadBool(local_variables, MAX_VAR, 1);
-     loadBool2(is_decision_vector, local_is_decision_vector, PSDD_SIZE);
+     load3Bit(node_type_vector, local_node_type_vector, PSDD_SIZE);
      load6Bit(children_size_vector, local_children_size_vector, PSDD_SIZE);
      load13Bit(literal_vector, local_literal_vector, TOTAL_LITERALS);
      load14Bit(literal_variable_vector, local_literal_variable_vector, TOTAL_LITERALS);
@@ -120,7 +128,7 @@ extern "C" {
    }
 
 void fpga_mar(
-        const ap_int<32> *is_decision_vector, // Read-Only Vector 2
+        const ap_int<32> *node_type_vector, // Read-Only Vector 2
         const ap_uint<32> *prime_vector,
         const ap_uint<32> *sub_vector,
         const ap_fixed<32,8,AP_RND> *parameter_vector,
@@ -136,7 +144,7 @@ void fpga_mar(
         float *resultFalse,       // Output Result
         int num_queries)
 {
-#pragma HLS INTERFACE m_axi port=is_decision_vector  offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=node_type_vector  offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=prime_vector  offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=sub_vector  offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port = parameter_vector offset = slave bundle = gmem
@@ -150,7 +158,7 @@ void fpga_mar(
 #pragma HLS INTERFACE m_axi port = variable_index_vector offset = slave bundle = gmem
 #pragma HLS INTERFACE m_axi port = resultTrue offset=slave bundle=gmem1
 #pragma HLS INTERFACE m_axi port = resultFalse offset=slave bundle=gmem2
-#pragma HLS INTERFACE s_axilite port = is_decision_vector  bundle=control
+#pragma HLS INTERFACE s_axilite port = node_type_vector  bundle=control
 #pragma HLS INTERFACE s_axilite port = prime_vector bundle=control
 #pragma HLS INTERFACE s_axilite port = sub_vector bundle=control
 #pragma HLS INTERFACE s_axilite port = parameter_vector bundle = control
@@ -174,7 +182,7 @@ void fpga_mar(
   static ap_uint<15> local_sub_vector[MAX_CHILDREN];
   static ap_fixed<16,8,AP_RND > local_parameter_vector[MAX_CHILDREN];
   static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
-  static bool local_is_decision_vector[PSDD_SIZE];
+  static ap_int<3> local_node_type_vector[PSDD_SIZE];
   static ap_int<13> local_literal_vector [TOTAL_LITERALS];
   static ap_int<14> local_literal_variable_vector [TOTAL_LITERALS];
   static ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES];
@@ -188,7 +196,7 @@ void fpga_mar(
   float marginalsFalse [1220];
   float derivatives [PSDD_SIZE];
   int index = 0;
-  InitLoop:for (int i = 0; i < PSDD_SIZE; i++){
+  InitLoop:for (int i = PSDD_SIZE-1; i >= 0 ; i--){
     #pragma HLS pipeline
     user_data[i] = index++;
     derivatives[i] = -std::numeric_limits<float>::infinity();
@@ -201,7 +209,7 @@ void fpga_mar(
   derivatives[0] = 0;
   #pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_is_decision_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=node_type_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_literal_variable_vector core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_top_variable_vector core=XPM_MEMORY uram
@@ -210,8 +218,8 @@ void fpga_mar(
   #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
 
 
-  load(local_variables, local_is_decision_vector,
-  is_decision_vector, local_bool_param_vector, bool_param_vector,
+  load(local_variables, local_node_type_vector,
+  node_type_vector, local_bool_param_vector, bool_param_vector,
    local_literal_vector, literal_vector, local_literal_variable_vector, literal_variable_vector,  local_top_variable_vector, top_variable_vector,
   local_children_size_vector, children_size_vector, local_children_offset_vector, children_offset_vector, local_literal_index_vector,
   literal_index_vector, local_variable_index_vector, variable_index_vector, local_sub_vector, sub_vector, local_prime_vector, prime_vector, local_parameter_vector, parameter_vector);
@@ -221,7 +229,7 @@ void fpga_mar(
     uint cur_decn_node = 0;
     LoopDecision:for(int cur_node_idx = PSDD_SIZE-1; cur_node_idx >= 0; cur_node_idx--) {
       // std::cout << cur_node_idx << ", ";
-      if (local_is_decision_vector[cur_node_idx]) {
+      if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE) {
         // std::cout << "at decision node: " << cur_node_idx << std::endl;
       short element_size = local_children_size_vector[cur_node_idx];
        load15Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_node_idx], element_size);
@@ -273,14 +281,36 @@ void fpga_mar(
           cur_decn_node++;
       }
     }
-    // std::cout << "\nmax decision node: " << cur_decn_node << std::endl;
-   //  LoopTop:for(uint cur_node_idx = 0; cur_node_idx < TOTAL_VARIABLE_INDEXES; cur_node_idx++) {
-   // // #pragma HLS pipeline
-   //     marginalsFalse[local_top_variable_vector[cur_node_idx]] = marginalsFalse[local_top_variable_vector[cur_node_idx]] + derivatives[user_data[local_variable_index_vector[cur_node_idx]]]
-   //       * float (local_bool_param_vector[cur_node_idx +1]);
-   //     marginalsTrue[local_top_variable_vector[cur_node_idx]] = marginalsTrue[local_top_variable_vector[cur_node_idx]] + derivatives[user_data[local_variable_index_vector[cur_node_idx]]]
-   //       * float(local_bool_param_vector[cur_node_idx]);
-   //   }
+    LoopTop:for(int cur_node_idx = TOTAL_VARIABLE_INDEXES-1; cur_node_idx >= 0 && TOTAL_VARIABLE_INDEXES > 1; cur_node_idx--) {
+   // #pragma HLS pipeline
+         float tmpFalse = derivatives[user_data[local_variable_index_vector[cur_node_idx]]] + float (local_bool_param_vector[cur_node_idx +1]);
+         float tmpTrue = derivatives[user_data[local_variable_index_vector[cur_node_idx]]] + float(local_bool_param_vector[cur_node_idx]);
+
+         if (marginalsFalse[local_top_variable_vector[cur_node_idx]] == -std::numeric_limits<double>::infinity()){
+           marginalsFalse[local_top_variable_vector[cur_node_idx]] = tmpFalse;
+         } else if (tmpFalse == -std::numeric_limits<double>::infinity()){
+           continue;
+         } else {
+           if (marginalsFalse[local_top_variable_vector[cur_node_idx]] > tmpFalse) {
+             marginalsFalse[local_top_variable_vector[cur_node_idx]] = marginalsFalse[local_top_variable_vector[cur_node_idx]] + std::log1p(std::exp(tmpFalse - marginalsFalse[local_top_variable_vector[cur_node_idx]]));
+           } else {
+             marginalsFalse[local_top_variable_vector[cur_node_idx]] = tmpFalse + std::log1p(std::exp(marginalsFalse[local_top_variable_vector[cur_node_idx]] - tmpFalse));
+           }
+         }
+
+         if (marginalsTrue[local_top_variable_vector[cur_node_idx]] == -std::numeric_limits<double>::infinity()){
+           marginalsTrue[local_top_variable_vector[cur_node_idx]] = tmpTrue;
+         } else if (tmpTrue == -std::numeric_limits<double>::infinity()){
+           continue;
+         } else {
+           if (marginalsTrue[local_top_variable_vector[cur_node_idx]] > tmpTrue) {
+             marginalsTrue[local_top_variable_vector[cur_node_idx]] = marginalsTrue[local_top_variable_vector[cur_node_idx]] + std::log1p(std::exp(tmpTrue - marginalsTrue[local_top_variable_vector[cur_node_idx]]));
+           } else {
+             marginalsTrue[local_top_variable_vector[cur_node_idx]] = tmpTrue + std::log1p(std::exp(marginalsTrue[local_top_variable_vector[cur_node_idx]] - tmpTrue));
+           }
+         }
+     }
+
 
   LoopLiteral:for(int cur_node_idx = TOTAL_LITERALS-1; cur_node_idx >= 0; cur_node_idx--) {
   // #pragma HLS pipeline
@@ -310,7 +340,6 @@ void fpga_mar(
       }
     }
  }
-  // std::cout << "fpga\n";
     FinalLoop:for (int i = 0; i < 1220; i++){
       // user_data[i] = 0;
       float partition = marginalsFalse[i];

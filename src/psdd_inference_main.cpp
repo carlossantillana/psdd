@@ -412,16 +412,19 @@ bool verifyResultsMAR(std::vector<float, aligned_allocator<float>> &resultTrue ,
     auto reference_serialized_psdd = psdd_node_util::SerializePsddNodes(reference_result_node);
     auto mar_result = psdd_node_util::GetMarginals(reference_serialized_psdd);
     std::cout << "verify MAR\n";
-    int index = 0;
-    // for (auto result_pair : mar_result) {
-    //   std::cout << result_pair.first << ":"
-    //             << result_pair.second.first.parameter() << "|"
-    //             << result_pair.second.second.parameter() << ",";
-    // index++;
-    // }
+    float totalFalseDiff = 0;
+    float totalTrueDiff = 0;
     for (int i = 0; i < 1220; i++){
+      float tmpTrue = abs(mar_result[i].second.parameter() - resultTrue[i]);
+      float tmpFalse = abs(mar_result[i].first.parameter() - resultFalse[i]);
+
       cout << "i: " << i << " reference false" << mar_result[i].first.parameter() << " fpga false: " << resultFalse[i] << " difference: " << mar_result[i].first.parameter() - resultFalse[i];
       cout << " reference true" << mar_result[i].second.parameter() << " fpga true: " << resultTrue[i] << " True Difference: " << mar_result[i].second.parameter() - resultTrue[i] << endl;
+      if (tmpFalse != -std::numeric_limits<double>::infinity() &&  !isnan(tmpFalse) && tmpFalse != std::numeric_limits<double>::infinity())
+        totalFalseDiff += tmpFalse;
+      if (tmpTrue != -std::numeric_limits<double>::infinity()  && !isnan(tmpTrue) && tmpTrue != std::numeric_limits<double>::infinity())
+        totalTrueDiff += tmpTrue;
     }
+    cout << "total false diff: " << totalFalseDiff << " total true diff: " << totalTrueDiff << endl;
     return valid;
 }
