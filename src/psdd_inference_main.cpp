@@ -414,17 +414,17 @@ bool verifyResultsMAR(std::vector<float, aligned_allocator<float>> &resultTrue ,
     std::cout << "verify MAR\n";
     float totalFalseDiff = 0;
     float totalTrueDiff = 0;
-    for (int i = 0; i < 1220; i++){
-      float tmpTrue = abs(mar_result[i].second.parameter() - resultTrue[i]);
-      float tmpFalse = abs(mar_result[i].first.parameter() - resultFalse[i]);
-
-      cout << "i: " << i << " reference false" << mar_result[i].first.parameter() << " fpga false: " << resultFalse[i] << " difference: " << mar_result[i].first.parameter() - resultFalse[i];
-      cout << " reference true" << mar_result[i].second.parameter() << " fpga true: " << resultTrue[i] << " True Difference: " << mar_result[i].second.parameter() - resultTrue[i] << endl;
-      if (tmpFalse != -std::numeric_limits<double>::infinity() &&  !isnan(tmpFalse) && tmpFalse != std::numeric_limits<double>::infinity())
-        totalFalseDiff += tmpFalse;
-      if (tmpTrue != -std::numeric_limits<double>::infinity()  && !isnan(tmpTrue) && tmpTrue != std::numeric_limits<double>::infinity())
-        totalTrueDiff += tmpTrue;
-    }
+    // for (int i = 0; i < 1220; i++){
+    //   float tmpTrue = abs(mar_result[i].second.parameter() - resultTrue[i]);
+    //   float tmpFalse = abs(mar_result[i].first.parameter() - resultFalse[i]);
+    //
+    //   cout << "i: " << i << " reference false" << mar_result[i].first.parameter() << " fpga false: " << resultFalse[i] << " difference: " << mar_result[i].first.parameter() - resultFalse[i];
+    //   cout << " reference true" << mar_result[i].second.parameter() << " fpga true: " << resultTrue[i] << " True Difference: " << mar_result[i].second.parameter() - resultTrue[i] << endl;
+    //   if (tmpFalse != -std::numeric_limits<double>::infinity() &&  !isnan(tmpFalse) && tmpFalse != std::numeric_limits<double>::infinity())
+    //     totalFalseDiff += tmpFalse;
+    //   if (tmpTrue != -std::numeric_limits<double>::infinity()  && !isnan(tmpTrue) && tmpTrue != std::numeric_limits<double>::infinity())
+    //     totalTrueDiff += tmpTrue;
+    // }
     cout << "total false diff: " << totalFalseDiff << " total true diff: " << totalTrueDiff << endl;
     return valid;
 }

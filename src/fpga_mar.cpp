@@ -112,7 +112,7 @@ extern "C" {
        ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
     ap_int<14> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS], ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
     ap_uint<6> local_children_size_vector [PSDD_SIZE], const ap_uint<32> children_size_vector [PSDD_SIZE], ap_uint<20>* local_children_offset_vector, const ap_uint<32>* children_offset_vector,
-    ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector, ap_uint<15> local_sub_vector[TOTAL_CHILDREN],
+    ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector, ap_uint<16> local_sub_vector[TOTAL_CHILDREN],
     const ap_uint<32> sub_vector[TOTAL_CHILDREN], ap_uint<16> local_prime_vector[TOTAL_CHILDREN], const ap_uint<32> prime_vector[TOTAL_CHILDREN], ap_fixed<16,8,AP_RND >local_parameter_vector[TOTAL_CHILDREN], const ap_fixed<32,8,AP_RND>parameter_vector[TOTAL_CHILDREN]) {
      loadBool(local_variables, MAX_VAR, 1);
      load3Bit(node_type_vector, local_node_type_vector, PSDD_SIZE);
@@ -179,7 +179,7 @@ void fpga_mar(
   static bool local_variables [MAX_VAR];
   static bool local_instantiation [MAX_VAR];
   static ap_uint<16> local_prime_vector[MAX_CHILDREN];
-  static ap_uint<15> local_sub_vector[MAX_CHILDREN];
+  static ap_uint<16> local_sub_vector[MAX_CHILDREN];
   static ap_fixed<16,8,AP_RND > local_parameter_vector[MAX_CHILDREN];
   static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
   static ap_int<3> local_node_type_vector[PSDD_SIZE];
@@ -227,32 +227,22 @@ void fpga_mar(
   for (uint m = 0; m < num_queries; m++){
 
     uint cur_decn_node = 0;
-    LoopDecision:for(int cur_node_idx = PSDD_SIZE-1; cur_node_idx >= 0; cur_node_idx--) {
-      // std::cout << cur_node_idx << ", ";
+    std::cout << "fpga\n";
+    LoopDecision:for(int cur_node_idx = PSDD_SIZE-1; cur_node_idx >= PSDD_SIZE -50; cur_node_idx--) {
       if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE) {
-        // std::cout << "at decision node: " << cur_node_idx << std::endl;
       short element_size = local_children_size_vector[cur_node_idx];
-       load15Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_node_idx], element_size);
+       load16Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_node_idx], element_size);
        load16Bit_staggered(prime_vector, local_prime_vector, local_children_offset_vector[cur_node_idx], element_size);
        loadFloats_staggered(parameter_vector, local_parameter_vector, local_children_offset_vector[cur_node_idx], element_size);
         float cur_derivative = derivatives[user_data[cur_node_idx]];
+        std::cout << "at decision node: " << cur_node_idx << " cur_derivative:" << cur_derivative << std::endl;
+
         assert(element_size <= MAX_CHILDREN);
-        // std::cout << " c: {" ;
-          InnerLoop:for (uint i = 0; i < element_size; ++i) {
+        std::cout << " child: {\n";
+          InnerLoop:for (uint i = 0; i < element_size; i++) {
     // #pragma HLS pipeline
-            // std::cout << local_prime_vector[i] << ", ";
-            float tmp = float (local_parameter_vector[i]);
-            if (cur_derivative == -std::numeric_limits<double>::infinity()){
-              tmp = float (local_parameter_vector[i]);
-            } else if (float (local_parameter_vector[i]) == -std::numeric_limits<double>::infinity()){
-              continue;
-            } else {
-              if (cur_derivative > float (local_parameter_vector[i])) {
-                tmp = cur_derivative + std::log1p(std::exp(float (local_parameter_vector[i]) - cur_derivative));
-              } else {
-                tmp = float (local_parameter_vector[i]) + std::log1p(std::exp(cur_derivative - float (local_parameter_vector[i])));
-              }
-            }
+            float tmp = cur_derivative + float(local_parameter_vector[i]);
+            std::cout << "tmp:" << tmp << ", parameter_vector: " << float(local_parameter_vector[i]) << ",\n p: { ";
             if (derivatives[user_data[local_prime_vector[i]]] == -std::numeric_limits<double>::infinity()){
               derivatives[user_data[local_prime_vector[i]]] = tmp;
             } else if (tmp == -std::numeric_limits<double>::infinity()){
@@ -264,7 +254,7 @@ void fpga_mar(
                 derivatives[user_data[local_prime_vector[i]]] = tmp + std::log1p(std::exp(derivatives[user_data[local_prime_vector[i]]] - tmp));
               }
             }
-
+              std::cout << "idx: " << local_prime_vector[i] << " UD: " << user_data[local_prime_vector[i]] << " val: " << derivatives[user_data[local_prime_vector[i]]] << "},\n s: { ";
             if (derivatives[user_data[local_sub_vector[i]]] == -std::numeric_limits<double>::infinity()){
               derivatives[user_data[local_sub_vector[i]]] = tmp;
             } else if (tmp == -std::numeric_limits<double>::infinity()){
@@ -276,8 +266,10 @@ void fpga_mar(
                 derivatives[user_data[local_sub_vector[i]]] = tmp + std::log1p(std::exp(derivatives[user_data[local_sub_vector[i]]] - tmp));
               }
             }
+            std::cout << "idx: " << local_sub_vector[i] << " UD: " << user_data[local_sub_vector[i]] << " val: " << derivatives[user_data[local_sub_vector[i]]] << "}\n";
+
           }
-          // std::cout << "} ";
+          std::cout << "}\n";
           cur_decn_node++;
       }
     }

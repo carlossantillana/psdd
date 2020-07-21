@@ -752,12 +752,13 @@ GetMarginals(const std::vector<PsddNode *> &serialized_nodes) {
   std::vector<Probability> derivatives(serialized_nodes.size(),
                                        Probability::CreateFromDecimal(0));
   auto index = 0;
+  std::cout << "reference\n";
   for (PsddNode *cur_node : serialized_nodes) {
     cur_node->SetUserData((uintmax_t)index);
     index++;
   }
+  index = 0;
   derivatives[0] = Probability::CreateFromDecimal(1);
-  std::cout << "order of nodes\n";
   for (PsddNode *cur_node : serialized_nodes) {
     // std::cout << cur_node->node_index_ << ", ";
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
@@ -797,16 +798,27 @@ GetMarginals(const std::vector<PsddNode *> &serialized_nodes) {
       const auto &subs = cur_decn_node->subs();
       const auto &params = cur_decn_node->parameters();
       Probability cur_derivative = derivatives[cur_decn_node->user_data()];
+      std::cout << "at decision node: " << cur_decn_node->node_index_  << " cur_derivative:" << cur_derivative.parameter_ << std::endl;
       auto element_size = primes.size();
-      // std::cout << " c: {" ;
+      std::cout << " child: {\n" ;
       for (size_t i = 0; i < element_size; ++i) {
+        Probability tmp = cur_derivative * params[i];
+        std::cout <<  "tmp:" <<tmp.parameter_ << ", parameter_vector: " << params[i].parameter_ << ",\n p: { ";
+
         // std::cout << primes[i]->node_index_ <<", ";
         derivatives[primes[i]->user_data()] =
             derivatives[primes[i]->user_data()] + cur_derivative * params[i];
+        std::cout << "idx: " << primes[i]->node_index_ << " UD: " << primes[i]->user_data() << " val: " << derivatives[primes[i]->user_data()].parameter_ << "},\n s: { ";
+
         derivatives[subs[i]->user_data()] =
             derivatives[subs[i]->user_data()] + cur_derivative * params[i];
+        std::cout << "idx: " << subs[i]->node_index_ << " UD: " << subs[i]->user_data() << " val: " << derivatives[subs[i]->user_data()].parameter_ << "}\n";
       }
-      // std::cout << "} ";
+      std::cout << "} \n";
+    }
+    index++;
+    if (index == 50){
+      break;
     }
   }
   for (PsddNode *cur_node : serialized_nodes) {
