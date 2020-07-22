@@ -2,6 +2,9 @@
 #include <assert.h>
 #include <iostream>
 
+#define FMUL_LAT 10
+
+
 extern "C" {
   void loadBool(bool* data_local, int burstLength, char value){
     #pragma HLS inline off
@@ -89,7 +92,7 @@ extern "C" {
      }
    }
 
-   void loadFloats_staggered(const ap_fixed<32,8,AP_RND >* data_dram, ap_fixed<16,6,AP_RND >* data_local, int start, int burstLength){
+   void loadFloats_staggered(const ap_fixed<32,6,AP_RND >* data_dram, ap_fixed<PARAM_BIT_WIDTH,PARAM_DEC_WIDTH,AP_RND >* data_local, int start, int burstLength){
      #pragma HLS inline off
      int j = 0;
      loadFloatStaggered:  for (int i = start; i < start +burstLength; i++){
@@ -99,21 +102,33 @@ extern "C" {
      }
    }
 
-   void loadFloatsSmall(const ap_fixed<32,2,AP_RND >* data_dram, ap_fixed<14,2,AP_RND >* data_local, int burstLength){
+   void loadFloatsSmall(const ap_fixed<32,BOOL_DEC_WIDTH,AP_RND >* data_dram, ap_fixed<14,BOOL_DEC_WIDTH,AP_RND >* data_local, int burstLength){
      #pragma HLS inline off
      loadFloatSmall: for (int i = 0; i < burstLength; i++){
      #pragma HLS pipeline
        data_local[i] = data_dram[i];
      }
    }
+   void loadFloat(float* data_local, int burstLength, double value){
+     #pragma HLS inline off
+     loadFloat: for (int i = 0; i < burstLength; i++){
+     #pragma HLS pipeline
+       data_local[i] = value;
+     }
+   }
 
-   void load(bool local_variables[MAX_VAR],  ap_int<3> local_node_type_vector[PSDD_SIZE],
-      const ap_int<32>  node_type_vector[PSDD_SIZE], ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
-       ap_int<13> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
-    ap_int<14> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS], ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
-    ap_uint<6> local_children_size_vector [PSDD_SIZE], const ap_uint<32> children_size_vector [PSDD_SIZE], ap_uint<20>* local_children_offset_vector, const ap_uint<32>* children_offset_vector,
-    ap_uint<20>* local_literal_index_vector, const ap_uint<32>* literal_index_vector, ap_uint<20>* local_variable_index_vector, const ap_uint<32>* variable_index_vector, ap_uint<16> local_sub_vector[TOTAL_CHILDREN],
-    const ap_uint<32> sub_vector[TOTAL_CHILDREN], ap_uint<16> local_prime_vector[TOTAL_CHILDREN], const ap_uint<32> prime_vector[TOTAL_CHILDREN], ap_fixed<16,6,AP_RND >local_parameter_vector[TOTAL_CHILDREN], const ap_fixed<32,8,AP_RND>parameter_vector[TOTAL_CHILDREN]) {
+   void load(bool local_variables[MAX_VAR],  ap_int<NODE_TYPE_BIT_WIDTH> local_node_type_vector[PSDD_SIZE],
+    const ap_int<32>  node_type_vector[PSDD_SIZE], ap_fixed<BOOL_BIT_WIDTH,BOOL_DEC_WIDTH,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM], const ap_fixed<32,2,AP_RND > bool_param_vector[TOTAL_BOOL_PARAM],
+    ap_int<LITERAL_BIT_WIDTH> local_literal_vector [TOTAL_LITERALS], const ap_int<32> literal_vector [TOTAL_LITERALS],
+    ap_int<LITERAL_VAR_BIT_WIDTH> local_literal_variable_vector [TOTAL_LITERALS], const ap_int<32> literal_variable_vector [TOTAL_LITERALS],
+    ap_int<TOP_VAR_BIT_WIDTH> local_top_variable_vector [TOTAL_VARIABLE_INDEXES], const ap_int<32> top_variable_vector [TOTAL_VARIABLE_INDEXES],
+    ap_uint<CHILD_SIZE_BIT_WIDTH> local_children_size_vector [PSDD_SIZE], const ap_uint<32> children_size_vector [PSDD_SIZE],
+    ap_uint<CHILD_OFFSET_BIT_WIDTH>* local_children_offset_vector, const ap_uint<32>* children_offset_vector,
+    ap_uint<LITERAL_IDX_BIT_WIDTH>* local_literal_index_vector, const ap_uint<32>* literal_index_vector,
+    ap_uint<VAR_IDX_BIT_WIDTH>* local_variable_index_vector, const ap_uint<32>* variable_index_vector,
+    ap_uint<SUB_BIT_WIDTH> local_sub_vector[TOTAL_CHILDREN], const ap_uint<32> sub_vector[TOTAL_CHILDREN],
+    ap_uint<PRIME_BIT_WIDTH> local_prime_vector[TOTAL_CHILDREN], const ap_uint<32> prime_vector[TOTAL_CHILDREN],
+    float derivatives[PSDD_SIZE], float marginalsTrue [NUM_VAR], float marginalsFalse [NUM_VAR]) {
      loadBool(local_variables, MAX_VAR, 1);
      load3Bit(node_type_vector, local_node_type_vector, PSDD_SIZE);
      load6Bit(children_size_vector, local_children_size_vector, PSDD_SIZE);
@@ -124,6 +139,9 @@ extern "C" {
      load20Bit(children_offset_vector, local_children_offset_vector, TOTAL_CHILDREN_SIZE);
      load20Bit(variable_index_vector, local_variable_index_vector, TOTAL_VARIABLE_INDEXES);
      loadFloatsSmall(bool_param_vector, local_bool_param_vector, TOTAL_BOOL_PARAM);
+     loadFloat(derivatives, PSDD_SIZE, 0);
+     loadFloat(marginalsTrue, NUM_VAR, 0);
+     loadFloat(marginalsFalse, NUM_VAR, 0);
      return;
    }
 //Log Scale
@@ -349,8 +367,8 @@ void fpga_mar(
         const ap_int<32> *node_type_vector, // Read-Only Vector 2
         const ap_uint<32> *prime_vector,
         const ap_uint<32> *sub_vector,
-        const ap_fixed<32,8,AP_RND> *parameter_vector,
-        const ap_fixed<32,2,AP_RND> *bool_param_vector,
+        const ap_fixed<32,PARAM_DEC_WIDTH,AP_RND> *parameter_vector,
+        const ap_fixed<32,BOOL_DEC_WIDTH,AP_RND> *bool_param_vector,
         const ap_int<32> *literal_vector,
         const ap_int<32> *literal_variable_vector,
         const ap_int<32> *top_variable_vector,
@@ -396,35 +414,22 @@ void fpga_mar(
   assert(num_queries <= 2048);  // this helps HLS estimate the loop trip count
   static bool local_variables [MAX_VAR];
   static bool local_instantiation [MAX_VAR];
-  static ap_uint<16> local_prime_vector[MAX_CHILDREN];
-  static ap_uint<16> local_sub_vector[MAX_CHILDREN];
-  static ap_fixed<16,6,AP_RND > local_parameter_vector[MAX_CHILDREN];
-  static ap_fixed<14,2,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
-  static ap_int<3> local_node_type_vector[PSDD_SIZE];
-  static ap_int<13> local_literal_vector [TOTAL_LITERALS];
-  static ap_int<14> local_literal_variable_vector [TOTAL_LITERALS];
-  static ap_int<14> local_top_variable_vector [TOTAL_VARIABLE_INDEXES];
-  static ap_uint<6> local_children_size_vector [PSDD_SIZE];
-  static ap_uint<20> local_children_offset_vector [TOTAL_CHILDREN_SIZE];
-  static ap_uint<20> local_literal_index_vector[TOTAL_LITERALS];
-  static ap_uint<20> local_variable_index_vector[TOTAL_VARIABLE_INDEXES];
-  //Might not be needed?? User data can be replaced with local_literal_vector etc...
-  static int user_data [PSDD_SIZE];
+  static ap_uint<PRIME_BIT_WIDTH> local_prime_vector[MAX_CHILDREN];
+  static ap_uint<SUB_BIT_WIDTH> local_sub_vector[MAX_CHILDREN];
+  static ap_fixed<PARAM_BIT_WIDTH,PARAM_DEC_WIDTH,AP_RND > local_parameter_vector[MAX_CHILDREN];
+  static ap_fixed<BOOL_BIT_WIDTH,BOOL_DEC_WIDTH,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
+  static ap_int<NODE_TYPE_BIT_WIDTH> local_node_type_vector[PSDD_SIZE];
+  static ap_int<LITERAL_BIT_WIDTH> local_literal_vector [TOTAL_LITERALS];
+  static ap_int<LITERAL_VAR_BIT_WIDTH> local_literal_variable_vector [TOTAL_LITERALS];
+  static ap_int<TOP_VAR_BIT_WIDTH> local_top_variable_vector [TOTAL_VARIABLE_INDEXES];
+  static ap_uint<CHILD_SIZE_BIT_WIDTH> local_children_size_vector [PSDD_SIZE];
+  static ap_uint<CHILD_OFFSET_BIT_WIDTH> local_children_offset_vector [TOTAL_CHILDREN_SIZE];
+  static ap_uint<LITERAL_IDX_BIT_WIDTH> local_literal_index_vector[TOTAL_LITERALS];
+  static ap_uint<VAR_IDX_BIT_WIDTH> local_variable_index_vector[TOTAL_VARIABLE_INDEXES];
   float marginalsTrue [NUM_VAR];
   float marginalsFalse [NUM_VAR];
   float derivatives [PSDD_SIZE];
-  int index = 0;
-  InitLoop:for (int i = PSDD_SIZE-1; i >= 0 ; i--){
-    #pragma HLS pipeline
-    user_data[i] = index++;
-    derivatives[i] = 0;
-  }
-  for (int i = 0; i < NUM_VAR; i++){
-    marginalsTrue[i] = 0;
-    marginalsFalse[i] = 0;
-  }
 
-  derivatives[0] = 1;
   #pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
   #pragma HLS RESOURCE variable=node_type_vector core=XPM_MEMORY uram
@@ -439,10 +444,12 @@ void fpga_mar(
   node_type_vector, local_bool_param_vector, bool_param_vector,
    local_literal_vector, literal_vector, local_literal_variable_vector, literal_variable_vector,  local_top_variable_vector, top_variable_vector,
   local_children_size_vector, children_size_vector, local_children_offset_vector, children_offset_vector, local_literal_index_vector,
-  literal_index_vector, local_variable_index_vector, variable_index_vector, local_sub_vector, sub_vector, local_prime_vector, prime_vector, local_parameter_vector, parameter_vector);
+  literal_index_vector, local_variable_index_vector, variable_index_vector, local_sub_vector, sub_vector, local_prime_vector, prime_vector, derivatives,
+  marginalsTrue, marginalsFalse);
+
+  derivatives[0] = 1;
 
   for (uint m = 0; m < num_queries; m++){
-
     uint cur_decn_node = 0;
     LoopDecision:for(int cur_node_idx = PSDD_SIZE-1; cur_node_idx >= 0; cur_node_idx--) {
       if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE) {
@@ -450,31 +457,32 @@ void fpga_mar(
         load16Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_node_idx], element_size);
         load16Bit_staggered(prime_vector, local_prime_vector, local_children_offset_vector[cur_node_idx], element_size);
         loadFloats_staggered(parameter_vector, local_parameter_vector, local_children_offset_vector[cur_node_idx], element_size);
-        float cur_derivative = derivatives[user_data[cur_node_idx]];
+        float cur_derivative = derivatives[PSDD_SIZE - 1 - cur_node_idx];
         assert(element_size <= MAX_CHILDREN);
         InnerLoop:for (uint i = 0; i < element_size; i++) {
-    // #pragma HLS pipeline
-            derivatives[user_data[local_prime_vector[i]]] += cur_derivative * float(local_parameter_vector[i]);
-            derivatives[user_data[local_sub_vector[i]]] += cur_derivative * float(local_parameter_vector[i]);
+          #pragma HLS UNROLL
+            derivatives[PSDD_SIZE - 1 - local_prime_vector[i]] += cur_derivative * float(local_parameter_vector[i]);
+            derivatives[PSDD_SIZE- 1 - local_sub_vector[i]] += cur_derivative * float(local_parameter_vector[i]);
           }
         cur_decn_node++;
       }
     }
     LoopTop:for(int cur_node_idx = TOTAL_VARIABLE_INDEXES-1; cur_node_idx >= 0 && TOTAL_VARIABLE_INDEXES > 1; cur_node_idx--) {
-   // #pragma HLS pipeline
-    marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_variable_index_vector[cur_node_idx]]] * float (local_bool_param_vector[cur_node_idx +1]);
-    marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[user_data[local_variable_index_vector[cur_node_idx]]] * float (local_bool_param_vector[cur_node_idx]);
+   #pragma HLS pipeline
+    marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_variable_index_vector[cur_node_idx]] * float (local_bool_param_vector[cur_node_idx +1]);
+    marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_variable_index_vector[cur_node_idx]] * float (local_bool_param_vector[cur_node_idx]);
      }
 
   LoopLiteral:for(int cur_node_idx = TOTAL_LITERALS-1; cur_node_idx >= 0; cur_node_idx--) {
-  // #pragma HLS pipeline
+  #pragma HLS pipeline
     if (local_literal_vector[cur_node_idx] > 0) {
-      marginalsTrue[local_literal_variable_vector[cur_node_idx]] += derivatives[user_data[local_literal_index_vector[cur_node_idx]]];
+      marginalsTrue[local_literal_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_literal_index_vector[cur_node_idx]];
     } else {
-      marginalsFalse[local_literal_variable_vector[cur_node_idx]] += derivatives[user_data[local_literal_index_vector[cur_node_idx]]];
+      marginalsFalse[local_literal_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_literal_index_vector[cur_node_idx]];
     }
  }
     FinalLoop:for (int i = 0; i < NUM_VAR; i++){
+      #pragma HLS pipeline
       float partition = marginalsFalse[i] + marginalsTrue[i];
       resultTrue[i] = marginalsTrue[i] / partition;
       resultFalse[i] =  marginalsFalse[i] / partition;
