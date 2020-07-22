@@ -248,8 +248,8 @@ int main(int argc, char** argv)
       //Allocate Memory in Host Memory
     std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (PSDD_SIZE);
     std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_CHILDREN);
-    std::vector<float, aligned_allocator<float>> resultTrue (1220);
-    std::vector<float, aligned_allocator<float>> resultFalse (1220);
+    std::vector<float, aligned_allocator<float>> resultTrue (NUM_VAR);
+    std::vector<float, aligned_allocator<float>> resultFalse (NUM_VAR);
 
     FPGAPsddNode *result_node = psdd_manager->ReadFPGAPsddFileOld(psdd_filename, 0, fpga_node_vector, prime_vector, sub_vector, parameter_vector, bool_param_vector,
        literal_vector, literal_index_vector,literal_variable_vector, top_variable_vector, variable_index_vector, children_size_vector, children_offset_vector, node_type_vector);
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
     size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
-    size_t result_size_bytes = sizeof(float) * 1220;
+    size_t result_size_bytes = sizeof(float) * NUM_VAR;
     cl_int err;
     clock_t time_req  = clock();
 
@@ -386,8 +386,6 @@ bool verifyResultsMPE(std::vector<float, aligned_allocator<float>> &result , con
    // Change back to num _queries
    for (uint i =0; i < NUM_QUERIES; i++){
      float tmpDiff = 0;
-     // if (reference_results[i] != -std::numeric_limits<float>::infinity())
-     //    std::cout << "i: " << i << " reference : " << reference_results[i] << " results: "  << result[i] << std::endl;
      if (reference_results[i] != -std::numeric_limits<float>::infinity()){
      tmpDiff = std::pow((reference_results[i] - result[i]),2);
    }
@@ -414,17 +412,29 @@ bool verifyResultsMAR(std::vector<float, aligned_allocator<float>> &resultTrue ,
     std::cout << "verify MAR\n";
     float totalFalseDiff = 0;
     float totalTrueDiff = 0;
-    // for (int i = 0; i < 1220; i++){
-    //   float tmpTrue = abs(mar_result[i].second.parameter() - resultTrue[i]);
-    //   float tmpFalse = abs(mar_result[i].first.parameter() - resultFalse[i]);
-    //
-    //   cout << "i: " << i << " reference false" << mar_result[i].first.parameter() << " fpga false: " << resultFalse[i] << " difference: " << mar_result[i].first.parameter() - resultFalse[i];
-    //   cout << " reference true" << mar_result[i].second.parameter() << " fpga true: " << resultTrue[i] << " True Difference: " << mar_result[i].second.parameter() - resultTrue[i] << endl;
-    //   if (tmpFalse != -std::numeric_limits<double>::infinity() &&  !isnan(tmpFalse) && tmpFalse != std::numeric_limits<double>::infinity())
-    //     totalFalseDiff += tmpFalse;
-    //   if (tmpTrue != -std::numeric_limits<double>::infinity()  && !isnan(tmpTrue) && tmpTrue != std::numeric_limits<double>::infinity())
-    //     totalTrueDiff += tmpTrue;
-    // }
-    cout << "total false diff: " << totalFalseDiff << " total true diff: " << totalTrueDiff << endl;
+    for (int i = 0; i < NUM_VAR; i++){
+      float tmpTrue = abs(mar_result[i].second.parameter() - resultTrue[i]);
+      float tmpFalse = abs(mar_result[i].first.parameter() - resultFalse[i]);
+      if (tmpFalse != -std::numeric_limits<double>::infinity() &&  !isnan(tmpFalse) && tmpFalse != std::numeric_limits<double>::infinity())
+        totalFalseDiff += tmpFalse;
+      if (tmpTrue != -std::numeric_limits<double>::infinity()  && !isnan(tmpTrue) && tmpTrue != std::numeric_limits<double>::infinity())
+        totalTrueDiff += tmpTrue;
+      if ((tmpTrue > .1 || tmpFalse >.1) && (tmpTrue != std::numeric_limits<double>::infinity() && tmpFalse != std::numeric_limits<double>::infinity())){
+        cout << "error at i: " << i << " tmpTrue: " << tmpTrue <<  " tmpFalse" << tmpFalse << endl;
+      }
+    }
+    totalTrueDiff = totalTrueDiff /NUM_VAR;
+    totalFalseDiff = totalFalseDiff /NUM_VAR;
+
+    if (totalTrueDiff > .001){
+      cout << "Error at true: " << totalTrueDiff << std::endl;
+      valid = false;
+    }
+    if (totalFalseDiff > .001){
+      cout << "Error at false: " << totalFalseDiff << std::endl;
+      valid = false;
+    }
+    cout << "avg false diff: " << totalFalseDiff << " avg true diff: " << totalTrueDiff  << endl;
+
     return valid;
 }

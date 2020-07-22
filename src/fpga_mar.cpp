@@ -192,8 +192,8 @@ void fpga_mar(
   static ap_uint<20> local_variable_index_vector[TOTAL_VARIABLE_INDEXES];
   //Might not be needed?? User data can be replaced with local_literal_vector etc...
   static int user_data [PSDD_SIZE];
-  float marginalsTrue [1220];
-  float marginalsFalse [1220];
+  float marginalsTrue [NUM_VAR];
+  float marginalsFalse [NUM_VAR];
   float derivatives [PSDD_SIZE];
   int index = 0;
   InitLoop:for (int i = PSDD_SIZE-1; i >= 0 ; i--){
@@ -201,7 +201,7 @@ void fpga_mar(
     user_data[i] = index++;
     derivatives[i] = -std::numeric_limits<float>::infinity();
   }
-  for (int i = 0; i < 1220; i++){
+  for (int i = 0; i < NUM_VAR; i++){
     marginalsTrue[i] = -std::numeric_limits<float>::infinity();
     marginalsFalse[i] = -std::numeric_limits<float>::infinity();
   }
@@ -227,22 +227,17 @@ void fpga_mar(
   for (uint m = 0; m < num_queries; m++){
 
     uint cur_decn_node = 0;
-    std::cout << "fpga\n";
-    LoopDecision:for(int cur_node_idx = PSDD_SIZE-1; cur_node_idx >= PSDD_SIZE -50; cur_node_idx--) {
+    LoopDecision:for(int cur_node_idx = PSDD_SIZE-1; cur_node_idx >= 0; cur_node_idx--) {
       if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE) {
       short element_size = local_children_size_vector[cur_node_idx];
        load16Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_node_idx], element_size);
        load16Bit_staggered(prime_vector, local_prime_vector, local_children_offset_vector[cur_node_idx], element_size);
        loadFloats_staggered(parameter_vector, local_parameter_vector, local_children_offset_vector[cur_node_idx], element_size);
         float cur_derivative = derivatives[user_data[cur_node_idx]];
-        std::cout << "at decision node: " << cur_node_idx << " cur_derivative:" << cur_derivative << std::endl;
-
         assert(element_size <= MAX_CHILDREN);
-        std::cout << " child: {\n";
           InnerLoop:for (uint i = 0; i < element_size; i++) {
     // #pragma HLS pipeline
             float tmp = cur_derivative + float(local_parameter_vector[i]);
-            std::cout << "tmp:" << tmp << ", parameter_vector: " << float(local_parameter_vector[i]) << ",\n p: { ";
             if (derivatives[user_data[local_prime_vector[i]]] == -std::numeric_limits<double>::infinity()){
               derivatives[user_data[local_prime_vector[i]]] = tmp;
             } else if (tmp == -std::numeric_limits<double>::infinity()){
@@ -254,7 +249,6 @@ void fpga_mar(
                 derivatives[user_data[local_prime_vector[i]]] = tmp + std::log1p(std::exp(derivatives[user_data[local_prime_vector[i]]] - tmp));
               }
             }
-              std::cout << "idx: " << local_prime_vector[i] << " UD: " << user_data[local_prime_vector[i]] << " val: " << derivatives[user_data[local_prime_vector[i]]] << "},\n s: { ";
             if (derivatives[user_data[local_sub_vector[i]]] == -std::numeric_limits<double>::infinity()){
               derivatives[user_data[local_sub_vector[i]]] = tmp;
             } else if (tmp == -std::numeric_limits<double>::infinity()){
@@ -266,10 +260,7 @@ void fpga_mar(
                 derivatives[user_data[local_sub_vector[i]]] = tmp + std::log1p(std::exp(derivatives[user_data[local_sub_vector[i]]] - tmp));
               }
             }
-            std::cout << "idx: " << local_sub_vector[i] << " UD: " << user_data[local_sub_vector[i]] << " val: " << derivatives[user_data[local_sub_vector[i]]] << "}\n";
-
           }
-          std::cout << "}\n";
           cur_decn_node++;
       }
     }
@@ -332,8 +323,7 @@ void fpga_mar(
       }
     }
  }
-    FinalLoop:for (int i = 0; i < 1220; i++){
-      // user_data[i] = 0;
+    FinalLoop:for (int i = 0; i < NUM_VAR; i++){
       float partition = marginalsFalse[i];
       if (marginalsFalse[i] == -std::numeric_limits<double>::infinity()){
         partition = marginalsTrue[i];
@@ -348,7 +338,6 @@ void fpga_mar(
       }
       resultTrue[i] = marginalsTrue[i] - partition;
       resultFalse[i] =  marginalsFalse[i] - partition;
-      // std::cout << "i: " << i << " true: " << marginalsTrue[i] << " false: " << marginalsFalse[i] << " partition[i] " << partition <<  std::endl;
     }
   }
 }
