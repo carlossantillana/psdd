@@ -257,7 +257,6 @@ int main(int argc, char** argv)
    auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
    uint32_t root_node_idx = result_node->node_index_;
 
-   auto fpga_serialized_psdd_evaluate = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, prime_vector, sub_vector);
    std::cout << "inside MAR\n";
     std::bitset<MAX_VAR> var_mask;
     var_mask.set();
@@ -274,7 +273,6 @@ int main(int argc, char** argv)
     size_t variable_index_vector_size_bytes = sizeof(variable_index_vector[0]) * TOTAL_VARIABLE_INDEXES;
     size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
-    size_t fpga_serialized_psdd_evaluate_size_bytes = sizeof(fpga_serialized_psdd[0]) * TOTAL_CHILDREN_SIZE;
     size_t result_size_bytes = sizeof(float) * NUM_VAR;
     cl_int err;
     clock_t time_req  = clock();
@@ -413,14 +411,14 @@ bool verifyResultsMAR(std::vector<float, aligned_allocator<float>> &resultTrue ,
     float totalFalseDiff = 0;
     float totalTrueDiff = 0;
     for (int i = 0; i < NUM_VAR; i++){
-      float tmpTrue = abs(mar_result[i].second.parameter() - resultTrue[i]);
-      float tmpFalse = abs(mar_result[i].first.parameter() - resultFalse[i]);
+      float tmpTrue = abs(mar_result[i].second.parameter() - std::log(resultTrue[i]));
+      float tmpFalse = abs(mar_result[i].first.parameter() - std::log(resultFalse[i]));
       if (tmpFalse != -std::numeric_limits<double>::infinity() &&  !isnan(tmpFalse) && tmpFalse != std::numeric_limits<double>::infinity())
         totalFalseDiff += tmpFalse;
       if (tmpTrue != -std::numeric_limits<double>::infinity()  && !isnan(tmpTrue) && tmpTrue != std::numeric_limits<double>::infinity())
         totalTrueDiff += tmpTrue;
       if ((tmpTrue > .1 || tmpFalse >.1) && (tmpTrue != std::numeric_limits<double>::infinity() && tmpFalse != std::numeric_limits<double>::infinity())){
-        cout << "error at i: " << i << " tmpTrue: " << tmpTrue <<  " tmpFalse" << tmpFalse << endl;
+        cout << "error at i: " << i << " fpgaTrue: " << std::log(resultTrue[i]) << " ref true: " << mar_result[i].second.parameter()  <<  " fpgaFalse: " << std::log(resultFalse[i]) << " refFalse: " << mar_result[i].first.parameter()  << endl;
       }
     }
     totalTrueDiff = totalTrueDiff /NUM_VAR;
