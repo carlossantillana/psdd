@@ -144,6 +144,148 @@ extern "C" {
      loadFloat(marginalsFalse, NUM_VAR, 0);
      return;
    }
+
+//Base 10
+void fpga_mar(
+        const ap_int<32> *node_type_vector, // Read-Only Vector 2
+        const ap_uint<32> *prime_vector,
+        const ap_uint<32> *sub_vector,
+        const ap_fixed<32,PARAM_DEC_WIDTH,AP_RND> *parameter_vector,
+        const ap_fixed<32,BOOL_DEC_WIDTH,AP_RND> *bool_param_vector,
+        const ap_int<32> *literal_vector,
+        const ap_int<32> *literal_variable_vector,
+        const ap_int<32> *top_variable_vector,
+        const ap_uint<32> *children_size_vector,
+        const ap_uint<32> *children_offset_vector,
+        const ap_uint<32> *literal_index_vector,
+        const ap_uint<32> *variable_index_vector,
+        float *resultTrue,       // Output Result
+        float *resultFalse,       // Output Result
+        int num_queries)
+{
+#pragma HLS INTERFACE m_axi port=node_type_vector  offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=prime_vector  offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port=sub_vector  offset=slave bundle=gmem
+#pragma HLS INTERFACE m_axi port = parameter_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = bool_param_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = literal_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = literal_variable_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = top_variable_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = children_size_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = children_offset_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = literal_index_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = variable_index_vector offset = slave bundle = gmem
+#pragma HLS INTERFACE m_axi port = resultTrue offset=slave bundle=gmem1
+#pragma HLS INTERFACE m_axi port = resultFalse offset=slave bundle=gmem2
+#pragma HLS INTERFACE s_axilite port = node_type_vector  bundle=control
+#pragma HLS INTERFACE s_axilite port = prime_vector bundle=control
+#pragma HLS INTERFACE s_axilite port = sub_vector bundle=control
+#pragma HLS INTERFACE s_axilite port = parameter_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = bool_param_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = literal_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = literal_variable_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = top_variable_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = children_size_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = children_offset_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = literal_index_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = variable_index_vector bundle = control
+#pragma HLS INTERFACE s_axilite port = resultTrue bundle=control
+#pragma HLS INTERFACE s_axilite port = resultFalse bundle=control
+#pragma HLS INTERFACE s_axilite port = num_queries bundle=control
+#pragma HLS INTERFACE s_axilite port = return bundle=control
+
+  assert(num_queries <= 2048);  // this helps HLS estimate the loop trip count
+  static bool local_variables [MAX_VAR];
+  static bool local_instantiation [MAX_VAR];
+  static ap_uint<PRIME_BIT_WIDTH> local_prime_vector[MAX_CHILDREN];
+  static ap_uint<SUB_BIT_WIDTH> local_sub_vector[MAX_CHILDREN];
+  static ap_fixed<PARAM_BIT_WIDTH,PARAM_DEC_WIDTH,AP_RND > local_parameter_vector[MAX_CHILDREN];
+  static ap_fixed<BOOL_BIT_WIDTH,BOOL_DEC_WIDTH,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
+  static ap_int<NODE_TYPE_BIT_WIDTH> local_node_type_vector[PSDD_SIZE];
+  static ap_int<LITERAL_BIT_WIDTH> local_literal_vector [TOTAL_LITERALS];
+  static ap_int<LITERAL_VAR_BIT_WIDTH> local_literal_variable_vector [TOTAL_LITERALS];
+  static ap_int<TOP_VAR_BIT_WIDTH> local_top_variable_vector [TOTAL_VARIABLE_INDEXES];
+  static ap_uint<CHILD_SIZE_BIT_WIDTH> local_children_size_vector [PSDD_SIZE];
+  static ap_uint<CHILD_OFFSET_BIT_WIDTH> local_children_offset_vector [TOTAL_CHILDREN_SIZE];
+  static ap_uint<LITERAL_IDX_BIT_WIDTH> local_literal_index_vector[TOTAL_LITERALS];
+  static ap_uint<VAR_IDX_BIT_WIDTH> local_variable_index_vector[TOTAL_VARIABLE_INDEXES];
+  float marginalsTrue [NUM_VAR];
+  float marginalsFalse [NUM_VAR];
+  float derivatives [PSDD_SIZE];
+
+  #pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=node_type_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_literal_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_literal_variable_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_top_variable_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_literal_index_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_variable_index_vector core=XPM_MEMORY uram
+  #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
+
+  load(local_variables, local_node_type_vector,
+  node_type_vector, local_bool_param_vector, bool_param_vector,
+   local_literal_vector, literal_vector, local_literal_variable_vector, literal_variable_vector,  local_top_variable_vector, top_variable_vector,
+  local_children_size_vector, children_size_vector, local_children_offset_vector, children_offset_vector, local_literal_index_vector,
+  literal_index_vector, local_variable_index_vector, variable_index_vector, local_sub_vector, sub_vector, local_prime_vector, prime_vector, derivatives,
+  marginalsTrue, marginalsFalse);
+
+  derivatives[0] = 1;
+
+  for (uint m = 0; m < num_queries; m++){
+    uint cur_decn_node = 0;
+    LoopDecision:for(int cur_node_idx = PSDD_SIZE-1; cur_node_idx >= 0; cur_node_idx--) {
+      if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE) {
+        short element_size = local_children_size_vector[cur_node_idx];
+        load16Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_node_idx], element_size);
+        load16Bit_staggered(prime_vector, local_prime_vector, local_children_offset_vector[cur_node_idx], element_size);
+        loadFloats_staggered(parameter_vector, local_parameter_vector, local_children_offset_vector[cur_node_idx], element_size);
+        float cur_derivative = derivatives[PSDD_SIZE - 1 - cur_node_idx];
+        assert(element_size <= MAX_CHILDREN);
+        InnerLoopPrime:for (uint i = 0; i < element_size; i++) {
+          // #pragma HLS UNROLL <- would this be faster??
+          #pragma HLS pipeline
+          #pragma HLS dependence variable=derivatives inter false
+            derivatives[PSDD_SIZE - 1 - local_prime_vector[i]] += cur_derivative * float(local_parameter_vector[i]);
+          }
+          InnerLoopSub:for (uint i = 0; i < element_size; i++) {
+            // #pragma HLS UNROLL
+            #pragma HLS pipeline
+            #pragma HLS dependence variable=derivatives inter false
+              derivatives[PSDD_SIZE- 1 - local_sub_vector[i]] += cur_derivative * float(local_parameter_vector[i]);
+            }
+        cur_decn_node++;
+      }
+    }
+    LoopTop:for(int cur_node_idx = TOTAL_VARIABLE_INDEXES-1; cur_node_idx >= 0 && TOTAL_VARIABLE_INDEXES > 1; cur_node_idx--) {
+   #pragma HLS pipeline
+    marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_variable_index_vector[cur_node_idx]] * float (local_bool_param_vector[cur_node_idx +1]);
+    marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_variable_index_vector[cur_node_idx]] * float (local_bool_param_vector[cur_node_idx]);
+     }
+
+  LoopLiteral:for(int cur_node_idx = TOTAL_LITERALS-1; cur_node_idx >= 0; cur_node_idx--) {
+
+    #pragma HLS dependence variable=marginalsTrue inter false
+    #pragma HLS dependence variable=marginalsFalse inter false
+
+  #pragma HLS pipeline
+    if (local_literal_vector[cur_node_idx] > 0) {
+      marginalsTrue[local_literal_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_literal_index_vector[cur_node_idx]];
+    } else {
+      marginalsFalse[local_literal_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_literal_index_vector[cur_node_idx]];
+    }
+ }
+    FinalLoop:for (int i = 0; i < NUM_VAR; i++){
+      #pragma HLS pipeline
+      float partition = marginalsFalse[i] + marginalsTrue[i];
+      resultTrue[i] = marginalsTrue[i] / partition;
+      resultFalse[i] =  marginalsFalse[i] / partition;
+    }
+  }
+}
+}
+
+
 //Log Scale
 
 // void fpga_mar(
@@ -361,132 +503,3 @@ extern "C" {
 //     }
 //   }
 // }
-
-//Base 10
-void fpga_mar(
-        const ap_int<32> *node_type_vector, // Read-Only Vector 2
-        const ap_uint<32> *prime_vector,
-        const ap_uint<32> *sub_vector,
-        const ap_fixed<32,PARAM_DEC_WIDTH,AP_RND> *parameter_vector,
-        const ap_fixed<32,BOOL_DEC_WIDTH,AP_RND> *bool_param_vector,
-        const ap_int<32> *literal_vector,
-        const ap_int<32> *literal_variable_vector,
-        const ap_int<32> *top_variable_vector,
-        const ap_uint<32> *children_size_vector,
-        const ap_uint<32> *children_offset_vector,
-        const ap_uint<32> *literal_index_vector,
-        const ap_uint<32> *variable_index_vector,
-        float *resultTrue,       // Output Result
-        float *resultFalse,       // Output Result
-        int num_queries)
-{
-#pragma HLS INTERFACE m_axi port=node_type_vector  offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=prime_vector  offset=slave bundle=gmem
-#pragma HLS INTERFACE m_axi port=sub_vector  offset=slave bundle=gmem
-#pragma HLS INTERFACE m_axi port = parameter_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = bool_param_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = literal_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = literal_variable_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = top_variable_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = children_size_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = children_offset_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = literal_index_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = variable_index_vector offset = slave bundle = gmem
-#pragma HLS INTERFACE m_axi port = resultTrue offset=slave bundle=gmem1
-#pragma HLS INTERFACE m_axi port = resultFalse offset=slave bundle=gmem2
-#pragma HLS INTERFACE s_axilite port = node_type_vector  bundle=control
-#pragma HLS INTERFACE s_axilite port = prime_vector bundle=control
-#pragma HLS INTERFACE s_axilite port = sub_vector bundle=control
-#pragma HLS INTERFACE s_axilite port = parameter_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = bool_param_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = literal_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = literal_variable_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = top_variable_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = children_size_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = children_offset_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = literal_index_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = variable_index_vector bundle = control
-#pragma HLS INTERFACE s_axilite port = resultTrue bundle=control
-#pragma HLS INTERFACE s_axilite port = resultFalse bundle=control
-#pragma HLS INTERFACE s_axilite port = num_queries bundle=control
-#pragma HLS INTERFACE s_axilite port = return bundle=control
-
-  assert(num_queries <= 2048);  // this helps HLS estimate the loop trip count
-  static bool local_variables [MAX_VAR];
-  static bool local_instantiation [MAX_VAR];
-  static ap_uint<PRIME_BIT_WIDTH> local_prime_vector[MAX_CHILDREN];
-  static ap_uint<SUB_BIT_WIDTH> local_sub_vector[MAX_CHILDREN];
-  static ap_fixed<PARAM_BIT_WIDTH,PARAM_DEC_WIDTH,AP_RND > local_parameter_vector[MAX_CHILDREN];
-  static ap_fixed<BOOL_BIT_WIDTH,BOOL_DEC_WIDTH,AP_RND > local_bool_param_vector[TOTAL_BOOL_PARAM];
-  static ap_int<NODE_TYPE_BIT_WIDTH> local_node_type_vector[PSDD_SIZE];
-  static ap_int<LITERAL_BIT_WIDTH> local_literal_vector [TOTAL_LITERALS];
-  static ap_int<LITERAL_VAR_BIT_WIDTH> local_literal_variable_vector [TOTAL_LITERALS];
-  static ap_int<TOP_VAR_BIT_WIDTH> local_top_variable_vector [TOTAL_VARIABLE_INDEXES];
-  static ap_uint<CHILD_SIZE_BIT_WIDTH> local_children_size_vector [PSDD_SIZE];
-  static ap_uint<CHILD_OFFSET_BIT_WIDTH> local_children_offset_vector [TOTAL_CHILDREN_SIZE];
-  static ap_uint<LITERAL_IDX_BIT_WIDTH> local_literal_index_vector[TOTAL_LITERALS];
-  static ap_uint<VAR_IDX_BIT_WIDTH> local_variable_index_vector[TOTAL_VARIABLE_INDEXES];
-  float marginalsTrue [NUM_VAR];
-  float marginalsFalse [NUM_VAR];
-  float derivatives [PSDD_SIZE];
-
-  #pragma HLS RESOURCE variable=local_instantiation core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_variables core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=node_type_vector core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_literal_vector core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_literal_variable_vector core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_top_variable_vector core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_literal_index_vector core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_variable_index_vector core=XPM_MEMORY uram
-  #pragma HLS RESOURCE variable=local_parameter_vector core=XPM_MEMORY uram
-
-  load(local_variables, local_node_type_vector,
-  node_type_vector, local_bool_param_vector, bool_param_vector,
-   local_literal_vector, literal_vector, local_literal_variable_vector, literal_variable_vector,  local_top_variable_vector, top_variable_vector,
-  local_children_size_vector, children_size_vector, local_children_offset_vector, children_offset_vector, local_literal_index_vector,
-  literal_index_vector, local_variable_index_vector, variable_index_vector, local_sub_vector, sub_vector, local_prime_vector, prime_vector, derivatives,
-  marginalsTrue, marginalsFalse);
-
-  derivatives[0] = 1;
-
-  for (uint m = 0; m < num_queries; m++){
-    uint cur_decn_node = 0;
-    LoopDecision:for(int cur_node_idx = PSDD_SIZE-1; cur_node_idx >= 0; cur_node_idx--) {
-      if (local_node_type_vector[cur_node_idx] == DECISION_NODE_TYPE) {
-        short element_size = local_children_size_vector[cur_node_idx];
-        load16Bit_staggered(sub_vector, local_sub_vector, local_children_offset_vector[cur_node_idx], element_size);
-        load16Bit_staggered(prime_vector, local_prime_vector, local_children_offset_vector[cur_node_idx], element_size);
-        loadFloats_staggered(parameter_vector, local_parameter_vector, local_children_offset_vector[cur_node_idx], element_size);
-        float cur_derivative = derivatives[PSDD_SIZE - 1 - cur_node_idx];
-        assert(element_size <= MAX_CHILDREN);
-        InnerLoop:for (uint i = 0; i < element_size; i++) {
-          #pragma HLS UNROLL
-            derivatives[PSDD_SIZE - 1 - local_prime_vector[i]] += cur_derivative * float(local_parameter_vector[i]);
-            derivatives[PSDD_SIZE- 1 - local_sub_vector[i]] += cur_derivative * float(local_parameter_vector[i]);
-          }
-        cur_decn_node++;
-      }
-    }
-    LoopTop:for(int cur_node_idx = TOTAL_VARIABLE_INDEXES-1; cur_node_idx >= 0 && TOTAL_VARIABLE_INDEXES > 1; cur_node_idx--) {
-   #pragma HLS pipeline
-    marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_variable_index_vector[cur_node_idx]] * float (local_bool_param_vector[cur_node_idx +1]);
-    marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_variable_index_vector[cur_node_idx]] * float (local_bool_param_vector[cur_node_idx]);
-     }
-
-  LoopLiteral:for(int cur_node_idx = TOTAL_LITERALS-1; cur_node_idx >= 0; cur_node_idx--) {
-  #pragma HLS pipeline
-    if (local_literal_vector[cur_node_idx] > 0) {
-      marginalsTrue[local_literal_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_literal_index_vector[cur_node_idx]];
-    } else {
-      marginalsFalse[local_literal_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_literal_index_vector[cur_node_idx]];
-    }
- }
-    FinalLoop:for (int i = 0; i < NUM_VAR; i++){
-      #pragma HLS pipeline
-      float partition = marginalsFalse[i] + marginalsTrue[i];
-      resultTrue[i] = marginalsTrue[i] / partition;
-      resultFalse[i] =  marginalsFalse[i] / partition;
-    }
-  }
-}
-}
