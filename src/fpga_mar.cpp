@@ -92,7 +92,7 @@ extern "C" {
      }
    }
 
-   void loadFloats_staggered(const ap_fixed<32,6,AP_RND >* data_dram, ap_fixed<PARAM_BIT_WIDTH,PARAM_DEC_WIDTH,AP_RND >* data_local, int start, int burstLength){
+   void loadFloats_staggered(const ap_fixed<32,PARAM_DEC_WIDTH,AP_RND >* data_dram, ap_fixed<PARAM_BIT_WIDTH,PARAM_DEC_WIDTH,AP_RND >* data_local, int start, int burstLength){
      #pragma HLS inline off
      int j = 0;
      loadFloatStaggered:  for (int i = start; i < start +burstLength; i++){
@@ -259,12 +259,14 @@ void fpga_mar(
     }
     LoopTop:for(int cur_node_idx = TOTAL_VARIABLE_INDEXES-1; cur_node_idx >= 0 && TOTAL_VARIABLE_INDEXES > 1; cur_node_idx--) {
    #pragma HLS pipeline
+   #pragma HLS dependence variable=marginalsTrue inter false
+   #pragma HLS dependence variable=marginalsFalse inter false
+
     marginalsFalse[local_top_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_variable_index_vector[cur_node_idx]] * float (local_bool_param_vector[cur_node_idx +1]);
     marginalsTrue[local_top_variable_vector[cur_node_idx]] += derivatives[PSDD_SIZE - 1 - local_variable_index_vector[cur_node_idx]] * float (local_bool_param_vector[cur_node_idx]);
      }
 
   LoopLiteral:for(int cur_node_idx = TOTAL_LITERALS-1; cur_node_idx >= 0; cur_node_idx--) {
-
     #pragma HLS dependence variable=marginalsTrue inter false
     #pragma HLS dependence variable=marginalsFalse inter false
 

@@ -74,7 +74,7 @@ int main(int argc, char** argv)
   std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>>  fpga_node_vector (PSDD_SIZE);
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> prime_vector (TOTAL_CHILDREN);
   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> sub_vector (TOTAL_CHILDREN);
-  std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
+  std::vector<ap_fixed<32,BOOL_DEC_WIDTH,AP_RND>, aligned_allocator<ap_fixed<32,BOOL_DEC_WIDTH,AP_RND>>> bool_param_vector (TOTAL_BOOL_PARAM);
   std::vector<std::bitset<MAX_VAR>, aligned_allocator<std::bitset<MAX_VAR>>> instantiations (NUM_DISTICT_QUERIES);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_vector (TOTAL_LITERALS);
   std::vector<ap_int<32>, aligned_allocator<ap_int<32>>> literal_index_vector (TOTAL_LITERALS);
@@ -247,7 +247,7 @@ int main(int argc, char** argv)
   if (strcmp(query, "mar_query") == 0) {
       //Allocate Memory in Host Memory
     std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (PSDD_SIZE);
-    std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> parameter_vector (TOTAL_CHILDREN);
+    std::vector<ap_fixed<32,PARAM_DEC_WIDTH,AP_RND>, aligned_allocator<ap_fixed<32,PARAM_DEC_WIDTH,AP_RND>>> parameter_vector (TOTAL_CHILDREN);
     std::vector<float, aligned_allocator<float>> resultTrue (NUM_VAR);
     std::vector<float, aligned_allocator<float>> resultFalse (NUM_VAR);
 
