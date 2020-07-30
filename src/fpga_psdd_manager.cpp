@@ -774,9 +774,9 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFile(const char *psdd_filename, uintm
 }
 
 PsddNodeStruct ConvertPsddToStructOldLinear(FPGAPsddNode * cur_node, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector,
-  int & currentChild, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector,
+  int & currentChild, std::vector<float, aligned_allocator<float>> &parameter_vector,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>>& bool_param_vector, int & currentBoolParam,
-  int &previousPrime, int& previousSub){
+  int &previousPrime, int& previousSub, int current_index){
   PsddNodeStruct PsddStruct;
   PsddStruct.node_type_ = cur_node->node_type_;
   PsddStruct.children_size = cur_node->primes_.size();
@@ -788,19 +788,22 @@ PsddNodeStruct ConvertPsddToStructOldLinear(FPGAPsddNode * cur_node, std::vector
     prime_vector[currentChild] = prime ;
     sub_vector[currentChild] = sub ;
     parameter_vector[currentChild] = std::exp(param.parameter_);
+    if (currentChild == 770397 ){
+      std::cout << "offset: " << 770397 << " node: " << current_index << " param.parameter_: " << param.parameter_ << " std::exp(param.parameter_): " << std::exp(param.parameter_) << std::endl;
+    }
     currentChild++;
   }
   if (int(PsddStruct.node_type_) == TOP_NODE_TYPE){
-    bool_param_vector[currentBoolParam] = cur_node->true_parameter_.parameter_;
+    bool_param_vector[currentBoolParam] = std::exp(cur_node->true_parameter_.parameter_);
     currentBoolParam++;
-    bool_param_vector[currentBoolParam] = cur_node->false_parameter_.parameter_;
+    bool_param_vector[currentBoolParam] = std::exp(cur_node->false_parameter_.parameter_);
     currentBoolParam++;
   }
   return PsddStruct;
 }
 
 PsddNodeStruct ConvertPsddToStructOld(FPGAPsddNode * cur_node, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector,
-  int & currentChild, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector,
+  int & currentChild, std::vector<float, aligned_allocator<float>> &parameter_vector,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>>& bool_param_vector, int & currentBoolParam,
   int &previousPrime, int& previousSub){
   PsddNodeStruct PsddStruct;
@@ -825,7 +828,7 @@ PsddNodeStruct ConvertPsddToStructOld(FPGAPsddNode * cur_node, std::vector<ap_ui
   return PsddStruct;
 }
 FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, uintmax_t flag_index, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector,
-  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector, std::vector<ap_fixed<32,8,AP_RND>, aligned_allocator<ap_fixed<32,8,AP_RND>>> &parameter_vector ,
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector, std::vector<float, aligned_allocator<float>> &parameter_vector ,
   std::vector<ap_fixed<32,2,AP_RND>, aligned_allocator<ap_fixed<32,2,AP_RND>>> &bool_param_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_index_vector,
   std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &literal_variable_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &top_variable_vector, std::vector<ap_int<32>,aligned_allocator<ap_int<32>>> &variable_index_vector, std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &children_size_vector,
   std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> &children_offset_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &node_type_vector ) {
@@ -862,7 +865,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
       FPGAPsddNode *cur_node = GetFPGAPsddLiteralNode(literal, flag_index);
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStructOldLinear(cur_node, prime_vector, sub_vector,
          currentChild, parameter_vector, bool_param_vector, currentBoolParam,
-         previousPrime, previousSub);
+         previousPrime, previousSub, current_index);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
       literal_vector[currentLiteral] = literal;
@@ -885,7 +888,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
           PsddParameter::CreateFromLog(neg_log_pr));
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStructOldLinear(cur_node,
          prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
-          previousPrime, previousSub);
+          previousPrime, previousSub, current_index);
       construct_fpga_cache[node_index] = cur_node;
       top_variable_vector[currentTopVariable] = cur_node->variable_index_;
       variable_index_vector[currentTopVariable++] = current_index;
@@ -928,7 +931,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
           node_type_vector[current_index++] = DECISION_NODE_TYPE;
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStructOldLinear(cur_node,
         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
-        previousPrime, previousSub);
+        previousPrime, previousSub, current_index);
       construct_fpga_cache[node_index] = cur_node;
       root_node = cur_node;
     }

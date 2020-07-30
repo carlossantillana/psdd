@@ -27,8 +27,8 @@ const uint MERGED_LOOP_LEN = 777724;
 const uint NUM_DISTICT_QUERIES = 50;
 const uint NUM_VAR = 3357;
 #define MAX_VAR 4096
-const uint PRIME_BIT_WIDTH = 16;
-const uint SUB_BIT_WIDTH = 16;
+const uint PRIME_BIT_WIDTH = 24;
+const uint SUB_BIT_WIDTH = 24;
 const uint PARAM_BIT_WIDTH = 16;
 const uint PARAM_DEC_WIDTH = 8;
 const uint BOOL_BIT_WIDTH = 14;

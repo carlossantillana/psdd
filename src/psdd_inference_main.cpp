@@ -247,7 +247,7 @@ int main(int argc, char** argv)
   if (strcmp(query, "mar_query") == 0) {
       //Allocate Memory in Host Memory
     std::vector<ap_uint<32>, aligned_allocator<ap_uint<32>>> node_type_vector (PSDD_SIZE);
-    std::vector<ap_fixed<32,PARAM_DEC_WIDTH,AP_RND>, aligned_allocator<ap_fixed<32,PARAM_DEC_WIDTH,AP_RND>>> parameter_vector (TOTAL_CHILDREN);
+    std::vector<float, aligned_allocator<float>> parameter_vector (TOTAL_CHILDREN);
     std::vector<float, aligned_allocator<float>> resultTrue (NUM_VAR);
     std::vector<float, aligned_allocator<float>> resultFalse (NUM_VAR);
 
@@ -256,6 +256,7 @@ int main(int argc, char** argv)
    std::vector<SddLiteral> variables = vtree_util::VariablesUnderVtree(psdd_manager->vtree());
    auto fpga_serialized_psdd = fpga_psdd_node_util::SerializePsddNodes(result_node);
    uint32_t root_node_idx = result_node->node_index_;
+   std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> order = fpga_psdd_node_util::SerializePsddNodesEvaluate(root_node_idx, fpga_node_vector, prime_vector, sub_vector);
 
    std::cout << "inside MAR\n";
     std::bitset<MAX_VAR> var_mask;
@@ -274,6 +275,8 @@ int main(int argc, char** argv)
     size_t children_size_vector_size_bytes = sizeof(children_size_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t children_offset_vector_size_bytes = sizeof(children_offset_vector[0]) * TOTAL_CHILDREN_SIZE;
     size_t result_size_bytes = sizeof(float) * NUM_VAR;
+    size_t order_size_bytes = sizeof(order[0]) * PSDD_SIZE;
+
     cl_int err;
     clock_t time_req  = clock();
 
@@ -318,13 +321,15 @@ int main(int argc, char** argv)
                     literal_vector_index_size_bytes, literal_index_vector.data(), &err));
         OCL_CHECK(err, cl::Buffer buffer_in13  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                     variable_index_vector_size_bytes, variable_index_vector.data(), &err));
+        OCL_CHECK(err, cl::Buffer buffer_in14  (context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                      order_size_bytes, order.data(), &err));
         OCL_CHECK(err, cl::Buffer buffer_output1(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
                 result_size_bytes, resultTrue.data(), &err));
         OCL_CHECK(err, cl::Buffer buffer_output2(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
                 result_size_bytes, resultFalse.data(), &err));
 
         OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1, buffer_in2, buffer_in3, buffer_in4, buffer_in5,
-          buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13},0/* 0 means from host*/));
+          buffer_in7, buffer_in8, buffer_in9, buffer_in10, buffer_in11, buffer_in12, buffer_in13, buffer_in14},0/* 0 means from host*/));
 
         OCL_CHECK(err, err = krnl_mar.setArg(0, buffer_in1));
         OCL_CHECK(err, err = krnl_mar.setArg(1, buffer_in2));
@@ -338,9 +343,10 @@ int main(int argc, char** argv)
         OCL_CHECK(err, err = krnl_mar.setArg(9, buffer_in11));
         OCL_CHECK(err, err = krnl_mar.setArg(10, buffer_in12));
         OCL_CHECK(err, err = krnl_mar.setArg(11, buffer_in13));
-        OCL_CHECK(err, err = krnl_mar.setArg(12, buffer_output1));
-        OCL_CHECK(err, err = krnl_mar.setArg(13, buffer_output2));
-        OCL_CHECK(err, err = krnl_mar.setArg(14, NUM_QUERIES));
+        OCL_CHECK(err, err = krnl_mar.setArg(12, buffer_in14));
+        OCL_CHECK(err, err = krnl_mar.setArg(13, buffer_output1));
+        OCL_CHECK(err, err = krnl_mar.setArg(14, buffer_output2));
+        OCL_CHECK(err, err = krnl_mar.setArg(15, NUM_QUERIES));
 
         time_t start_time = time(NULL);
         OCL_CHECK(err, err = q.enqueueTask(krnl_mar));
@@ -417,7 +423,7 @@ bool verifyResultsMAR(std::vector<float, aligned_allocator<float>> &resultTrue ,
         totalFalseDiff += tmpFalse;
       if (tmpTrue != -std::numeric_limits<double>::infinity()  && !isnan(tmpTrue) && tmpTrue != std::numeric_limits<double>::infinity())
         totalTrueDiff += tmpTrue;
-      if ((tmpTrue > .1 || tmpFalse >.1) && (tmpTrue != std::numeric_limits<double>::infinity() && tmpFalse != std::numeric_limits<double>::infinity())){
+      if (((tmpTrue > .1 || tmpFalse >.1) && (tmpTrue != std::numeric_limits<double>::infinity() && tmpFalse != std::numeric_limits<double>::infinity())) || (tmpTrue == std::numeric_limits<double>::infinity() && tmpFalse != std::numeric_limits<double>::infinity() || tmpTrue != std::numeric_limits<double>::infinity() && tmpFalse == std::numeric_limits<double>::infinity() )) {
         cout << "error at i: " << i << " fpgaTrue: " << std::log(resultTrue[i]) << " ref true: " << mar_result[i].second.parameter()  <<  " fpgaFalse: " << std::log(resultFalse[i]) << " refFalse: " << mar_result[i].first.parameter()  << endl;
       }
       cout << "result at i: " << i << " fpgaTrue: " << std::log(resultTrue[i]) << " ref true: " << mar_result[i].second.parameter()  <<  " fpgaFalse: " << std::log(resultFalse[i]) << " refFalse: " << mar_result[i].first.parameter()  << endl;

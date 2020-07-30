@@ -294,17 +294,17 @@ SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes) {
   return result;
 }
 
-std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
+std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
                                                 ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector,
                                               std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector) {
   return SerializePsddNodesEvaluate(std::vector<uint32_t>({root_node}), fpga_node_vector, prime_vector, sub_vector);
 }
 
-std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
+std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
                                                 ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector,
                                               std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector) {
   std::unordered_set<uintmax_t> node_explored;
-  std::vector<uint32_t> result;
+  std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> result;
   for (int i = 0 ; i < root_nodes.size() ; i++ ) {
     uint32_t cur_root_node_idx = root_nodes[i];
     if (node_explored.find(cur_root_node_idx) ==

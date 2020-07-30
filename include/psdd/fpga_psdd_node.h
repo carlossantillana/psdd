@@ -189,9 +189,9 @@ namespace fpga_psdd_node_util {
 std::vector<FPGAPsddNode *> SerializePsddNodes(FPGAPsddNode *root);
 std::vector<FPGAPsddNode *>
 SerializePsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
-std::vector<uint32_t> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
+std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> SerializePsddNodesEvaluate(uint32_t root_node,  std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
                                                 ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector);
-std::vector<uint32_t> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
+std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> SerializePsddNodesEvaluate(const std::vector<uint32_t> &root_nodes, std::vector<PsddNodeStruct,aligned_allocator<PsddNodeStruct>> &fpga_node_vector
                                                   ,std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &prime_vector, std::vector<ap_uint<32>,aligned_allocator<ap_uint<32>>> &sub_vector);
 std::unordered_map<uintmax_t, FPGAPsddNode *>
 GetCoveredPsddNodes(const std::vector<FPGAPsddNode *> &root_nodes);
