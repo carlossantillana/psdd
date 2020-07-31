@@ -426,7 +426,7 @@ bool verifyResultsMAR(std::vector<float, aligned_allocator<float>> &resultTrue ,
       if (((tmpTrue > .1 || tmpFalse >.1) && (tmpTrue != std::numeric_limits<double>::infinity() && tmpFalse != std::numeric_limits<double>::infinity())) || (tmpTrue == std::numeric_limits<double>::infinity() && tmpFalse != std::numeric_limits<double>::infinity() || tmpTrue != std::numeric_limits<double>::infinity() && tmpFalse == std::numeric_limits<double>::infinity() )) {
         cout << "error at i: " << i << " fpgaTrue: " << std::log(resultTrue[i]) << " ref true: " << mar_result[i].second.parameter()  <<  " fpgaFalse: " << std::log(resultFalse[i]) << " refFalse: " << mar_result[i].first.parameter()  << endl;
       }
-      cout << "result at i: " << i << " fpgaTrue: " << std::log(resultTrue[i]) << " ref true: " << mar_result[i].second.parameter()  <<  " fpgaFalse: " << std::log(resultFalse[i]) << " refFalse: " << mar_result[i].first.parameter()  << endl;
+      // cout << "result at i: " << i << " fpgaTrue: " << std::log(resultTrue[i]) << " ref true: " << mar_result[i].second.parameter()  <<  " fpgaFalse: " << std::log(resultFalse[i]) << " refFalse: " << mar_result[i].first.parameter()  << endl;
 
     }
     totalTrueDiff = totalTrueDiff /NUM_VAR;
