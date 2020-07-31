@@ -841,6 +841,8 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
   int currentTopVariable = 0;
   int previousPrime = 0;
   int previousSub = 0;
+  int maxChildren = 0;
+  int currentDecision = 0;
   psdd_file.open(psdd_filename);
   if (!psdd_file) {
     std::cerr << "File " << psdd_filename << " cannot be open.";
@@ -929,6 +931,8 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
           children_size_vector[current_index] = cur_node->primes_.size();
           children_offset_vector[current_index] = currentChild;
           node_type_vector[current_index++] = DECISION_NODE_TYPE;
+          currentDecision++;
+          maxChildren = maxChildren > cur_node->primes_.size() ? maxChildren : cur_node->primes_.size();
       fpga_node_vector[cur_node->node_index_] = ConvertPsddToStructOldLinear(cur_node,
         prime_vector, sub_vector, currentChild, parameter_vector, bool_param_vector, currentBoolParam,
         previousPrime, previousSub, current_index);
@@ -936,7 +940,7 @@ FPGAPsddNode *FPGAPsddManager::ReadFPGAPsddFileOld(const char *psdd_filename, ui
       root_node = cur_node;
     }
   }
-  std::cout << "total Lit: " << currentLiteral <<  " total top: " << currentTopVariable << std::endl;
+  std::cout << "TOTAL_LITERALS: " << currentLiteral <<  " TOTAL_VARIABLES: " << currentTopVariable << " TOTAL_DECISION: " << currentDecision << " TOTAL_CHILDREN: "  << currentChild << " PSDD_SIZE: " << current_index << " MAX_CHILDREN: " << maxChildren << std::endl;
   psdd_file.close();
   return root_node;
 }
