@@ -39,13 +39,13 @@ cp -rf ./_x.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/emconfig.json .
 
 # XCL_EMULATION_MODE=sw_emu ./psdd_inference  ../networks/weighted_map_network.psdd  ../networks/weighted_map_network.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/$kernel.xclbin $query
 #mastermind
-# XCL_EMULATION_MODE=sw_emu ./psdd_inference ../networks/mastermind.psdd  ../networks/mastermind.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/$kernel.xclbin $query
+XCL_EMULATION_MODE=sw_emu ./psdd_inference ../networks/mastermind.psdd  ../networks/mastermind.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/$kernel.xclbin $query
 #grid network
-# XCL_EMULATION_MODE=sw_emu ./psdd_inference  ../grids.psdd  ../grids.vtree $query
+# XCL_EMULATION_MODE=sw_emu ./psdd_inference  ../networks/grids.psdd  ../networks/grids.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/$kernel.xclbin $query
 #blockmap
 # XCL_EMULATION_MODE=sw_emu ./psdd_inference ../networks/blockmap.psdd  ../networks/blockmap.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/$kernel.xclbin $query
 #BN_78
-XCL_EMULATION_MODE=sw_emu ./psdd_inference ../networks/BN_78.psdd  ../networks/BN_78.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/$kernel.xclbin $query
+# XCL_EMULATION_MODE=sw_emu ./psdd_inference ../networks/BN_78.psdd  ../networks/BN_78.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/$kernel.xclbin $query
 #fs-04
 # XCL_EMULATION_MODE=sw_emu ./psdd_inference ../networks/fs-04.psdd  ../networks/fs-04.vtree ./build_dir.sw_emu.xilinx_aws-vu9p-f1_shell-v04261818_201920_2/$kernel.xclbin $query
 #students

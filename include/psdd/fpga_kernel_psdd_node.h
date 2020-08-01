@@ -43,33 +43,33 @@
 // const uint VAR_IDX_BIT_WIDTH = 20;
 
 //For Mastermind Network
-// const uint PSDD_SIZE = 42558;
-// const uint MAX_CHILDREN = 2;
-// const uint TOTAL_CHILDREN = 45272;
-// const short TOTAL_BOOL_PARAM = 1;
-// const short TOTAL_LITERALS = 2328;
-// const short TOTAL_VARIABLES = 1;
-// const short TOTAL_VARIABLE_INDEXES = 1;
-// const uint TOTAL_CHILDREN_SIZE = 42558;
-// const uint MERGED_LOOP_LEN = 47688;
-// const uint NUM_DISTICT_QUERIES = 1;
-// const uint TOTAL_DECISION = 40230;
-// const uint NUM_VAR = 1220;
-// #define MAX_VAR 2048
-// const uint PRIME_BIT_WIDTH = 16;
-// const uint SUB_BIT_WIDTH = 16;
-// const uint PARAM_BIT_WIDTH = 18;
-// const uint PARAM_DEC_WIDTH = 6;
-// const uint BOOL_BIT_WIDTH = 14;
-// const uint BOOL_DEC_WIDTH = 2;
-// const uint NODE_TYPE_BIT_WIDTH = 3;
-// const uint LITERAL_BIT_WIDTH = 13;
-// const uint LITERAL_VAR_BIT_WIDTH = 14;
-// const uint TOP_VAR_BIT_WIDTH = 14;
-// const uint CHILD_SIZE_BIT_WIDTH = 6;
-// const uint CHILD_OFFSET_BIT_WIDTH = 20;
-// const uint LITERAL_IDX_BIT_WIDTH = 20;
-// const uint VAR_IDX_BIT_WIDTH = 20;
+const uint PSDD_SIZE = 42558;
+const uint MAX_CHILDREN = 2;
+const uint TOTAL_CHILDREN = 45272;
+const short TOTAL_BOOL_PARAM = 1;
+const short TOTAL_LITERALS = 2328;
+const short TOTAL_VARIABLES = 1;
+const short TOTAL_VARIABLE_INDEXES = 1;
+const uint TOTAL_CHILDREN_SIZE = 42558;
+const uint MERGED_LOOP_LEN = 47688;
+const uint NUM_DISTICT_QUERIES = 1;
+const uint TOTAL_DECISION = 40230;
+const uint NUM_VAR = 1220;
+#define MAX_VAR 2048
+const uint PRIME_BIT_WIDTH = 16;
+const uint SUB_BIT_WIDTH = 16;
+const uint PARAM_BIT_WIDTH = 18;
+const uint PARAM_DEC_WIDTH = 6;
+const uint BOOL_BIT_WIDTH = 14;
+const uint BOOL_DEC_WIDTH = 2;
+const uint NODE_TYPE_BIT_WIDTH = 3;
+const uint LITERAL_BIT_WIDTH = 13;
+const uint LITERAL_VAR_BIT_WIDTH = 14;
+const uint TOP_VAR_BIT_WIDTH = 14;
+const uint CHILD_SIZE_BIT_WIDTH = 6;
+const uint CHILD_OFFSET_BIT_WIDTH = 20;
+const uint LITERAL_IDX_BIT_WIDTH = 20;
+const uint VAR_IDX_BIT_WIDTH = 20;
 
 
 //For Blockmap Network
@@ -101,34 +101,64 @@
 // const uint LITERAL_IDX_BIT_WIDTH = 20;
 // const uint VAR_IDX_BIT_WIDTH = 20;
 
+//For grids network
+// const uint PSDD_SIZE = 51;
+// const uint MAX_CHILDREN = 2;
+// const uint TOTAL_CHILDREN = 156;
+// const uint TOTAL_PARAM = 78;
+// const short TOTAL_BOOL_PARAM = 48;
+// const short TOTAL_LITERALS = 1218;
+// const short TOTAL_VARIABLES = 70;
+// const short TOTAL_VARIABLE_INDEXES = 70;
+// const uint TOTAL_CHILDREN_SIZE = 51;
+// const uint MERGED_LOOP_LEN = 47688;
+// const uint NUM_DISTICT_QUERIES = 1;
+// const uint TOTAL_DECISION = 2330;
+// const uint NUM_VAR = 700;
+// #define MAX_VAR 2048
+// const uint PRIME_BIT_WIDTH = 16;
+// const uint SUB_BIT_WIDTH = 16;
+// const uint PARAM_BIT_WIDTH = 18;
+// const uint PARAM_DEC_WIDTH = 6;
+// const uint BOOL_BIT_WIDTH = 14;
+// const uint BOOL_DEC_WIDTH = 2;
+// const uint NODE_TYPE_BIT_WIDTH = 3;
+// const uint LITERAL_BIT_WIDTH = 13;
+// const uint LITERAL_VAR_BIT_WIDTH = 14;
+// const uint TOP_VAR_BIT_WIDTH = 14;
+// const uint CHILD_SIZE_BIT_WIDTH = 6;
+// const uint CHILD_OFFSET_BIT_WIDTH = 20;
+// const uint LITERAL_IDX_BIT_WIDTH = 20;
+// const uint VAR_IDX_BIT_WIDTH = 20;
+
 //For BN_78 Network
-const uint PSDD_SIZE = 42558;
-const uint MAX_CHILDREN = 2;
-const uint TOTAL_CHILDREN = 45272;
-const short TOTAL_BOOL_PARAM = 1;
-const short TOTAL_LITERALS = 2328;
-const short TOTAL_VARIABLES = 1;
-const short TOTAL_VARIABLE_INDEXES = 1;
-const uint TOTAL_CHILDREN_SIZE = 42558;
-const uint MERGED_LOOP_LEN = 47688;
-const uint NUM_DISTICT_QUERIES = 1;
-const uint TOTAL_DECISION = 40230;
-const uint NUM_VAR = 1220;
-#define MAX_VAR 2048
-const uint PRIME_BIT_WIDTH = 16;
-const uint SUB_BIT_WIDTH = 16;
-const uint PARAM_BIT_WIDTH = 18;
-const uint PARAM_DEC_WIDTH = 6;
-const uint BOOL_BIT_WIDTH = 14;
-const uint BOOL_DEC_WIDTH = 2;
-const uint NODE_TYPE_BIT_WIDTH = 3;
-const uint LITERAL_BIT_WIDTH = 13;
-const uint LITERAL_VAR_BIT_WIDTH = 14;
-const uint TOP_VAR_BIT_WIDTH = 14;
-const uint CHILD_SIZE_BIT_WIDTH = 6;
-const uint CHILD_OFFSET_BIT_WIDTH = 20;
-const uint LITERAL_IDX_BIT_WIDTH = 20;
-const uint VAR_IDX_BIT_WIDTH = 20;
+// const uint PSDD_SIZE = 208092;
+// const uint ORDER_SIZE = 123204;
+// const uint MAX_CHILDREN = 2;
+// const uint TOTAL_CHILDREN = 305629;
+// const uint TOTAL_BOOL_PARAM = 10754;
+// const uint TOTAL_LITERALS = 70;
+// const uint TOTAL_VARIABLES = 5377;
+// const uint TOTAL_VARIABLE_INDEXES = 5377;
+// const uint MERGED_LOOP_LEN = 777724;
+// const uint NUM_DISTICT_QUERIES = 1;
+// const uint TOTAL_DECISION = 202645;
+// const uint NUM_VAR = 55;
+// #define MAX_VAR 64
+// const uint PRIME_BIT_WIDTH = 28;
+// const uint SUB_BIT_WIDTH = 28;
+// const uint PARAM_BIT_WIDTH = 18;
+// const uint PARAM_DEC_WIDTH = 8;
+// const uint BOOL_BIT_WIDTH = 18;
+// const uint BOOL_DEC_WIDTH = 2;
+// const uint NODE_TYPE_BIT_WIDTH = 3;
+// const uint LITERAL_BIT_WIDTH = 13;
+// const uint LITERAL_VAR_BIT_WIDTH = 14;
+// const uint TOP_VAR_BIT_WIDTH = 20;
+// const uint CHILD_SIZE_BIT_WIDTH = 6;
+// const uint CHILD_OFFSET_BIT_WIDTH = 20;
+// const uint LITERAL_IDX_BIT_WIDTH = 20;
+// const uint VAR_IDX_BIT_WIDTH = 24;
 
 //For fs-04 Network
 // const uint PSDD_SIZE = 52789;
@@ -188,27 +218,6 @@ const uint VAR_IDX_BIT_WIDTH = 20;
 // const uint LITERAL_IDX_BIT_WIDTH = 20;
 // const uint VAR_IDX_BIT_WIDTH = 20;
 
-//For grids network
-// const uint PSDD_SIZE = 51;
-// const uint MAX_CHILDREN = 2;
-// const uint TOTAL_CHILDREN = 156;
-// const uint TOTAL_PARAM = 78;
-// const short TOTAL_BOOL_PARAM = 48;
-// #define MAX_VAR 2048
-// const uint PRIME_BIT_WIDTH = 16;
-// const uint SUB_BIT_WIDTH = 16;
-// const uint PARAM_BIT_WIDTH = 18;
-// const uint PARAM_DEC_WIDTH = 6;
-// const uint BOOL_BIT_WIDTH = 14;
-// const uint BOOL_DEC_WIDTH = 2;
-// const uint NODE_TYPE_BIT_WIDTH = 3;
-// const uint LITERAL_BIT_WIDTH = 13;
-// const uint LITERAL_VAR_BIT_WIDTH = 14;
-// const uint TOP_VAR_BIT_WIDTH = 14;
-// const uint CHILD_SIZE_BIT_WIDTH = 6;
-// const uint CHILD_OFFSET_BIT_WIDTH = 20;
-// const uint LITERAL_IDX_BIT_WIDTH = 20;
-// const uint VAR_IDX_BIT_WIDTH = 20;
 
 struct PsddNodeStruct {
   ap_uint<32> node_type_;
